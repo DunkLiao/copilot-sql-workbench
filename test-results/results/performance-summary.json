@@ -1,0 +1,26 @@
+[
+  {
+    "module": "Oracle SQL Formatter",
+    "size": 100,
+    "runs": 5,
+    "p50_ms": 13.3,
+    "p95_ms": 26.2,
+    "mean_throughput_per_second": 10071.45
+  },
+  {
+    "module": "Oracle SQL Formatter",
+    "size": 1000,
+    "runs": 5,
+    "p50_ms": 94.8,
+    "p95_ms": 115.4,
+    "mean_throughput_per_second": 12371.49
+  },
+  {
+    "module": "Oracle SQL Formatter",
+    "size": 10000,
+    "runs": 5,
+    "p50_ms": 501.6,
+    "p95_ms": 543.2,
+    "mean_throughput_per_second": 19805.82
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "run_id": "7ad19f2a-0f60-41c9-83a8-65365e346ce7",
+  "started_at": "2026-10-23T10:39:10.374288+00:00",
+  "finished_at": "2026-10-23T10:39:25.493163+00:00",
+  "seed": 20261023,
+  "mode": "full",
+  "source": "/content/sql-spa-project/unpacked",
+  "source_sha256": "d6b340d72e822a88aea9cee8202843379b1be82bf6231e2e7fe880700e4a718b",
+  "python": "3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]",
+  "node": "v22.23.4",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "cpu_count": 2,
+  "browser": "Playwright Chromium",
+  "packages": {
+    "matplotlib": "3.10.0",
+    "xlsxwriter": "3.3.0",
+    "playwright": "1.64.1"
+  },
+  "limitations": [
+    "瀏覽器檢查驗證全部工具頁載入與共用導覽，並覆蓋主要功能流程；尚未逐項測試所有操作選項及錯誤路徑。",
+    "個資指標以 UTF-8 合成檔案的命中類型與位元組區間逐筆比對；Big5／UTF-16 準確度仍待加入掃描器整合案例。",
+    "效能測試目前量測 Oracle SQL Formatter 實際 formatText 函式，不代表其他模組端到端效能。",
+    "未設定 Oracle 連線；SQL Lab 亦未視為 Oracle 執行器。"
+  ]
+}

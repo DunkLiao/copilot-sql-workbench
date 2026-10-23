@@ -32,7 +32,6 @@ coverage/
 .nyc_output/
 playwright-report/
 blob-report/
-test-results/
 
 # 本專案產生的 Colab 報告與簡報素材
 /colab/outputs/

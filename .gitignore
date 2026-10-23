@@ -1,4 +1,4 @@
-# Secrets and local environment
+# 機密資料與本機環境設定
 .env
 .env.*
 !.env.example
@@ -7,31 +7,60 @@
 *.p12
 *.pfx
 
-# Dependencies and generated build output
-node_modules/
-參賽準備/.artifact-build/
+# Python 快取與虛擬環境（Colab 測試工具）
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
 
-# Test, debug, and runtime output
+# Jupyter 暫存與檢查點；保留正式 .ipynb Notebook
+.ipynb_checkpoints/
+
+# Node.js 套件、測試覆蓋率與瀏覽器測試輸出
+node_modules/
 coverage/
 .nyc_output/
 playwright-report/
+blob-report/
 test-results/
-*.log
+
+# 本專案產生的 Colab 報告與簡報素材
+/colab/outputs/
+/參賽準備/.artifact-build/
+
+# 套件管理器與執行日誌
+.npm/
+.yarn-integrity
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+*.log
 
-# Operating system and editor files
+# 編輯器與作業系統暫存檔
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
 .DS_Store
+._*
 Thumbs.db
 Desktop.ini
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
 
-# Microsoft Office temporary and lock files
-~$*.docx
-~$*.xlsx
-~$*.pptx
+# Office 暫存與鎖定檔；正式 Office 文件仍納入版本控制
+~$*

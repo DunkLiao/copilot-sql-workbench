@@ -15,7 +15,7 @@ assert.match(beforeSql, /CUSTOMER_SEGMENT\s+VARCHAR2\(20\)/i);
 assert.match(afterSql, /CUSTOMER_SEGMENT\s+VARCHAR2\(40\)/i);
 assert.equal(beforeSql.replace('VARCHAR2(20)', 'VARCHAR2(40)'), afterSql);
 
-const html = fs.readFileSync(path.join(root, 'sql-spa-tools-column-lineage.html'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'sql-spa-tools-column-lineage.html'), 'utf8').replace(/\r\n/g, '\n');
 const marker = "'use strict';\n(() => {\n";
 const start = html.indexOf(marker);
 const end = html.indexOf('// UI events', start);

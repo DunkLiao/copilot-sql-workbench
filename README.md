@@ -106,6 +106,8 @@ Colab 測試框架供維護者檢查 SQL SPA Tools，不是一般 Demo 的必要
 4. `MODE = 'quick'` 用於快速檢查，產生 50 組案例；`MODE = 'full'` 產生 1,000 組案例並執行較完整的瀏覽器及效能檢查。
 5. 執行完成後下載 `test-results.zip`。報告亦暫存在 Colab 工作階段的 `colab/outputs/`；離開或重設工作階段前請先下載。
 
+目前納入版本控制的測試成果副本位於 [`test-results/`](test-results/)；內容包括 Excel 測試報告、PNG／SVG 圖表、合成案例 fixtures，以及 JSON／CSV 結果。這是一次完整模式執行的快照，不會隨每次 Colab 執行自動更新。若要更新版本庫中的成果，請將新下載的 `test-results.zip` 解壓並用新結果取代此資料夾，再提交變更。
+
 詳細設定、結果解讀與本機維護命令見[Colab 測試操作指南](colab/docs/testing-guide.md)。雲端執行環境及效能數值會變動；請連同報告中的環境資訊解讀，不要把單次結果當成跨環境比較或正式效益結論。
 
 ### 關閉 Colab 工作階段

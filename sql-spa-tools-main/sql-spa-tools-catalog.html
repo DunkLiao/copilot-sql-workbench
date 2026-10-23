@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<title>SQL SPA Tools｜SQL Catalog</title>
+<style>
+:root{
+  --bg:#eaeaea;--panel:#f7f7f7;--line:#cacaca;--text:#252525;--dim:#6e6e6e;
+  --pri:#474747;--pri-d:#353535;--pri-l:#e5e5e5;
+  --navy:#2d2d2d;--navy-2:#3c3c3c;--gold:#929292;--gold-l:#d4d4d4;
+  --fuji:#6e6e6e;--fuji-l:#e3e3e3;--take:#6b6b6b;--sakura:#cdcdcd;
+  --ok:#6b6b6b;--warn:#7e7e7e;--err:#595959;--sel:#e7e7e7;--cur:#e0e0e0;
+  }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font:13px/1.5 var(--theme-font-sans);color:var(--text);background:var(--bg)}
+::selection{background:var(--gold-l)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:3px;padding:4px 10px;white-space:nowrap;transition:background .12s,border-color .12s}
+button:hover{background:var(--pri-l);border-color:#ababab}
+button.pri{background:var(--pri);color:#f4f4f4;border-color:var(--pri-d)}
+button.pri:hover{background:var(--pri-d)}
+button.danger{color:var(--err)}
+button:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=date],input:not([type]),select,textarea{border:1px solid var(--line);border-radius:3px;padding:4px 7px;background:#fdfdfd;width:100%}
+textarea{resize:vertical;min-height:54px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold-l);outline-offset:-1px;border-color:var(--gold)}
+input[type=checkbox]{accent-color:var(--pri)}
+.app{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh}
+header{display:flex;align-items:center;gap:6px;padding:8px 12px;color:#ebebeb;flex-wrap:wrap;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 22px,rgba(146,146,146,.07) 22px 23px),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 11px,transparent 11px 22px),
+    linear-gradient(180deg,var(--navy-2),var(--navy));
+  border-bottom:3px double var(--gold)}
+header h1{font:600 16px/1 var(--theme-font-sans);margin:0 12px 0 0;white-space:nowrap;letter-spacing:2px;color:#e8e8e8}
+header button{background:rgba(255,255,255,.04);color:#ebebeb;border-color:rgba(212,212,212,.45)}
+header button:hover{background:rgba(212,212,212,.16);border-color:var(--gold-l)}
+header button.pri{background:var(--pri);border-color:#8c8c8c;color:#f4f4f4}
+header button.pri:hover{background:#565656}
+header .sp{flex:1}
+.root-badge{background:rgba(0,0,0,.25);border:1px solid rgba(212,212,212,.3);border-radius:3px;padding:3px 9px;font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gold-l)}
+.searchbar{display:flex;gap:8px;align-items:center;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:inset 0 -2px 0 rgba(71,71,71,.06);flex-wrap:wrap}
+.searchbar input#q{max-width:480px}
+.qhint{font-size:12px;color:var(--dim);white-space:nowrap}
+.qhint code{background:var(--pri-l);color:var(--pri);border-radius:3px;padding:0 4px;font-family:var(--theme-font-mono)}
+.qf{display:flex;gap:4px;flex-wrap:wrap}
+.qf button{border-radius:14px;padding:2px 12px;border-color:#bbbbbb}
+.qf button.on{background:var(--fuji);color:#fff;border-color:var(--fuji)}
+main{display:grid;grid-template-columns:260px minmax(420px,1fr) 440px;min-height:0}
+.pane{background:var(--panel);min-height:0;overflow:auto;border-right:1px solid var(--line)}
+.pane h3{font:600 12px/1.4 var(--theme-font-sans);color:var(--pri);margin:12px 10px 5px;letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+.pane h3::before{content:"";width:6px;height:6px;background:var(--gold);transform:rotate(45deg)}
+.pane h3::after{content:"";flex:1;border-top:1px solid var(--line)}
+#leftPane{background:linear-gradient(180deg,#f0f0f0,var(--panel) 240px)}
+.tree{padding:2px 4px 8px}
+.tn{display:flex;align-items:center;gap:3px;padding:2px 5px;border-radius:3px;cursor:pointer;white-space:nowrap;border-left:3px solid transparent}
+.tn:hover{background:#e8e8e8}
+.tn.on{background:var(--cur);font-weight:600;border-left-color:var(--fuji)}
+.tn .tw{width:14px;text-align:center;color:var(--dim);flex:none}
+.tn .nm{overflow:hidden;text-overflow:ellipsis}
+.tn .cnt{margin-left:auto;color:var(--dim);font-size:11px;padding-left:6px}
+.tc{padding-left:13px;border-left:1px dotted #bbbbbb;margin-left:9px}
+.tc.hide{display:none}
+.filters{padding:0 10px 12px;display:grid;gap:6px}
+.filters label{font-size:12px;color:var(--dim)}
+.listpane{display:flex;flex-direction:column;overflow:hidden}
+.cols{display:grid;grid-template-columns:28px 34px minmax(170px,2fr) minmax(150px,2.2fr) 105px minmax(90px,1.2fr) 66px 66px 88px;align-items:center}
+.listhead{background:linear-gradient(180deg,#e4e4e4,#d9d9d9);border-bottom:2px solid var(--pri);font:600 12px/1.4 var(--theme-font-sans);color:#343434;user-select:none;letter-spacing:.5px}
+.listhead>span{padding:6px 5px;cursor:pointer;white-space:nowrap;overflow:hidden}
+.listhead>span:hover{color:var(--pri)}
+.listbody{flex:1;overflow:auto;position:relative;background:var(--panel)}
+#listSpacer{position:relative}
+.row{position:absolute;left:0;right:0;height:32px;border-bottom:1px solid #e3e3e3;cursor:pointer}
+.row>span{padding:0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:31px}
+.row:hover{background:#ededed}
+.row.sel{background:var(--sel)}
+.row.cur{background:var(--cur);box-shadow:inset 3px 0 0 var(--fuji)}
+.row .fold{color:var(--dim);font-size:11px;margin-left:5px}
+.dim{color:var(--dim)}
+.empty{padding:40px 20px;text-align:center;color:var(--dim)}
+.chip{display:inline-block;background:#eaeaea;border:1px solid #c5c5c5;color:#484848;border-radius:10px;padding:0 7px;font-size:11px;line-height:17px;margin-right:3px}
+.pill{display:inline-block;border-radius:10px;padding:0 7px;font-size:11px;line-height:18px;background:#e4e4e4}
+.l-使用中{background:#e5e5e5;color:#515151}.l-草稿{background:#e7e7e7;color:#5c5c5c}.l-停用{background:#dedede;color:#565656}.l-遺失{background:#dbdbdb;color:#474747}
+.t-待處理{background:#e1e1e1;color:#525252}.t-處理中{background:var(--fuji-l);color:#454545}.t-完成{background:#e5e5e5;color:#515151}
+.overdue{color:var(--err);font-weight:700}
+.edpane{border-right:none;padding-bottom:20px}
+.ed{padding:10px 12px;display:grid;gap:8px}
+.ed .path{font-family:var(--theme-font-mono);font-size:12px;word-break:break-all;background:#eeeeee;border:1px solid var(--line);border-left:3px solid var(--pri);border-radius:3px;padding:5px 8px}
+.ed .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ed .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.ed label{display:block;font-size:12px;color:var(--pri);margin-bottom:2px;font-weight:600}
+.ed .btns{display:flex;gap:5px;flex-wrap:wrap}
+.meta{font-size:12px;color:var(--dim);display:grid;grid-template-columns:auto 1fr;gap:1px 10px;background:#eeeeee;border:1px solid var(--line);border-radius:3px;padding:6px 8px}
+.meta b{font-weight:400;color:var(--text);word-break:break-all}
+.suggest{font-size:12px;background:#f0f0f0;border:1px dashed var(--gold);border-radius:3px;padding:5px 7px;display:flex;gap:6px;align-items:flex-start}
+.suggest span{flex:1;white-space:pre-wrap}
+.chipbox{display:flex;flex-wrap:wrap;gap:4px;align-items:center;border:1px solid var(--line);border-radius:3px;padding:3px 5px;background:#fdfdfd}
+.chipbox input{border:none!important;outline:none!important;flex:1;min-width:90px;padding:2px;background:transparent}
+.chipbox .chip{font-size:12px;line-height:20px}
+.chipbox .chip i{font-style:normal;cursor:pointer;margin-left:4px;color:var(--dim)}
+.chipbox .chip i:hover{color:var(--err)}
+details summary{cursor:pointer}
+.hist{font-size:12px;color:var(--dim);max-height:110px;overflow:auto;border-left:3px solid var(--gold-l);padding-left:8px}
+.preview{border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.preview .bar{display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--navy);color:#ebebeb;border-bottom:2px solid var(--gold);font-size:12px}
+.preview .bar .dim{color:#bebebe}
+.preview .bar .sp{flex:1}
+.code{display:flex;max-height:62vh;overflow:auto;background:#f9f9f9;font:12px/1.55 var(--theme-font-mono)}
+.code pre{margin:0;padding:6px 8px;white-space:pre}
+.code .gut{color:#999999;text-align:right;background:#e8e8e8;border-right:1px solid var(--line);user-select:none;position:sticky;left:0}
+.code .src{flex:1;tab-size:4}
+.k{color:#3b3b3b;font-weight:700}.f{color:#5a5a5a}.s{color:#636363}.c{color:#8d8d8d;font-style:italic}.n{color:#535353}
+mark{background:#d4d4d4;color:inherit;padding:0;border-bottom:1px solid var(--pri)}
+footer{display:flex;gap:16px;align-items:center;padding:4px 12px;background:#dbdbdb;border-top:1px solid #b9b9b9;font-size:12px;color:#525252}
+footer .sp{flex:1}
+#saveStatus.err{color:var(--err);font-weight:700}
+#saveStatus.ok{color:var(--ok)}
+.dd{position:relative}
+.dd .menu{display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-top:3px solid var(--pri);border-radius:3px;box-shadow:0 8px 24px rgba(37,37,37,.22);z-index:50;min-width:210px;padding:4px}
+.dd.open .menu{display:block}
+.dd .menu button{display:block;width:100%;text-align:left;border:none;background:none;color:var(--text);padding:6px 10px}
+.dd .menu button:hover{background:var(--pri-l)}
+.dd .menu hr{border:none;border-top:1px solid var(--line);margin:4px 0}
+.mask{position:fixed;inset:0;background:rgba(45,45,45,.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--panel);border-radius:4px;width:min(860px,94vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(21,21,21,.35);border:1px solid var(--line)}
+.modal .mh{display:flex;align-items:center;padding:10px 14px;font:600 15px/1.4 var(--theme-font-sans);letter-spacing:1px;color:#e8e8e8;background:linear-gradient(180deg,var(--navy-2),var(--navy));border-bottom:3px double var(--gold);border-radius:4px 4px 0 0}
+.modal .mh .x{margin-left:auto;border:none;font-size:18px;padding:0 6px;background:none;color:#ebebeb}
+.modal .mh .x:hover{color:var(--gold-l)}
+.modal .mb{padding:12px 14px;overflow:auto}
+.modal .mf{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#eeeeee}
+.form{display:grid;grid-template-columns:150px 1fr;gap:8px 10px;align-items:center}
+.form .hint{grid-column:2;font-size:12px;color:var(--dim);margin-top:-4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.card{border:1px solid var(--line);border-top:3px solid var(--pri);border-radius:3px;padding:8px 10px;background:#fdfdfd}
+.card:nth-child(2){border-top-color:var(--gold)}.card:nth-child(3){border-top-color:var(--fuji)}.card:nth-child(4){border-top-color:var(--err)}.card:nth-child(5){border-top-color:var(--take)}
+.card .v{font:700 22px/1.3 var(--theme-font-sans);color:var(--navy)}
+.card .l{font-size:12px;color:var(--dim)}
+.dash{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dash h4{margin:4px 0 6px;color:var(--pri);border-bottom:1px solid var(--line);padding-bottom:2px}
+.bars .b{display:grid;grid-template-columns:150px 1fr 44px;gap:6px;align-items:center;font-size:12px;margin:2px 0}
+.bars .b .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bars .b .t{background:#e6e6e6;border-radius:2px;height:12px}
+.bars .b .t i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),#717171);border-radius:2px}
+.bars .b.click{cursor:pointer}.bars .b.click:hover .nm{color:var(--pri);text-decoration:underline}
+table.mg{width:100%;border-collapse:collapse;font-size:12px}
+table.mg td,table.mg th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
+table.mg th{color:var(--pri);font-family:var(--theme-font-sans)}
+.help h4{margin:12px 0 4px;color:var(--pri)}.help p,.help li{margin:3px 0}
+.help table{border-collapse:collapse;font-size:12px}.help td,.help th{border:1px solid var(--line);padding:3px 8px;text-align:left}
+.help th{background:#e4e4e4}
+.help code{background:var(--pri-l);color:var(--pri);border-radius:3px;padding:0 4px;font-family:var(--theme-font-mono)}
+#progress{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:3px;box-shadow:0 8px 30px rgba(21,21,21,.25);padding:12px 16px;width:380px;z-index:120;display:none}
+#progress .pb{height:8px;background:#e6e6e6;border-radius:2px;overflow:hidden;margin-top:8px}
+#progress .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),var(--gold));transition:width .15s}
+#toasts{position:fixed;right:14px;bottom:36px;display:grid;gap:6px;z-index:130}
+.toast{background:var(--navy);color:#ebebeb;border-left:4px solid var(--gold);padding:8px 12px;border-radius:3px;max-width:420px;box-shadow:0 6px 18px rgba(21,21,21,.3);font-size:13px;white-space:pre-wrap}
+.toast.error{background:var(--pri);border-left-color:var(--sakura)}.toast.ok{background:var(--take);border-left-color:var(--gold-l)}
+.welcome{padding:40px 30px;max-width:620px;margin:0 auto;color:var(--text)}
+.welcome h2{margin-top:0;color:var(--pri);letter-spacing:1px}
+.welcome li{margin:4px 0}
+.welcome .resume{display:block;margin:18px auto 6px;font-size:15px;padding:10px 22px}
+.welcome .resume-hint{text-align:center;font-size:12px;color:var(--dim)}
+.welcome code{background:var(--pri-l);color:var(--pri);padding:0 4px;border-radius:3px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#e7e7e7}
+::-webkit-scrollbar-thumb{background:#b6b6b6;border-radius:5px;border:2px solid #e7e7e7}
+::-webkit-scrollbar-thumb:hover{background:var(--gold)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🗂️ SQL SPA Tools｜SQL Catalog</h1>
+    <button class="pri" id="btnPick" title="選擇 SQL 根目錄">📁 選擇目錄</button>
+    <button id="btnRestore" style="display:none">↩️ 恢復上次目錄</button>
+    <button id="btnScan" disabled>🔄 重新掃描</button>
+    <button id="btnSave" disabled title="Ctrl+S">💾 儲存</button>
+    <span class="root-badge" id="rootBadge">尚未選擇目錄</span>
+    <span class="sp"></span>
+    <button id="btnBatch" disabled>✏️ 批次編輯</button>
+    <button id="btnManage" disabled>🏷️ 分類/標籤管理</button>
+    <button id="btnDash" disabled>📊 統計</button>
+    <button id="btnZip" disabled title="將 SQL 原始檔打包成 ZIP 下載">📦 打包下載</button>
+    <div class="dd" id="ddExport">
+      <button id="btnExport" disabled>⬇️ 匯出 ▾</button>
+      <div class="menu">
+        <button data-ex="csv-all">CSV（全部）</button>
+        <button data-ex="csv-view">CSV（目前篩選結果）</button>
+        <button data-ex="md">Markdown 清冊</button>
+        <button data-ex="html">HTML 報表</button>
+        <hr>
+        <button data-ex="json">下載 sql_catalog.json</button>
+        <button data-ex="import">匯入 JSON（合併）…</button>
+      </div>
+    </div>
+    <button id="btnSettings">⚙️ 設定</button>
+    <button id="btnHelp">❔ 說明</button>
+    <a class="home-link" href="index.html">⌂ 工具入口</a>
+    <button id="themeToggle" class="theme-toggle" type="button">☀️ 淺色模式</button>
+  </header>
+
+  <div class="searchbar">
+    <input id="q" type="text" placeholder="🔍 搜尋檔名、路徑、SQL 內容、用途、後續說明…（Ctrl+F）">
+    <span class="qhint" title="範例：ELN_CR OR ELN_IFRS 月報">空白＝AND　<code>OR</code> 或 <code>|</code>＝或　<code>-字</code>＝排除　<code>"片語"</code></span>
+    <div class="qf" id="quick">
+      <button data-q="nopurpose">未填用途</button>
+      <button data-q="changed">本次有異動</button>
+      <button data-q="overdue">待辦逾期</button>
+      <button data-q="todo">待辦未完成</button>
+      <button data-q="missing">已遺失</button>
+    </div>
+    <button id="btnClear">清除篩選</button>
+  </div>
+
+  <main>
+    <section class="pane" id="leftPane">
+      <h3>資料夾</h3>
+      <div class="tree" id="tree"></div>
+      <h3>篩選</h3>
+      <div class="filters">
+        <div><label>分類</label><select id="fCategory"></select></div>
+        <div><label>標籤</label><input id="fTag" list="dlTags" placeholder="輸入或選擇標籤"></div>
+        <div><label>引用表格</label><input id="fTable" list="dlTables" placeholder="例：ELN_CR_ACCBALDETAIL"></div>
+        <div><label>語法類型</label><select id="fSqlType"></select></div>
+        <div><label>掃描狀態</label><select id="fScan"></select></div>
+        <div><label>生命週期</label><select id="fLife"></select></div>
+        <div><label>待辦狀態</label><select id="fTodo"></select></div>
+      </div>
+    </section>
+
+    <section class="pane listpane">
+      <div class="listhead cols" id="listHead">
+        <span><input type="checkbox" id="chkAll" title="全選目前清單"></span>
+        <span data-sort="scanStatus" title="掃描狀態">狀態</span>
+        <span data-sort="path">檔名 / 資料夾</span>
+        <span data-sort="purpose">用途</span>
+        <span data-sort="category">分類</span>
+        <span data-sort="tags">標籤</span>
+        <span data-sort="lifecycle">週期</span>
+        <span data-sort="todoStatus">待辦</span>
+        <span data-sort="dueDate">到期日</span>
+      </div>
+      <div class="listbody" id="listBody">
+        <div id="listSpacer"><div id="listRows"></div></div>
+        <div id="listEmpty" class="empty" style="display:none"></div>
+      </div>
+    </section>
+
+    <section class="pane edpane" id="edPane"></section>
+  </main>
+
+  <footer>
+    <span id="stTotal">共 0 支</span>
+    <span id="stView">篩選 0 支</span>
+    <span id="stSel">已選 0 支</span>
+    <button id="btnSelClear" style="padding:0 8px;display:none">清除選取</button>
+    <span class="sp"></span>
+    <span id="stScan"></span>
+    <span id="saveStatus">—</span>
+  </footer>
+</div>
+
+<datalist id="dlCats"></datalist>
+<datalist id="dlTags"></datalist>
+<datalist id="dlTables"></datalist>
+<datalist id="dlFreq"><option value="日"><option value="週"><option value="月"><option value="季"><option value="半年"><option value="年"><option value="不定期"><option value="一次性"></datalist>
+<input type="file" id="fallbackInput" webkitdirectory multiple hidden>
+<input type="file" id="importInput" accept=".json,application/json" hidden>
+<div id="progress"><div id="progTxt">掃描中…</div><div class="pb"><i id="progBar"></i></div></div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* =========================================================
+ * SQL Catalog － 單檔 SQL 檔案管理工具
+ *   0. 常數與狀態     1. 工具函式      2. IndexedDB
+ *   3. 編碼/雜湊/解析 4. 目錄存取與掃描 5. 異動比對
+ *   6. 儲存           7. 搜尋語法/篩選/排序  8. 畫面
+ *   9. 預覽標色       10. 批次/管理/統計/設定/說明
+ *   11. 匯出匯入      12. 事件綁定與啟動
+ * ========================================================= */
+
+/* ---------- 0. 常數與狀態 ---------- */
+const CAT_FILE = 'sql_catalog.json';
+const BAK_FILE = 'sql_catalog.bak.json';
+const ROW_H = 32;
+const MANUAL = ['purpose','category','tags','lifecycle','frequency','followUp','todoStatus','dueDate','notes'];
+const LIFECYCLES = ['使用中','草稿','停用','遺失'];
+const TODOS = ['無','待處理','處理中','完成'];
+const SCAN_ST = {new:'🆕 新增',changed:'✏️ 變更',moved:'🔀 搬移',missing:'❌ 遺失',unchanged:'✅ 未變'};
+const SCAN_ICON = {new:'🆕',changed:'✏️',moved:'🔀',missing:'❌',unchanged:'✅'};
+const SCAN_ORDER = {new:0,changed:1,moved:2,missing:3,unchanged:4};
+const SQL_TYPES = ['SELECT','INSERT','UPDATE','DELETE','MERGE','DDL','PL/SQL'];
+const DEFAULT_SETTINGS = {exts:['.sql'], excludes:['backup','old','.git','node_modules'], rootPath:''};
+
+const S = {
+  root:null, readOnly:false, fallbackFiles:null, catalog:null,
+  content:new Map(), lower:new Map(), getters:new Map(),
+  view:[], selected:new Set(), current:null, lastSelIdx:-1,
+  expanded:new Set(['']),
+  filters:{folder:'',q:'',quick:'',category:'',tag:'',table:'',sqlType:'',scanStatus:'',lifecycle:'',todoStatus:''},
+  query:null,
+  sort:{key:'path',dir:1},
+  scanning:false, pending:false, backedUp:false,
+  savedSettings:null,   // IndexedDB 中最近一次的設定（未開啟目錄時使用）
+  lastHandle:null,      // IndexedDB 中上次的目錄控制代碼
+  autoArmed:false       // 是否等待第一次點擊以自動授權
+};
+
+/* ---------- 1. 工具函式 ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s=>String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n=>String(n).padStart(2,'0');
+function nowISO(d=new Date()){
+  const off=-d.getTimezoneOffset(), s=off>=0?'+':'-', a=Math.abs(off);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${s}${pad(a/60|0)}:${pad(a%60)}`;
+}
+const today = ()=>nowISO().slice(0,10);
+const fmtDT = iso=>iso ? String(iso).replace('T',' ').slice(0,16) : '';
+const stamp = ()=>nowISO().slice(0,16).replace(/[-:]/g,'').replace('T','_');
+function fmtSize(n){ if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(1)+' KB'; return (n/1048576).toFixed(2)+' MB'; }
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+const baseName = p=>p.slice(p.lastIndexOf('/')+1);
+const dirName = p=>{ const i=p.lastIndexOf('/'); return i<0?'':p.slice(0,i); };
+const collator = new Intl.Collator('zh-Hant',{numeric:true,sensitivity:'base'});
+const uniqSorted = arr=>[...new Set(arr.filter(Boolean))].sort(collator.compare);
+const splitList = s=>String(s||'').split(/[,，;；\n]+/).map(x=>x.trim()).filter(Boolean);
+const reEsc = s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+
+function toast(msg,type='info',ms=3500){
+  const d=document.createElement('div'); d.className='toast '+type; d.textContent=msg;
+  $('#toasts').appendChild(d); setTimeout(()=>d.remove(),ms);
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  toast('已複製到剪貼簿','ok',1500);
+}
+function download(name,text,mime='text/plain;charset=utf-8'){
+  const blob=new Blob([text],{type:mime}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+}
+function isOverdue(e){ return !!e.dueDate && e.dueDate<today() && (e.todoStatus==='待處理'||e.todoStatus==='處理中'); }
+
+/* ---------- 2. IndexedDB ---------- */
+const idb = {
+  _db:null,
+  open(){ return this._db || (this._db = new Promise((res,rej)=>{
+    const r=indexedDB.open('sql-catalog-spa',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  })); },
+  async get(k){ const db=await this.open(); return new Promise((res,rej)=>{ const q=db.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); },
+  async set(k,v){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+};
+
+/* ---------- 3. 編碼判別 / 雜湊 / SQL 解析 ---------- */
+function decode(buf){
+  const b=new Uint8Array(buf);
+  if(b.length>=3 && b[0]===0xEF&&b[1]===0xBB&&b[2]===0xBF) return {text:new TextDecoder('utf-8').decode(b.subarray(3)),enc:'UTF-8 BOM'};
+  if(b.length>=2 && b[0]===0xFF&&b[1]===0xFE) return {text:new TextDecoder('utf-16le').decode(b.subarray(2)),enc:'UTF-16LE'};
+  if(b.length>=2 && b[0]===0xFE&&b[1]===0xFF) return {text:new TextDecoder('utf-16be').decode(b.subarray(2)),enc:'UTF-16BE'};
+  if(b.length>=4){
+    const n=Math.min(b.length,4000); let z0=0,z1=0;
+    for(let i=0;i<n;i++){ if(b[i]===0){ if(i%2) z1++; else z0++; } }
+    if(z1>n/4 && z0<n/50) return {text:new TextDecoder('utf-16le').decode(b),enc:'UTF-16LE'};
+    if(z0>n/4 && z1<n/50) return {text:new TextDecoder('utf-16be').decode(b),enc:'UTF-16BE'};
+  }
+  try{ return {text:new TextDecoder('utf-8',{fatal:true}).decode(b),enc:'UTF-8'}; }catch(e){}
+  try{ return {text:new TextDecoder('big5',{fatal:true}).decode(b),enc:'Big5'}; }catch(e){}
+  return {text:new TextDecoder('big5').decode(b),enc:'Big5（部分字元無法解碼）'};
+}
+async function sha256(buf){
+  if(window.crypto && crypto.subtle){
+    const h=await crypto.subtle.digest('SHA-256',buf);
+    return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  const b=new Uint8Array(buf); let h1=0x811c9dc5,h2=0x01000193^b.length;
+  for(let i=0;i<b.length;i++){ h1=Math.imul(h1^b[i],16777619)>>>0; h2=Math.imul(h2^b[i],2246822519)>>>0; }
+  return 'fnv'+h1.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0')+b.length.toString(16);
+}
+const TABLE_STOP = new Set(['DUAL','SELECT','WHERE','SET','VALUES','LATERAL','ONLY','IF','EXISTS','TABLE','THE','AS','ON','USING','NOT','NULL','WITH','BY','GROUP','ORDER']);
+function stripSql(t){
+  return t.replace(/\/\*[\s\S]*?(?:\*\/|$)|--[^\n]*|'(?:[^']|'')*'?/g, m=>m[0]==="'" ? "''" : ' ');
+}
+function parseSql(text){
+  const src=stripSql(text), up=src.toUpperCase();
+  const cte=new Set(); let m;
+  const reCte=/(?:\bWITH|,)\s*([A-Za-z_][\w$#]*)\s*(?:\([^)]*\))?\s+AS\s*\(/gi;
+  while((m=reCte.exec(src))) cte.add(m[1].toUpperCase());
+  const tables=new Set();
+  const add=n=>{ if(!n) return; n=n.replace(/"/g,'').toUpperCase(); const last=n.split('.').pop();
+    if(TABLE_STOP.has(n)||TABLE_STOP.has(last)||cte.has(n)||/^\d/.test(n)) return; tables.add(n); };
+  const NAME='("?[A-Za-z_][\\w$#]*"?(?:\\s*\\.\\s*"?[A-Za-z_][\\w$#]*"?)?)';
+  const reOne=new RegExp('\\b(?:JOIN|INTO|UPDATE|TRUNCATE\\s+TABLE|DELETE\\s+FROM|DELETE|(?:CREATE|ALTER|DROP)\\s+(?:GLOBAL\\s+TEMPORARY\\s+)?TABLE|(?:CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:FORCE\\s+)?)?VIEW)\\s+'+NAME,'gi');
+  while((m=reOne.exec(src))) add(m[1].replace(/\s+/g,''));
+  const reFrom=new RegExp('\\bFROM\\s+'+NAME+'((?:\\s+(?:AS\\s+)?[A-Za-z_][\\w$#]*)?(?:\\s*,\\s*'+NAME.replace(/\(/,'(?:')+'(?:\\s+(?:AS\\s+)?[A-Za-z_][\\w$#]*)?)*)','gi');
+  while((m=reFrom.exec(src))){
+    add(m[1].replace(/\s+/g,''));
+    if(m[2] && m[2].includes(',')) m[2].split(',').slice(1).forEach(seg=>add(seg.trim().split(/\s+/)[0]));
+  }
+  const types=[];
+  if(/\bSELECT\b/.test(up)) types.push('SELECT');
+  if(/\bINSERT\s+(?:ALL\s+|FIRST\s+)?INTO\b/.test(up)) types.push('INSERT');
+  if(/\bUPDATE\s+[\w$#."]+(?:\s+\w+)?\s+SET\b/.test(up)) types.push('UPDATE');
+  if(/\bDELETE\s+(?:FROM\s+)?[\w$#."]+/.test(up)) types.push('DELETE');
+  if(/\bMERGE\s+INTO\b/.test(up)) types.push('MERGE');
+  if(/\b(?:CREATE|ALTER|DROP|TRUNCATE|RENAME|GRANT|REVOKE)\b|\bCOMMENT\s+ON\b/.test(up)) types.push('DDL');
+  if(/\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:PROCEDURE|FUNCTION|PACKAGE|TRIGGER|TYPE\s+BODY)\b|\b(?:DECLARE|BEGIN)\b[\s\S]*\bEND\s*[\w$#]*\s*;/.test(up)) types.push('PL/SQL');
+  return {tables:[...tables].sort(), types, header:headerComment(text)};
+}
+function headerComment(text){
+  const t=text.replace(/^\uFEFF/,'').replace(/^\s+/,'');
+  let out='';
+  if(t.startsWith('--')){
+    const lines=[]; for(const ln of t.split(/\r?\n/)){ const s=ln.trim(); if(!s.startsWith('--')) break; lines.push(s.replace(/^-+\s?/,'')); }
+    out=lines.join('\n');
+  } else if(t.startsWith('/*')){
+    const end=t.indexOf('*/'); out=(end<0?t.slice(2):t.slice(2,end)).split(/\r?\n/).map(s=>s.replace(/^\s*\*+\s?/,'').trim()).join('\n');
+  }
+  out=out.split('\n').filter(s=>!/^[=\-*#_~\s]*$/.test(s)).join('\n').trim();
+  return out.length>400 ? out.slice(0,400)+'…' : out;
+}
+
+/* ---------- 4. 目錄存取與掃描 ---------- */
+function newEntry(){
+  return {hash:'',size:0,modified:'',encoding:'',scanStatus:'new',tables:[],tablesLocked:false,sqlType:[],headerComment:'',
+    purpose:'',category:'',tags:[],lifecycle:'使用中',frequency:'',followUp:'',todoStatus:'無',dueDate:'',notes:'',updatedAt:'',history:[]};
+}
+function normalizeCatalog(c){
+  c=c||{};
+  const out={version:2,rootName:c.rootName||'',lastScan:c.lastScan||null,lastSummary:c.lastSummary||null,
+    settings:Object.assign({},DEFAULT_SETTINGS,c.settings||{}),
+    categories:Array.isArray(c.categories)?c.categories:[], tags:Array.isArray(c.tags)?c.tags:[], files:{}};
+  for(const [p,e] of Object.entries(c.files||{})){
+    const n=Object.assign(newEntry(),e);
+    if(!Array.isArray(n.tags)) n.tags=splitList(n.tags);
+    if(!Array.isArray(n.tables)) n.tables=splitList(n.tables);
+    if(!Array.isArray(n.sqlType)) n.sqlType=[];
+    if(!Array.isArray(n.history)) n.history=[];
+    out.files[p]=n;
+  }
+  return out;
+}
+/* 設定同步保存在 IndexedDB：
+ *   settings            → 最近一次使用的設定（未開啟目錄時顯示／暫存）
+ *   settings:<資料夾名> → 各目錄的設定（JSON 遺失時用來補回）*/
+async function persistSettings(){
+  const st=S.catalog?S.catalog.settings:S.savedSettings; if(!st) return;
+  const copy=JSON.parse(JSON.stringify(st)); S.savedSettings=copy;
+  try{ await idb.set('settings',copy); if(S.catalog) await idb.set('settings:'+S.catalog.rootName,copy); }catch(e){ console.warn(e); }
+}
+async function applySavedSettings(rawCat){
+  // JSON 內沒有 settings（新目錄或舊版檔）時，用 IndexedDB 的設定補上
+  if(rawCat && rawCat.settings) return;
+  let st=null;
+  try{ st=await idb.get('settings:'+S.catalog.rootName); }catch(e){}
+  if(!st) st=S.savedSettings;
+  if(st) S.catalog.settings=Object.assign({},DEFAULT_SETTINGS,st);
+}
+function addHist(e,event){ e.history.push({at:nowISO(),event}); if(e.history.length>30) e.history=e.history.slice(-30); }
+
+async function pickDir(){
+  if(!window.showDirectoryPicker){
+    toast('此瀏覽器不支援直接寫入目錄，改用「唯讀模式」','error',5000);
+    $('#fallbackInput').click(); return;
+  }
+  try{
+    const h=await window.showDirectoryPicker({id:'sqlcatalog',mode:'readwrite'});
+    await openRoot(h);
+  }catch(e){ if(e.name!=='AbortError') toast('開啟目錄失敗：'+e.message,'error',6000); }
+}
+async function restoreDir(){
+  try{
+    const h=await idb.get('rootHandle'); if(!h){ toast('沒有上次使用的目錄'); return; }
+    let p=await h.queryPermission({mode:'readwrite'});
+    if(p!=='granted') p=await h.requestPermission({mode:'readwrite'});
+    if(p!=='granted'){ toast('未取得目錄權限，可再按「▶ 繼續上次目錄」重試','error',5000); return; }
+    await openRoot(h);
+  }catch(e){ toast('恢復目錄失敗：'+e.message+'\n請改用「選擇目錄」','error',6000); }
+}
+async function openRoot(h){
+  if(S.pending) await saveNow();
+  S.root=h; S.readOnly=false; S.fallbackFiles=null; S.backedUp=false;
+  S.lastHandle=h; disarmAutoResume();
+  resetUiState();
+  try{ await idb.set('rootHandle',h); }catch(e){}
+  await loadCatalogFromDir();
+  await scan();
+}
+function resetUiState(){
+  S.selected.clear(); S.current=null; S.expanded=new Set(['']);
+  S.content.clear(); S.lower.clear(); S.getters.clear();
+  Object.keys(S.filters).forEach(k=>S.filters[k]=''); S.query=null;
+  if($('#q')) $('#q').value='';
+}
+async function loadCatalogFromDir(){
+  let cat=null;
+  try{
+    const fh=await S.root.getFileHandle(CAT_FILE);
+    const txt=await (await fh.getFile()).text();
+    if(txt.trim()) cat=JSON.parse(txt);
+  }catch(e){
+    if(e.name!=='NotFoundError') toast('sql_catalog.json 讀取失敗（'+e.message+'），改用瀏覽器快取。原檔會在第一次儲存前備份為 '+BAK_FILE,'error',8000);
+    const cached=await idb.get('cache:'+S.root.name).catch(()=>null);
+    if(cached){ cat=cached; if(e.name==='NotFoundError') toast('目錄中沒有 '+CAT_FILE+'，已載入瀏覽器快取'); }
+  }
+  S.catalog=normalizeCatalog(cat); S.catalog.rootName=S.root.name;
+  await applySavedSettings(cat);
+}
+async function openFallback(fileList){
+  const files=[...fileList]; if(!files.length) return;
+  if(S.pending) await saveNow();
+  const rootName=(files[0].webkitRelativePath||'').split('/')[0]||'root';
+  S.root=null; S.readOnly=true; S.backedUp=false; resetUiState();
+  S.fallbackFiles=files.map(f=>({path:f.webkitRelativePath.split('/').slice(1).join('/'),file:f}));
+  let cat=null;
+  const cf=S.fallbackFiles.find(x=>x.path===CAT_FILE);
+  if(cf){ try{ cat=JSON.parse(await cf.file.text()); }catch(e){ toast('sql_catalog.json 解析失敗','error'); } }
+  if(!cat) cat=await idb.get('cache:'+rootName).catch(()=>null);
+  S.catalog=normalizeCatalog(cat); S.catalog.rootName=rootName;
+  await applySavedSettings(cat);
+  await scan();
+  toast('唯讀模式：說明只存在瀏覽器快取，請定期用「匯出 → 下載 sql_catalog.json」放回根目錄','error',8000);
+}
+async function collectFiles(){
+  const st=S.catalog.settings;
+  const exts=st.exts.map(e=>e.toLowerCase().trim()).filter(Boolean);
+  const ex=new Set(st.excludes.map(e=>e.toLowerCase().trim()).filter(Boolean));
+  const matchExt=n=>{ const l=n.toLowerCase(); return exts.some(e=>l.endsWith(e)); };
+  if(S.readOnly){
+    return S.fallbackFiles.filter(x=>{
+      const parts=x.path.split('/'); if(parts.slice(0,-1).some(p=>ex.has(p.toLowerCase()))) return false;
+      return matchExt(x.path);
+    }).map(x=>({path:x.path,get:async()=>x.file}));
+  }
+  const out=[];
+  async function walk(dir,prefix){
+    for await (const [name,h] of dir.entries()){
+      if(h.kind==='directory'){ if(!ex.has(name.toLowerCase())) await walk(h,prefix+name+'/'); }
+      else if(matchExt(name)) out.push({path:prefix+name,get:()=>h.getFile()});
+    }
+  }
+  await walk(S.root,'');
+  return out;
+}
+function showProgress(done,total,txt){
+  $('#progress').style.display='block';
+  $('#progTxt').textContent=txt || `掃描中… ${done} / ${total}`;
+  $('#progBar').style.width=(total?done/total*100:0)+'%';
+}
+async function scan(){
+  if(S.scanning||!S.catalog) return;
+  if(!S.root && !S.readOnly) return;
+  S.scanning=true; const t0=performance.now();
+  showProgress(0,0,'列舉檔案中…');
+  try{
+    if(S.root){
+      const p=await S.root.queryPermission({mode:'readwrite'});
+      if(p!=='granted' && await S.root.requestPermission({mode:'readwrite'})!=='granted') throw new Error('沒有目錄權限');
+    }
+    const items=await collectFiles();
+    S.getters=new Map(items.map(it=>[it.path,it.get]));
+    const results=new Map(); let done=0, idx=0;
+    async function worker(){
+      while(idx<items.length){
+        const it=items[idx++];
+        try{
+          const f=await it.get(); const buf=await f.arrayBuffer();
+          const {text,enc}=decode(buf); const hash=await sha256(buf);
+          results.set(it.path,{hash,size:f.size,modified:nowISO(new Date(f.lastModified)),encoding:enc,text});
+        }catch(e){ results.set(it.path,{error:e.message||String(e)}); }
+        done++; if(done%25===0||done===items.length) showProgress(done,items.length);
+      }
+    }
+    await Promise.all(Array.from({length:8},worker));
+    const sum=reconcile(results);
+    const sec=((performance.now()-t0)/1000).toFixed(1);
+    refreshAll(); enableUi(true);
+    await saveNow();
+    toast(`掃描完成：${items.length} 支，${sec} 秒\n🆕${sum.new}　✏️${sum.changed}　🔀${sum.moved}　❌${sum.missing}　✅${sum.unchanged}`+(sum.error?`　⚠️讀取失敗 ${sum.error}`:''),'ok',6000);
+  }catch(e){
+    toast('掃描失敗：'+e.message,'error',6000);
+  }finally{
+    S.scanning=false; $('#progress').style.display='none';
+  }
+}
+
+/* ---------- 5. 異動比對 ---------- */
+function reconcile(results){
+  const files=S.catalog.files;
+  const sum={new:0,changed:0,moved:0,missing:0,unchanged:0,error:0};
+  const hashToOld=new Map();
+  for(const p of Object.keys(files)){
+    if(results.has(p)) continue;
+    const h=files[p].hash; if(!h) continue;
+    if(!hashToOld.has(h)) hashToOld.set(h,[]); hashToOld.get(h).push(p);
+  }
+  S.content.clear(); S.lower.clear();
+  const reviveLife=e=>{ if(e.lifecycle==='遺失'){ e.lifecycle=e.prevLifecycle||'使用中'; delete e.prevLifecycle; } };
+  for(const [path,r] of results){
+    let e=files[path], status;
+    if(r.error){
+      if(!e){ e=files[path]=newEntry(); addHist(e,'首次掃描（讀取失敗）'); }
+      e.readError=r.error; e.encoding='讀取失敗'; e.scanStatus=e.scanStatus==='missing'?'unchanged':(e.scanStatus||'new');
+      reviveLife(e); sum.error++; continue;
+    }
+    if(e){
+      status = e.hash===r.hash ? 'unchanged' : 'changed';
+      if(status==='changed') addHist(e,'內容變更');
+      if(e.lifecycle==='遺失'){ reviveLife(e); addHist(e,'檔案重新出現'); }
+    }else{
+      const cands=hashToOld.get(r.hash);
+      if(cands && cands.length){
+        const from=cands.shift();
+        e=files[path]=files[from]; delete files[from];
+        status='moved'; addHist(e,'由「'+from+'」搬移/更名'); reviveLife(e);
+        if(S.current===from) S.current=path;
+        if(S.selected.delete(from)) S.selected.add(path);
+      }else{
+        e=files[path]=newEntry(); status='new'; addHist(e,'首次掃描');
+      }
+    }
+    Object.assign(e,{hash:r.hash,size:r.size,modified:r.modified,encoding:r.encoding}); delete e.readError;
+    const p=parseSql(r.text);
+    if(!e.tablesLocked) e.tables=p.tables;
+    e.sqlType=p.types; e.headerComment=p.header; e.scanStatus=status; sum[status]++;
+    S.content.set(path,r.text); S.lower.set(path,r.text.toLowerCase());
+  }
+  for(const p of Object.keys(files)){
+    if(results.has(p)) continue;
+    const e=files[p];
+    if(e.lifecycle!=='遺失'){ e.prevLifecycle=e.lifecycle; e.lifecycle='遺失'; addHist(e,'檔案遺失'); }
+    e.scanStatus='missing'; sum.missing++;
+  }
+  S.catalog.lastScan=nowISO(); S.catalog.lastSummary=sum;
+  return sum;
+}
+
+/* ---------- 6. 儲存 ---------- */
+let saveTimer=null, saveChain=Promise.resolve();
+function syncLists(){
+  const c=S.catalog, cats=[], tags=[];
+  for(const e of Object.values(c.files)){ if(e.category) cats.push(e.category); tags.push(...e.tags); }
+  c.categories=uniqSorted([...c.categories,...cats]);
+  c.tags=uniqSorted([...c.tags,...tags]);
+}
+function setSaveStatus(t,cls=''){ const el=$('#saveStatus'); el.textContent=t; el.className=cls; }
+function scheduleSave(){
+  if(!S.catalog) return;
+  S.pending=true; setSaveStatus('● 未儲存…');
+  clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,1000);
+}
+function saveNow(){ clearTimeout(saveTimer); saveChain=saveChain.then(doSave).catch(e=>console.error(e)); return saveChain; }
+async function writeFile(name,text){
+  const fh=await S.root.getFileHandle(name,{create:true});
+  const w=await fh.createWritable(); await w.write(text); await w.close();
+}
+async function doSave(){
+  if(!S.catalog) return;
+  S.pending=false; syncLists();
+  const json=JSON.stringify(S.catalog,null,1);
+  try{ await idb.set('cache:'+S.catalog.rootName, JSON.parse(json)); }catch(e){ console.warn('IDB cache',e); }
+  await persistSettings();
+  if(!S.root || S.readOnly){ setSaveStatus('已存於瀏覽器快取（唯讀模式）','err'); return; }
+  try{
+    if(await S.root.queryPermission({mode:'readwrite'})!=='granted') throw new Error('目錄寫入權限已失效，請按「儲存」重新授權');
+    if(!S.backedUp){
+      try{
+        const old=await (await (await S.root.getFileHandle(CAT_FILE)).getFile()).text();
+        if(old.trim()) await writeFile(BAK_FILE,old);
+      }catch(e){ if(e.name!=='NotFoundError') throw e; }
+      S.backedUp=true;
+    }
+    await writeFile(CAT_FILE,json);
+    setSaveStatus('✔ 已儲存 '+nowISO().slice(11,19),'ok');
+  }catch(e){
+    S.pending=true; setSaveStatus('✖ 儲存失敗','err');
+    toast('寫入 '+CAT_FILE+' 失敗：'+e.message+'\n資料已保留在瀏覽器快取，可用「匯出 → 下載 sql_catalog.json」手動保存','error',8000);
+  }
+}
+async function manualSave(){
+  if(S.root && await S.root.queryPermission({mode:'readwrite'})!=='granted'){
+    if(await S.root.requestPermission({mode:'readwrite'})!=='granted'){ toast('未取得寫入權限','error'); return; }
+  }
+  S.pending=true; await saveNow();
+}
+
+/* ---------- 7. 搜尋語法 / 篩選 / 排序 ----------
+ * 搜尋語法：
+ *   A B          → A 且 B（AND）
+ *   A OR B / A|B → A 或 B（OR，優先順序低於 AND）
+ *   A B OR C     → (A 且 B) 或 C
+ *   -A           → 排除含 A 者
+ *   "A B"        → 片語（含空白的完整字串）
+ */
+function parseQuery(q){
+  const tokens=[]; const re=/(-?)"([^"]*)"?|\||(\S+)/g; let m;
+  while((m=re.exec(q))){
+    if(m[0]==='|'){ tokens.push({or:true}); continue; }
+    if(m[2]!==undefined){ if(m[2].trim()) tokens.push({t:m[2].toLowerCase(),neg:!!m[1]}); continue; }
+    let w=m[3];
+    if(w==='OR'){ tokens.push({or:true}); continue; }
+    // 處理 A|B 黏在一起
+    const parts=w.split('|');
+    parts.forEach((p,i)=>{
+      if(i>0) tokens.push({or:true});
+      if(!p) return;
+      const neg=p.length>1 && p[0]==='-';
+      tokens.push({t:(neg?p.slice(1):p).toLowerCase(),neg});
+    });
+  }
+  const groups=[[]];
+  tokens.forEach(k=>{ if(k.or){ if(groups[groups.length-1].length) groups.push([]); } else groups[groups.length-1].push(k); });
+  const out=groups.filter(g=>g.length);
+  return out.length ? out : null;
+}
+function matchQuery(groups,hay,content){
+  const has=t=>hay.includes(t)||content.includes(t);
+  return groups.some(g=>g.every(k=>k.neg ? !has(k.t) : has(k.t)));
+}
+function computeView(){
+  const f=S.filters, files=S.catalog?S.catalog.files:{};
+  const groups=S.query;
+  const tbl=f.table.trim().toUpperCase(), tag=f.tag.trim();
+  const out=[];
+  for(const p in files){
+    const e=files[p];
+    if(f.folder && !p.startsWith(f.folder)) continue;
+    if(f.category){ if(f.category==='__none__'){ if(e.category) continue; } else if(e.category!==f.category) continue; }
+    if(tag && !e.tags.includes(tag)) continue;
+    if(tbl && !e.tables.some(t=>t===tbl || t.endsWith('.'+tbl))) continue;
+    if(f.sqlType && !e.sqlType.includes(f.sqlType)) continue;
+    if(f.scanStatus && e.scanStatus!==f.scanStatus) continue;
+    if(f.lifecycle && e.lifecycle!==f.lifecycle) continue;
+    if(f.todoStatus && e.todoStatus!==f.todoStatus) continue;
+    switch(f.quick){
+      case 'nopurpose': if(e.purpose.trim()) continue; break;
+      case 'changed': if(!['new','changed','moved'].includes(e.scanStatus)) continue; break;
+      case 'overdue': if(!isOverdue(e)) continue; break;
+      case 'todo': if(!(e.todoStatus==='待處理'||e.todoStatus==='處理中')) continue; break;
+      case 'missing': if(e.scanStatus!=='missing') continue; break;
+    }
+    if(groups){
+      const hay=(p+'\n'+e.purpose+'\n'+e.followUp+'\n'+e.notes+'\n'+e.category+'\n'+e.tags.join(' ')+'\n'+e.tables.join(' ')).toLowerCase();
+      if(!matchQuery(groups,hay,S.lower.get(p)||'')) continue;
+    }
+    out.push(p);
+  }
+  const {key,dir}=S.sort;
+  const val=p=>{ const e=files[p];
+    switch(key){
+      case 'path': return p;
+      case 'scanStatus': return SCAN_ORDER[e.scanStatus]??9;
+      case 'tags': return e.tags.join(',');
+      case 'todoStatus': return TODOS.indexOf(e.todoStatus);
+      case 'lifecycle': return LIFECYCLES.indexOf(e.lifecycle);
+      default: return e[key]||'';
+    } };
+  out.sort((a,b)=>{
+    const va=val(a), vb=val(b); let r;
+    if(typeof va==='number') r=va-vb;
+    else { if(!va && vb) return 1; if(va && !vb) return -1; r=collator.compare(va,vb); }
+    return (r||collator.compare(a,b))*dir;
+  });
+  S.view=out;
+}
+const refreshList = ()=>{ computeView(); renderList(); };
+
+/* ---------- 8. 畫面 ---------- */
+function enableUi(on){
+  ['#btnScan','#btnSave','#btnBatch','#btnManage','#btnDash','#btnExport','#btnZip'].forEach(s=>$(s).disabled=!on);
+  $('#rootBadge').textContent = S.catalog ? ('📂 '+S.catalog.rootName+(S.readOnly?'（唯讀模式）':'')) : '尚未選擇目錄';
+}
+function refreshAll(){
+  syncLists(); renderDatalists(); renderFilterOptions(); renderTree(); refreshList(); renderEditor(); renderScanInfo();
+}
+function renderScanInfo(){
+  const c=S.catalog; if(!c||!c.lastScan){ $('#stScan').textContent=''; return; }
+  const s=c.lastSummary||{};
+  $('#stScan').textContent=`上次掃描 ${fmtDT(c.lastScan)}｜🆕${s.new||0} ✏️${s.changed||0} 🔀${s.moved||0} ❌${s.missing||0}`;
+}
+function renderDatalists(){
+  const c=S.catalog; if(!c) return;
+  const opt=a=>a.map(v=>`<option value="${esc(v)}">`).join('');
+  $('#dlCats').innerHTML=opt(c.categories);
+  $('#dlTags').innerHTML=opt(c.tags);
+  const t=new Set(); Object.values(c.files).forEach(e=>e.tables.forEach(x=>t.add(x)));
+  $('#dlTables').innerHTML=opt([...t].sort());
+}
+function renderFilterOptions(){
+  const c=S.catalog; if(!c) return;
+  const files=Object.values(c.files);
+  const cnt=(fn)=>{ const m=new Map(); files.forEach(e=>[].concat(fn(e)).forEach(v=>m.set(v,(m.get(v)||0)+1))); return m; };
+  const fill=(sel,items,cur,labels={})=>{
+    sel.innerHTML='<option value="">（全部）</option>'+items.map(([v,n])=>`<option value="${esc(v)}">${esc(labels[v]||v)}（${n}）</option>`).join('');
+    sel.value=cur; if(sel.value!==cur) sel.value='';
+  };
+  const cc=cnt(e=>e.category||'__none__');
+  fill($('#fCategory'),[...cc].sort((a,b)=>a[0]==='__none__'?1:b[0]==='__none__'?-1:collator.compare(a[0],b[0])),S.filters.category,{'__none__':'（未分類）'});
+  const tc=cnt(e=>e.sqlType); fill($('#fSqlType'),SQL_TYPES.filter(t=>tc.has(t)).map(t=>[t,tc.get(t)]),S.filters.sqlType);
+  const sc=cnt(e=>e.scanStatus); fill($('#fScan'),Object.keys(SCAN_ST).filter(k=>sc.has(k)).map(k=>[k,sc.get(k)]),S.filters.scanStatus,SCAN_ST);
+  const lc=cnt(e=>e.lifecycle); fill($('#fLife'),LIFECYCLES.filter(k=>lc.has(k)).map(k=>[k,lc.get(k)]),S.filters.lifecycle);
+  const dc=cnt(e=>e.todoStatus); fill($('#fTodo'),TODOS.filter(k=>dc.has(k)).map(k=>[k,dc.get(k)]),S.filters.todoStatus);
+  $('#fTag').value=S.filters.tag; $('#fTable').value=S.filters.table;
+}
+function renderTree(){
+  const c=S.catalog; const el=$('#tree');
+  if(!c){ el.innerHTML='<div class="dim" style="padding:6px">—</div>'; return; }
+  const root={children:new Map(),count:0};
+  for(const p of Object.keys(c.files)){
+    const parts=p.split('/'); let node=root; root.count++;
+    for(let i=0;i<parts.length-1;i++){
+      if(!node.children.has(parts[i])) node.children.set(parts[i],{children:new Map(),count:0,path:parts.slice(0,i+1).join('/')+'/'});
+      node=node.children.get(parts[i]); node.count++;
+    }
+  }
+  const draw=(node)=>[...node.children.entries()].sort((a,b)=>collator.compare(a[0],b[0])).map(([name,n])=>{
+    const has=n.children.size>0, open=S.expanded.has(n.path);
+    return `<div class="tn${S.filters.folder===n.path?' on':''}" data-path="${esc(n.path)}"><span class="tw" data-tw="1">${has?(open?'▾':'▸'):''}</span><span class="nm" title="${esc(n.path)}">📁 ${esc(name)}</span><span class="cnt">${n.count}</span></div>`+
+      (has?`<div class="tc${open?'':' hide'}">${draw(n)}</div>`:'');
+  }).join('');
+  el.innerHTML=`<div class="tn${S.filters.folder===''?' on':''}" data-path=""><span class="tw"></span><span class="nm">🗂️ 全部（${esc(c.rootName)}）</span><span class="cnt">${root.count}</span></div>`+draw(root);
+}
+function renderList(){
+  const n=S.view.length;
+  $('#listSpacer').style.height=(n*ROW_H)+'px';
+  const empty=$('#listEmpty');
+  if(!S.catalog){ empty.style.display='block'; empty.innerHTML=welcomeHtml(); }
+  else if(!n){ empty.style.display='block'; empty.textContent='沒有符合條件的檔案'; }
+  else empty.style.display='none';
+  renderRows(); updateCounts(); updateSortHead();
+}
+function welcomeHtml(){
+  const h=S.lastHandle;
+  const resume=h?`<button class="pri resume" id="wResume">▶ 繼續上次目錄：${esc(h.name)}</button>
+  <div class="resume-hint">Chrome 重新開啟網頁後需要再授權一次；在網頁任意處點一下也會跳出授權視窗。<br>若授權視窗有「每次造訪時都允許」，選它即可在下次開啟時直接自動載入。</div>`:'';
+  return `<div class="welcome"><h2>歡迎使用 SQL Catalog</h2>${resume}<ol style="text-align:left">
+  <li>按左上角 <b>📁 選擇目錄</b>，選擇 SQL 根目錄，並允許「編輯」權限。</li>
+  <li>系統會遞迴掃描子資料夾的 SQL，並在根目錄建立 <code>${CAT_FILE}</code> 存放說明。</li>
+  <li>點選檔案後，在右側填寫用途、分類、標籤、後續說明，<b>1 秒後自動儲存</b>。</li>
+  <li>下次開啟，按 <b>↩️ 恢復上次目錄</b> 即可。</li></ol>
+  <p class="dim">本工具不會修改任何 SQL 檔。</p></div>`;
+}
+function rowHtml(i){
+  const p=S.view[i], e=S.catalog.files[p];
+  const cls=(p===S.current?' cur':'')+(S.selected.has(p)?' sel':'');
+  const od=isOverdue(e);
+  return `<div class="row cols${cls}" data-i="${i}" style="top:${i*ROW_H}px">
+<span><input type="checkbox" data-chk="1"${S.selected.has(p)?' checked':''}></span>
+<span title="${esc(SCAN_ST[e.scanStatus]||'')}${e.readError?'｜讀取失敗':''}">${e.readError?'⚠️':(SCAN_ICON[e.scanStatus]||'')}</span>
+<span title="${esc(p)}">${esc(baseName(p))}<span class="fold">${esc(dirName(p))}</span></span>
+<span title="${esc(e.purpose)}">${e.purpose?esc(e.purpose.split('\n')[0]):'<i class="dim">（未填）</i>'}</span>
+<span title="${esc(e.category)}">${esc(e.category)}</span>
+<span title="${esc(e.tags.join(', '))}">${e.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</span>
+<span><span class="pill l-${esc(e.lifecycle)}">${esc(e.lifecycle)}</span></span>
+<span>${e.todoStatus&&e.todoStatus!=='無'?`<span class="pill t-${esc(e.todoStatus)}">${esc(e.todoStatus)}</span>`:''}</span>
+<span class="${od?'overdue':''}">${esc(e.dueDate)}${od?' ⚠':''}</span></div>`;
+}
+function renderRows(){
+  const body=$('#listBody'), n=S.view.length;
+  if(!n){ $('#listRows').innerHTML=''; return; }
+  const st=body.scrollTop, h=body.clientHeight||600;
+  const a=Math.max(0,Math.floor(st/ROW_H)-10), b=Math.min(n,Math.ceil((st+h)/ROW_H)+10);
+  let html=''; for(let i=a;i<b;i++) html+=rowHtml(i);
+  $('#listRows').innerHTML=html;
+}
+function updateCounts(){
+  const total=S.catalog?Object.keys(S.catalog.files).length:0;
+  $('#stTotal').textContent=`共 ${total} 支`;
+  $('#stView').textContent=`篩選 ${S.view.length} 支`;
+  $('#stSel').textContent=`已選 ${S.selected.size} 支`;
+  $('#btnSelClear').style.display=S.selected.size?'':'none';
+  const all=$('#chkAll'); const inView=S.view.filter(p=>S.selected.has(p)).length;
+  all.checked=S.view.length>0 && inView===S.view.length; all.indeterminate=inView>0 && inView<S.view.length;
+}
+function updateSortHead(){
+  $$('#listHead [data-sort]').forEach(s=>{
+    const base=s.textContent.replace(/ [▲▼]$/,''); s.textContent=base+(S.sort.key===s.dataset.sort?(S.sort.dir>0?' ▲':' ▼'):'');
+  });
+}
+function selectCurrent(p,scroll){
+  S.current=p; renderRows(); renderEditor();
+  if(scroll){
+    const i=S.view.indexOf(p); if(i<0) return; const body=$('#listBody');
+    const top=i*ROW_H; if(top<body.scrollTop) body.scrollTop=top; else if(top+ROW_H>body.scrollTop+body.clientHeight) body.scrollTop=top+ROW_H-body.clientHeight;
+    renderRows();
+  }
+}
+
+function renderEditor(){
+  const pane=$('#edPane'); const c=S.catalog; const p=S.current;
+  if(!c || !p || !c.files[p]){ pane.innerHTML=`<div class="empty">${c?'在清單點選檔案以編輯說明<br><br><span class="dim">↑ ↓ 可切換檔案</span>':''}</div>`; return; }
+  const e=c.files[p];
+  const lifeOpts=LIFECYCLES.map(l=>`<option${l===e.lifecycle?' selected':''}${l==='遺失'?' disabled':''}>${l}</option>`).join('');
+  const todoOpts=TODOS.map(t=>`<option${t===e.todoStatus?' selected':''}>${t}</option>`).join('');
+  pane.innerHTML=`<div class="ed">
+  <div><label>路徑</label><div class="path">${esc(p)}</div></div>
+  <div class="btns"><button id="cpPath">📋 複製完整路徑</button><button id="cpName">📋 複製檔名</button><button id="cpSql"${S.content.has(p)?'':' disabled'}>📋 複製 SQL</button><button id="dlFile"${S.getters.has(p)?'':' disabled'}>⬇️ 下載檔案</button>
+  ${e.scanStatus==='missing'?'<button id="rmEntry" class="danger">🗑 移除此遺失紀錄</button>':''}</div>
+  ${e.headerComment && e.headerComment!==e.purpose?`<div class="suggest"><span>💡 檔頭註解：${esc(e.headerComment)}</span><button id="useHeader">套用為用途</button></div>`:''}
+  <div><label>用途 *</label><textarea data-f="purpose" rows="2" placeholder="這支 SQL 做什麼？">${esc(e.purpose)}</textarea></div>
+  <div class="g2">
+    <div><label>分類</label><input data-f="category" list="dlCats" value="${esc(e.category)}" placeholder="自由輸入"></div>
+    <div><label>執行頻率</label><input data-f="frequency" list="dlFreq" value="${esc(e.frequency)}" placeholder="日/週/月…"></div>
+  </div>
+  <div><label>標籤（Enter 或逗號新增）</label><div class="chipbox" id="tagBox">${e.tags.map(t=>`<span class="chip">${esc(t)}<i data-rm="${esc(t)}">×</i></span>`).join('')}<input id="tagIn" list="dlTags" placeholder="新增標籤"></div></div>
+  <div class="g3">
+    <div><label>生命週期</label><select data-f="lifecycle"${e.lifecycle==='遺失'?' disabled':''}>${lifeOpts}</select></div>
+    <div><label>待辦狀態</label><select data-f="todoStatus">${todoOpts}</select></div>
+    <div><label>到期日</label><input type="date" data-f="dueDate" value="${esc(e.dueDate)}"></div>
+  </div>
+  <div><label>後續說明 / 待辦內容</label><textarea data-f="followUp" rows="3">${esc(e.followUp)}</textarea></div>
+  <div><label>備註</label><textarea data-f="notes" rows="2">${esc(e.notes)}</textarea></div>
+  <div><label>引用表格 ${e.tablesLocked?'<span class="pill t-處理中">人工修正</span>':'<span class="dim">（自動解析，可修改）</span>'}</label>
+    <div style="display:flex;gap:5px"><input id="tblIn" value="${esc(e.tables.join(', '))}" placeholder="以逗號分隔">${e.tablesLocked?'<button id="tblAuto" title="恢復自動解析">↺</button>':''}</div></div>
+  <div class="meta">
+    <span>掃描狀態</span><b>${esc(SCAN_ST[e.scanStatus]||'')}${e.readError?'　⚠️ '+esc(e.readError):''}</b>
+    <span>語法類型</span><b>${esc(e.sqlType.join(', ')||'—')}</b>
+    <span>編碼 / 大小</span><b>${esc(e.encoding)} / ${fmtSize(e.size||0)}</b>
+    <span>檔案修改</span><b>${esc(fmtDT(e.modified))}</b>
+    <span>說明更新</span><b>${esc(fmtDT(e.updatedAt))||'—'}</b>
+  </div>
+  <details><summary class="dim">異動紀錄（${e.history.length}）</summary><div class="hist">${e.history.slice().reverse().map(h=>`<div>${esc(fmtDT(h.at))}　${esc(h.event)}</div>`).join('')}</div></details>
+  <div class="preview"><div class="bar"><b>SQL 預覽</b><span class="dim">（唯讀）</span><span class="sp"></span><span class="dim" id="pvInfo"></span></div><div class="code" id="codeBox"></div></div>
+  </div>`;
+  renderPreview(p);
+}
+function touch(e){ e.updatedAt=nowISO(); scheduleSave(); renderRows(); }
+function onEdInput(ev){
+  const f=ev.target.dataset.f; if(!f) return;
+  const e=S.catalog.files[S.current]; if(!e) return;
+  e[f]=ev.target.value; touch(e);
+}
+function onEdChange(ev){
+  const f=ev.target.dataset.f;
+  if(f==='category'||f==='lifecycle'||f==='todoStatus'){ syncLists(); renderDatalists(); renderFilterOptions(); }
+  if(ev.target.id==='tblIn'){
+    const e=S.catalog.files[S.current];
+    e.tables=uniqSorted(splitList(ev.target.value).map(x=>x.toUpperCase())); e.tablesLocked=true;
+    touch(e); renderDatalists(); renderEditor();
+  }
+}
+function addTag(v){
+  const e=S.catalog.files[S.current]; if(!e) return;
+  let added=false;
+  splitList(v).forEach(t=>{ if(!e.tags.includes(t)){ e.tags.push(t); added=true; } });
+  if(added){ touch(e); syncLists(); renderDatalists(); }
+  renderEditor(); $('#tagIn') && $('#tagIn').focus();
+}
+function copyFullPath(p){
+  const base=(S.catalog.settings.rootPath||'').trim();
+  if(base){ copyText(base.replace(/[\\/]+$/,'')+'\\'+p.replace(/\//g,'\\')); }
+  else { copyText(S.catalog.rootName+'\\'+p.replace(/\//g,'\\')); toast('提示：到「設定」填入根目錄實體路徑（例 D:\\SQL_Repo），即可複製完整路徑','info',5000); }
+}
+
+/* ---------- 9. SQL 預覽與語法標色 ---------- */
+const KW=new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN LEFT RIGHT INNER OUTER FULL CROSS GROUP BY ORDER HAVING UNION ALL DISTINCT '+
+ 'INSERT INTO VALUES UPDATE SET DELETE MERGE USING MATCHED WHEN THEN ELSE ELSIF END CASE CREATE OR ALTER DROP TABLE VIEW INDEX TRUNCATE WITH '+
+ 'BEGIN DECLARE EXCEPTION PROCEDURE FUNCTION PACKAGE BODY RETURN RETURNS IF LOOP FOR WHILE EXIT COMMIT ROLLBACK GRANT REVOKE REPLACE BETWEEN '+
+ 'LIKE EXISTS ASC DESC PARTITION OVER FETCH FIRST NEXT ROWS ROW ONLY LIMIT OFFSET PRIMARY KEY FOREIGN REFERENCES CONSTRAINT DEFAULT CHECK UNIQUE '+
+ 'COMMENT TRIGGER BEFORE AFTER EACH CURSOR OPEN CLOSE TYPE RECORD OUT MINUS INTERSECT CONNECT PRIOR START LEVEL ROWNUM SYSDATE TEMPORARY GLOBAL '+
+ 'NOCOPY PRAGMA RAISE BULK COLLECT FORALL EXECUTE IMMEDIATE NUMBER VARCHAR2 VARCHAR CHAR DATE TIMESTAMP INTEGER CLOB BLOB DECIMAL INT').split(' '));
+const FN=new Set('NVL NVL2 DECODE TO_CHAR TO_DATE TO_NUMBER COUNT SUM AVG MIN MAX COALESCE CAST ROUND TRUNC SUBSTR INSTR TRIM LTRIM RTRIM UPPER LOWER LENGTH ROW_NUMBER RANK DENSE_RANK LAG LEAD ADD_MONTHS LAST_DAY MONTHS_BETWEEN ABS MOD GREATEST LEAST LISTAGG REGEXP_LIKE REGEXP_SUBSTR REGEXP_REPLACE EXTRACT CONCAT LPAD RPAD'.split(' '));
+function termRegex(){
+  if(!S.query) return null;
+  const terms=[...new Set(S.query.flat().filter(k=>!k.neg).map(k=>k.t))].sort((a,b)=>b.length-a.length);
+  return terms.length ? new RegExp(terms.map(reEsc).join('|'),'gi') : null;
+}
+function markEsc(s,re){
+  if(!re) return esc(s);
+  let out='',last=0; re.lastIndex=0; let m;
+  while((m=re.exec(s))){ if(!m[0]){ re.lastIndex++; continue; } out+=esc(s.slice(last,m.index))+'<mark>'+esc(m[0])+'</mark>'; last=m.index+m[0].length; }
+  return out+esc(s.slice(last));
+}
+function highlight(text,re){
+  const tok=/(\/\*[\s\S]*?(?:\*\/|$))|(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][\w$#]*)|([\s\S])/g;
+  let out='',m, plain='';
+  const flush=()=>{ if(plain){ out+=markEsc(plain,re); plain=''; } };
+  while((m=tok.exec(text))){
+    if(m[1]||m[2]){ flush(); out+='<span class="c">'+markEsc(m[0],re)+'</span>'; }
+    else if(m[3]){ flush(); out+='<span class="s">'+markEsc(m[0],re)+'</span>'; }
+    else if(m[4]){ flush(); out+='<span class="n">'+markEsc(m[0],re)+'</span>'; }
+    else if(m[5]){ const u=m[5].toUpperCase();
+      if(KW.has(u)){ flush(); out+='<span class="k">'+markEsc(m[0],re)+'</span>'; }
+      else if(FN.has(u)){ flush(); out+='<span class="f">'+markEsc(m[0],re)+'</span>'; }
+      else plain+=m[0]; }
+    else plain+=m[0];
+  }
+  flush(); return out;
+}
+function renderPreview(p){
+  const box=$('#codeBox'); if(!box) return;
+  const e=S.catalog.files[p];
+  if(!S.content.has(p)){ box.innerHTML=`<pre class="src dim">${e.scanStatus==='missing'?'檔案已不存在，無法預覽':'（尚未載入內容，請重新掃描）'}</pre>`; return; }
+  const text=S.content.get(p).replace(/\r\n?/g,'\n');
+  const lines=text.split('\n').length; const big=text.length>400000;
+  const re=termRegex();
+  box.innerHTML=`<pre class="gut">${Array.from({length:lines},(_,i)=>i+1).join('\n')}</pre><pre class="src">${big?markEsc(text,re):highlight(text,re)}</pre>`;
+  $('#pvInfo').textContent=`${lines} 行${big?'（檔案較大，未標色）':''}`;
+  const mk=box.querySelector('mark'); if(mk) box.scrollTop=Math.max(0,mk.offsetTop-60);
+}
+
+/* ---------- 10. Modal ---------- */
+function modal(title,body,buttons=[{t:'關閉'}],wide){
+  const m=document.createElement('div'); m.className='mask';
+  m.innerHTML=`<div class="modal"${wide?' style="width:min(1100px,96vw)"':''}><div class="mh">${esc(title)}<button class="x">×</button></div><div class="mb">${body}</div><div class="mf"></div></div>`;
+  const close=()=>m.remove();
+  m.querySelector('.x').onclick=close;
+  m.addEventListener('mousedown',ev=>{ if(ev.target===m) close(); });
+  buttons.forEach(b=>{ const btn=document.createElement('button'); btn.textContent=b.t; if(b.cls) btn.className=b.cls;
+    btn.onclick=async()=>{ if(b.fn){ const r=await b.fn(m); if(r===false) return; } close(); }; m.querySelector('.mf').appendChild(btn); });
+  document.body.appendChild(m);
+  const onKey=ev=>{ if(ev.key==='Escape'&&document.body.contains(m)){ close(); document.removeEventListener('keydown',onKey); } };
+  document.addEventListener('keydown',onKey);
+  return m;
+}
+function openBatch(){
+  const n=S.selected.size;
+  if(!n){ toast('請先在清單勾選檔案（可 Shift 連選，或勾表頭全選）'); return; }
+  const opt=(arr)=>'<option value="">（不變更）</option>'+arr.map(v=>`<option>${v}</option>`).join('');
+  modal(`批次編輯（${n} 支）`,`<div class="form">
+    <label>分類</label><input id="bCat" list="dlCats" placeholder="空白＝不變更">
+    <span></span><label style="font-size:12px"><input type="checkbox" id="bCatClr"> 清空分類</label>
+    <label>加入標籤</label><input id="bTagAdd" list="dlTags" placeholder="逗號分隔">
+    <label>移除標籤</label><input id="bTagRm" list="dlTags" placeholder="逗號分隔">
+    <label>生命週期</label><select id="bLife">${opt(['使用中','草稿','停用'])}</select>
+    <label>執行頻率</label><input id="bFreq" list="dlFreq" placeholder="空白＝不變更">
+    <label>待辦狀態</label><select id="bTodo">${opt(TODOS)}</select>
+    <label>到期日</label><input type="date" id="bDue">
+    <label>後續說明（附加）</label><textarea id="bFollow" rows="2" placeholder="會附加在原內容後面"></textarea>
+    <span></span><label style="font-size:12px"><input type="checkbox" id="bHeader"> 未填用途者，以檔頭註解填入</label>
+    <span></span><label style="font-size:12px;color:var(--err)"><input type="checkbox" id="bRmMissing"> 移除選取中「已遺失」的紀錄</label>
+  </div>`,[{t:'取消'},{t:'套用',cls:'pri',fn:(m)=>{
+    const v=id=>m.querySelector(id).value.trim(), ck=id=>m.querySelector(id).checked;
+    const cat=v('#bCat'), add=splitList(v('#bTagAdd')), rm=splitList(v('#bTagRm')), life=v('#bLife'), freq=v('#bFreq'), todo=v('#bTodo'), due=v('#bDue'), fol=v('#bFollow');
+    if(ck('#bRmMissing') && !confirm('確定移除選取中已遺失的紀錄？（說明會一併刪除）')) return false;
+    let cnt=0, rmCnt=0;
+    for(const p of [...S.selected]){
+      const e=S.catalog.files[p]; if(!e) continue;
+      if(ck('#bRmMissing') && e.scanStatus==='missing'){ delete S.catalog.files[p]; S.selected.delete(p); rmCnt++; continue; }
+      if(ck('#bCatClr')) e.category=''; else if(cat) e.category=cat;
+      add.forEach(t=>{ if(!e.tags.includes(t)) e.tags.push(t); });
+      if(rm.length) e.tags=e.tags.filter(t=>!rm.includes(t));
+      if(life && e.lifecycle!=='遺失') e.lifecycle=life;
+      if(freq) e.frequency=freq;
+      if(todo) e.todoStatus=todo;
+      if(due) e.dueDate=due;
+      if(fol) e.followUp=(e.followUp?e.followUp+'\n':'')+fol;
+      if(ck('#bHeader') && !e.purpose.trim() && e.headerComment) e.purpose=e.headerComment;
+      e.updatedAt=nowISO(); cnt++;
+    }
+    if(S.current && !S.catalog.files[S.current]) S.current=null;
+    refreshAll(); scheduleSave();
+    toast(`已更新 ${cnt} 支`+(rmCnt?`，移除 ${rmCnt} 筆遺失紀錄`:''),'ok');
+  }}]);
+}
+function openManage(){
+  syncLists();
+  const files=Object.values(S.catalog.files);
+  const cc=new Map(), tc=new Map();
+  files.forEach(e=>{ if(e.category) cc.set(e.category,(cc.get(e.category)||0)+1); e.tags.forEach(t=>tc.set(t,(tc.get(t)||0)+1)); });
+  const table=(kind,list,cnt)=>`<table class="mg"><tr><th>名稱</th><th style="width:60px">使用數</th><th style="width:200px">更名／合併為</th><th style="width:120px"></th></tr>`+
+    list.map(v=>`<tr><td>${esc(v)}</td><td>${cnt.get(v)||0}</td><td><input data-k="${kind}" data-old="${esc(v)}" list="${kind==='cat'?'dlCats':'dlTags'}" placeholder="新名稱"></td>
+    <td><button data-act="ren" data-k="${kind}" data-old="${esc(v)}">套用</button> <button class="danger" data-act="del" data-k="${kind}" data-old="${esc(v)}">刪除</button></td></tr>`).join('')+'</table>';
+  const m=modal('分類 / 標籤管理',`<p class="dim">更名成已存在的名稱＝合併。刪除會同時從所有檔案移除。</p>
+    <div class="dash"><div><h4>分類（${S.catalog.categories.length}）</h4>${table('cat',S.catalog.categories,cc)}</div>
+    <div><h4>標籤（${S.catalog.tags.length}）</h4>${table('tag',S.catalog.tags,tc)}</div></div>`,[{t:'關閉'}],true);
+  m.addEventListener('click',ev=>{
+    const b=ev.target.closest('button[data-act]'); if(!b) return;
+    const kind=b.dataset.k, old=b.dataset.old;
+    if(b.dataset.act==='ren'){
+      const nv=b.closest('tr').querySelector('input').value.trim();
+      if(!nv||nv===old) return;
+      renameValue(kind,old,nv);
+    }else{
+      if(!confirm(`確定刪除「${old}」？`)) return;
+      renameValue(kind,old,null);
+    }
+    m.remove(); openManage();
+  });
+}
+function renameValue(kind,old,nv){
+  const c=S.catalog; let n=0;
+  for(const e of Object.values(c.files)){
+    if(kind==='cat'){ if(e.category===old){ e.category=nv||''; e.updatedAt=nowISO(); n++; } }
+    else if(e.tags.includes(old)){ e.tags=[...new Set(e.tags.map(t=>t===old?nv:t).filter(Boolean))]; e.updatedAt=nowISO(); n++; }
+  }
+  if(kind==='cat') c.categories=c.categories.filter(x=>x!==old); else c.tags=c.tags.filter(x=>x!==old);
+  if(S.filters.category===old) S.filters.category=nv||'';
+  if(S.filters.tag===old) S.filters.tag=nv||'';
+  refreshAll(); scheduleSave(); toast(`已更新 ${n} 支檔案`,'ok');
+}
+function bars(entries,total,clickKey){
+  const max=Math.max(1,...entries.map(x=>x[1]));
+  return '<div class="bars">'+entries.map(([k,v,label])=>`<div class="b${clickKey?' click':''}"${clickKey?` data-${clickKey}="${esc(k)}"`:''}><span class="nm" title="${esc(label||k)}">${esc(label||k)}</span><span class="t"><i style="width:${v/max*100}%"></i></span><span>${v}</span></div>`).join('')+'</div>';
+}
+function topFolders(files){
+  const m=new Map(); files.forEach(([p])=>{ const k=p.includes('/')?p.split('/')[0]:'（根目錄）'; m.set(k,(m.get(k)||0)+1); });
+  return [...m].sort((a,b)=>b[1]-a[1]).slice(0,15);
+}
+function openDash(){
+  const c=S.catalog, files=Object.entries(c.files), vals=files.map(x=>x[1]);
+  const total=vals.length, active=vals.filter(e=>e.scanStatus!=='missing').length;
+  const filled=vals.filter(e=>e.purpose.trim()).length;
+  const todo=vals.filter(e=>e.todoStatus==='待處理'||e.todoStatus==='處理中').length;
+  const od=vals.filter(isOverdue).length, miss=vals.filter(e=>e.scanStatus==='missing').length;
+  const count=fn=>{ const m=new Map(); vals.forEach(e=>[].concat(fn(e)).forEach(k=>m.set(k,(m.get(k)||0)+1))); return [...m].sort((a,b)=>b[1]-a[1]); };
+  const s=c.lastSummary||{};
+  const pct=total?Math.round(filled/total*100):0;
+  const m=modal('統計儀表板',`<div class="cards">
+    <div class="card"><div class="v">${total}</div><div class="l">紀錄總數（現存 ${active}）</div></div>
+    <div class="card"><div class="v">${pct}%</div><div class="l">已填用途 ${filled} / ${total}</div></div>
+    <div class="card"><div class="v">${todo}</div><div class="l">待辦未完成</div></div>
+    <div class="card"><div class="v" style="color:${od?'var(--err)':'inherit'}">${od}</div><div class="l">待辦逾期</div></div>
+    <div class="card"><div class="v">${miss}</div><div class="l">已遺失</div></div>
+  </div>
+  <p class="dim">上次掃描：${esc(fmtDT(c.lastScan))}　🆕 新增 ${s.new||0}　✏️ 變更 ${s.changed||0}　🔀 搬移 ${s.moved||0}　❌ 遺失 ${s.missing||0}　✅ 未變 ${s.unchanged||0}${s.error?'　⚠️ 讀取失敗 '+s.error:''}</p>
+  <div class="dash">
+    <div><h4>表格引用排行 Top 20 <span class="dim" style="font-weight:400">（點選可反查）</span></h4>${bars(count(e=>e.tables).slice(0,20),total,'tbl')}</div>
+    <div><h4>分類分布</h4>${bars(count(e=>e.category||'（未分類）').slice(0,20),total)}
+      <h4>第一層資料夾</h4>${bars(topFolders(files),total)}</div>
+    <div><h4>語法類型</h4>${bars(count(e=>e.sqlType.length?e.sqlType:'（未判定）'),total)}</div>
+    <div><h4>生命週期 / 待辦</h4>${bars(count(e=>e.lifecycle),total)}${bars(count(e=>'待辦：'+e.todoStatus),total)}</div>
+  </div>`,[{t:'關閉'}],true);
+  m.addEventListener('click',ev=>{
+    const b=ev.target.closest('[data-tbl]'); if(!b) return;
+    clearFilters(false); S.filters.table=b.dataset.tbl; renderFilterOptions(); renderTree(); refreshList(); m.remove();
+    toast('已篩選引用 '+b.dataset.tbl+' 的 SQL');
+  });
+}
+function openSettings(){
+  const st=S.catalog?S.catalog.settings:(S.savedSettings||DEFAULT_SETTINGS);
+  modal('設定',`<div class="form">
+    <label>根目錄實體路徑</label><input id="sRoot" value="${esc(st.rootPath)}" placeholder="例：D:\\SQL_Repo 或 \\\\server\\share\\SQL">
+    <div class="hint">瀏覽器無法得知實際磁碟路徑；填入後「複製完整路徑」才會是完整路徑。</div>
+    <label>掃描副檔名</label><input id="sExt" value="${esc(st.exts.join(', '))}">
+    <div class="hint">逗號分隔，例：.sql, .pls, .pck, .prc</div>
+    <label>排除資料夾名稱</label><input id="sEx" value="${esc(st.excludes.join(', '))}">
+    <div class="hint">任何層級同名資料夾都會略過（不分大小寫）</div>
+  </div>
+  ${S.catalog?'':'<p class="dim">尚未開啟目錄：設定會先保存在瀏覽器，開啟目錄後一併寫入 sql_catalog.json。</p>'}`,
+  [{t:'取消'},{t:'儲存設定',cls:'pri',fn:(m)=>{
+    const exts=splitList(m.querySelector('#sExt').value).map(x=>x.startsWith('.')?x:'.'+x);
+    const nst={rootPath:m.querySelector('#sRoot').value.trim(), exts:exts.length?exts:['.sql'], excludes:splitList(m.querySelector('#sEx').value)};
+    if(!S.catalog){
+      S.savedSettings=Object.assign({},DEFAULT_SETTINGS,nst); persistSettings();
+      toast('設定已保存在瀏覽器，開啟目錄後會自動套用','ok'); return;
+    }
+    const old=JSON.stringify([st.exts,st.excludes]);
+    Object.assign(st,nst);
+    persistSettings(); scheduleSave();
+    if(old!==JSON.stringify([st.exts,st.excludes]) && confirm('掃描條件已變更，要立即重新掃描嗎？')) scan();
+  }}]);
+}
+function openHelp(){
+  modal('使用說明',`<div class="help">
+  <h4>開始使用</h4><ol><li>用 Chrome 開啟本 HTML（雙擊即可）。</li><li>按「📁 選擇目錄」選 SQL 根目錄，允許「編輯檔案」。</li><li>說明存在根目錄的 <code>${CAT_FILE}</code>；每次開啟後第一次儲存前，舊檔會備份為 <code>${BAK_FILE}</code>。</li><li>重新開啟網頁時：若 Chrome 已記住權限會自動載入；否則在網頁任意處點一下（或按「▶ 繼續上次目錄」）並允許，即會載入上次目錄。授權視窗若有「每次造訪時都允許」，選它可在之後直接自動載入。</li><li>設定同時保存在 sql_catalog.json 與瀏覽器；未開啟目錄時也能先修改設定。</li></ol>
+  <h4>搜尋語法</h4>
+  <table><tr><th>寫法</th><th>意義</th></tr>
+  <tr><td><code>ACCBAL 月報</code></td><td>同時包含兩者（AND）</td></tr>
+  <tr><td><code>ACCBAL OR ACCINC</code>　或　<code>ACCBAL | ACCINC</code></td><td>包含任一者（OR，OR 須大寫）</td></tr>
+  <tr><td><code>ACCBAL 月報 OR JCIC</code></td><td>（ACCBAL 且 月報）或 JCIC — AND 優先於 OR</td></tr>
+  <tr><td><code>ACCBAL -TEST</code></td><td>包含 ACCBAL 但不含 TEST</td></tr>
+  <tr><td><code>"GROUP BY CUST"</code></td><td>完整片語（含空白）</td></tr></table>
+  <p>搜尋範圍：路徑、SQL 內容、用途、後續說明、備註、分類、標籤、表格；不分大小寫。預覽區會標示命中處。</p>
+  <h4>掃描狀態</h4><ul><li>🆕 新增：第一次出現的檔案</li><li>✏️ 變更：內容（SHA-256）與上次不同</li><li>🔀 搬移：路徑不同但內容相同，說明自動轉移</li><li>❌ 遺失：檔案已不存在，說明保留；檔案回來會自動恢復</li><li>✅ 未變</li></ul>
+  <h4>下載 SQL 原始檔</h4><ul><li>單檔：在右側編輯區按「⬇️ 下載檔案」，下載內容與原檔完全相同（不轉碼）。</li><li>打包：按「📦 打包下載」，選擇範圍（勾選／目前篩選結果／全部），產生 ZIP；可保留資料夾結構並附上清冊 CSV。</li><li>已遺失的檔案無法下載，會自動略過並列在 ZIP 內的「_略過清單.txt」。</li></ul>
+  <h4>快捷鍵</h4><ul><li><b>Ctrl+F</b> 搜尋　<b>Ctrl+S</b> 立即儲存</li><li><b>↑ / ↓</b> 切換檔案（焦點不在輸入框時）</li><li><b>Shift + 點勾選框</b> 連續選取</li></ul>
+  <h4>注意</h4><ul><li>本工具不會修改任何 SQL 檔，只寫入 ${CAT_FILE} 與 ${BAK_FILE}。</li><li>瀏覽器無法直接呼叫本機程式開檔，請用「複製完整路徑」。</li><li>自動解析的表格名稱僅供參考，可在編輯區修改（修改後不會被重新掃描覆蓋）。</li><li>若寫入失敗，資料仍保留在瀏覽器快取，可從「匯出 → 下載 sql_catalog.json」手動保存。</li></ul>
+  </div>`,[{t:'關閉'}],true);
+}
+
+/* ---------- 11. 匯出 / 匯入 ---------- */
+const EXPORT_COLS=[['路徑',(p)=>p],['檔名',(p)=>baseName(p)],['資料夾',(p)=>dirName(p)],['掃描狀態',(p,e)=>(SCAN_ST[e.scanStatus]||'').slice(2).trim()],
+  ['生命週期',(p,e)=>e.lifecycle],['用途',(p,e)=>e.purpose],['分類',(p,e)=>e.category],['標籤',(p,e)=>e.tags.join(', ')],['執行頻率',(p,e)=>e.frequency],
+  ['後續說明',(p,e)=>e.followUp],['待辦狀態',(p,e)=>e.todoStatus],['到期日',(p,e)=>e.dueDate],['備註',(p,e)=>e.notes],['引用表格',(p,e)=>e.tables.join(', ')],
+  ['語法類型',(p,e)=>e.sqlType.join(', ')],['編碼',(p,e)=>e.encoding],['大小(Bytes)',(p,e)=>e.size],['檔案修改時間',(p,e)=>fmtDT(e.modified)],['說明更新時間',(p,e)=>fmtDT(e.updatedAt)]];
+function sortedPaths(paths){ return [...paths].sort(collator.compare); }
+function csvText(paths){
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const lines=[EXPORT_COLS.map(c=>q(c[0])).join(',')];
+  for(const p of paths){ const e=S.catalog.files[p]; lines.push(EXPORT_COLS.map(c=>q(c[1](p,e))).join(',')); }
+  return '\uFEFF'+lines.join('\r\n');
+}
+function exportCsv(paths){
+  download(`SQL清冊_${S.catalog.rootName}_${stamp()}.csv`,csvText(paths),'text/csv;charset=utf-8');
+}
+function groupByFolder(paths){ const m=new Map(); sortedPaths(paths).forEach(p=>{ const d=dirName(p)||'（根目錄）'; if(!m.has(d)) m.set(d,[]); m.get(d).push(p); }); return m; }
+function exportMd(){
+  const c=S.catalog, cell=s=>String(s??'').replace(/\|/g,'\\|').replace(/\r?\n/g,'<br>');
+  let md=`# SQL 清冊：${c.rootName}\n\n- 匯出時間：${fmtDT(nowISO())}\n- 上次掃描：${fmtDT(c.lastScan)}\n- 檔案數：${Object.keys(c.files).length}\n\n`;
+  for(const [d,ps] of groupByFolder(Object.keys(c.files))){
+    md+=`## 📁 ${d}\n\n| 檔名 | 用途 | 分類 | 標籤 | 週期 | 頻率 | 待辦 | 到期日 | 後續說明 | 引用表格 |\n|---|---|---|---|---|---|---|---|---|---|\n`;
+    ps.forEach(p=>{ const e=c.files[p]; md+=`| ${cell(baseName(p))} | ${cell(e.purpose)} | ${cell(e.category)} | ${cell(e.tags.join(', '))} | ${cell(e.lifecycle)} | ${cell(e.frequency)} | ${cell(e.todoStatus==='無'?'':e.todoStatus)} | ${cell(e.dueDate)} | ${cell(e.followUp)} | ${cell(e.tables.join(', '))} |\n`; });
+    md+='\n';
+  }
+  download(`SQL清冊_${c.rootName}_${stamp()}.md`,md,'text/markdown;charset=utf-8');
+}
+function exportHtml(){
+  const c=S.catalog, vals=Object.values(c.files), total=vals.length;
+  const filled=vals.filter(e=>e.purpose.trim()).length, todo=vals.filter(e=>e.todoStatus==='待處理'||e.todoStatus==='處理中').length, od=vals.filter(isOverdue).length;
+  const br=s=>esc(s).replace(/\r?\n/g,'<br>');
+  let body='';
+  for(const [d,ps] of groupByFolder(Object.keys(c.files))){
+    body+=`<h2>📁 ${esc(d)} <small>(${ps.length})</small></h2><table><thead><tr><th>檔名</th><th>用途</th><th>分類 / 標籤</th><th>週期</th><th>頻率</th><th>待辦</th><th>後續說明</th><th>引用表格</th></tr></thead><tbody>`;
+    ps.forEach(p=>{ const e=c.files[p]; body+=`<tr><td>${esc(baseName(p))}</td><td>${br(e.purpose)}</td><td>${esc(e.category)}<br><small>${esc(e.tags.join(', '))}</small></td><td>${esc(e.lifecycle)}</td><td>${esc(e.frequency)}</td><td class="${isOverdue(e)?'od':''}">${esc(e.todoStatus==='無'?'':e.todoStatus)}<br><small>${esc(e.dueDate)}</small></td><td>${br(e.followUp)}</td><td><small>${esc(e.tables.join(', '))}</small></td></tr>`; });
+    body+='</tbody></table>';
+  }
+  const html=`<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>SQL 清冊 - ${esc(c.rootName)}</title><style>:root{--theme-font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Noto Sans CJK TC",system-ui,sans-serif;--theme-font-mono:"Cascadia Mono",Consolas,"SFMono-Regular",monospace}
+body{font:13px/1.5 var(--theme-font-sans);margin:24px;color:#2f2f2f;background:#f4f4f4}h1{margin:0 0 6px;color:#616161;border-bottom:3px double #797979;padding-bottom:4px}h2{margin:22px 0 6px;font-size:16px;color:#616161;border-bottom:2px solid #616161;padding-bottom:3px}
+.sum{display:flex;gap:20px;color:#6e6e6e;margin-bottom:10px}table{border-collapse:collapse;width:100%;page-break-inside:auto}th,td{border:1px solid #d1d1d1;padding:4px 6px;vertical-align:top;text-align:left}
+th{background:#eaeaea;color:#2f2f2f}tr{page-break-inside:avoid}small{color:#6e6e6e}.od{color:#696969;font-weight:700}@media print{body{margin:8mm}}</style></head><body>
+<h1>SQL 清冊：${esc(c.rootName)}</h1><div class="sum"><span>匯出：${esc(fmtDT(nowISO()))}</span><span>檔案數：${total}</span><span>已填用途：${filled}（${total?Math.round(filled/total*100):0}%）</span><span>待辦：${todo}</span><span>逾期：${od}</span></div>${body}</body></html>`;
+  download(`SQL清冊_${c.rootName}_${stamp()}.html`,html,'text/html;charset=utf-8');
+}
+async function importJson(file){
+  try{
+    const inc=normalizeCatalog(JSON.parse(await file.text()));
+    const n=Object.keys(inc.files).length;
+    if(!confirm(`匯入檔含 ${n} 筆紀錄。\n合併規則：路徑相同者以匯入檔的說明欄位覆蓋；目前不存在的路徑會以「遺失」加入。\n確定匯入？`)) return;
+    let upd=0, add=0;
+    for(const [p,ie] of Object.entries(inc.files)){
+      const e=S.catalog.files[p];
+      if(e){ MANUAL.forEach(k=>{ if(k==='lifecycle' && (e.lifecycle==='遺失'||ie.lifecycle==='遺失')) return; e[k]=ie[k]; }); if(ie.tablesLocked){ e.tables=ie.tables; e.tablesLocked=true; } e.updatedAt=nowISO(); addHist(e,'匯入 JSON 合併'); upd++; }
+      else { const ne=Object.assign(newEntry(),ie); if(!S.content.has(p)){ ne.scanStatus='missing'; if(ne.lifecycle!=='遺失'){ ne.prevLifecycle=ne.lifecycle; ne.lifecycle='遺失'; } } addHist(ne,'匯入 JSON 新增'); S.catalog.files[p]=ne; add++; }
+    }
+    S.catalog.categories=uniqSorted([...S.catalog.categories,...inc.categories]);
+    S.catalog.tags=uniqSorted([...S.catalog.tags,...inc.tags]);
+    refreshAll(); scheduleSave(); toast(`匯入完成：更新 ${upd} 筆、新增 ${add} 筆`,'ok',5000);
+  }catch(e){ toast('匯入失敗：'+e.message,'error',6000); }
+}
+function doExport(kind){
+  $('#ddExport').classList.remove('open');
+  if(kind==='import'){ $('#importInput').value=''; $('#importInput').click(); return; }
+  if(!S.catalog) return;
+  if(kind==='csv-all') exportCsv(sortedPaths(Object.keys(S.catalog.files)));
+  else if(kind==='csv-view') exportCsv(S.view);
+  else if(kind==='md') exportMd();
+  else if(kind==='html') exportHtml();
+  else if(kind==='json'){ syncLists(); download(CAT_FILE,JSON.stringify(S.catalog,null,1),'application/json;charset=utf-8'); }
+}
+
+
+/* ---------- 11b. SQL 原始檔下載（單檔 / ZIP 打包） ----------
+ * ZIP 採「儲存」模式（不壓縮），檔名以 UTF-8 編碼（旗標 bit 11），中文檔名可正確顯示。
+ * 下載內容為原始位元組，不做任何轉碼。
+ */
+const CRC_TABLE=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=CRC_TABLE[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function dosTime(d){
+  const y=Math.max(1980,d.getFullYear());
+  return {time:(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1), date:((y-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()};
+}
+function buildZip(entries){
+  const enc=new TextEncoder(), parts=[], central=[]; let offset=0;
+  for(const en of entries){
+    const name=enc.encode(en.name), data=en.data, crc=crc32(data), {time,date}=dosTime(en.date||new Date());
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,time,true); lh.setUint16(12,date,true); lh.setUint32(14,crc,true);
+    lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true); lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(lh.buffer,name,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,time,true); ch.setUint16(14,date,true); ch.setUint32(16,crc,true);
+    ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true); ch.setUint16(28,name.length,true);
+    ch.setUint32(42,offset,true);
+    central.push(ch.buffer,name);
+    offset+=30+name.length+data.length;
+    if(offset>0xFFFFFFFF) throw new Error('打包內容超過 4GB，請縮小範圍');
+  }
+  const cdSize=central.reduce((a,b)=>a+b.byteLength,0);
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,entries.length,true); end.setUint16(10,entries.length,true);
+  end.setUint32(12,cdSize,true); end.setUint32(16,offset,true);
+  return new Blob([...parts,...central,end.buffer],{type:'application/zip'});
+}
+function downloadBlob(name,blob){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },3000);
+}
+async function readOriginal(p){
+  const g=S.getters.get(p); if(!g) throw new Error('檔案不存在或尚未掃描');
+  const f=await g(); return {data:new Uint8Array(await f.arrayBuffer()), date:new Date(f.lastModified)};
+}
+async function downloadOne(p){
+  try{
+    const {data}=await readOriginal(p);
+    downloadBlob(baseName(p),new Blob([data],{type:'application/octet-stream'}));
+  }catch(e){ toast('下載失敗：'+e.message+(S.catalog.files[p]&&S.catalog.files[p].scanStatus==='missing'?'（檔案已遺失）':''),'error',5000); }
+}
+function openZip(){
+  if(!S.catalog) return;
+  const all=sortedPaths(Object.keys(S.catalog.files));
+  const sel=all.filter(p=>S.selected.has(p));
+  const cnt=list=>{ const ok=list.filter(p=>S.getters.has(p)); const sz=ok.reduce((a,p)=>a+(S.catalog.files[p].size||0),0); return `${ok.length} 支，約 ${fmtSize(sz)}`+(list.length>ok.length?`，略過遺失 ${list.length-ok.length} 支`:''); };
+  const def=sel.length?'sel':(S.view.length<all.length?'view':'all');
+  const radio=(v,label,list,dis)=>`<label style="display:block;margin:3px 0;${dis?'opacity:.45':''}"><input type="radio" name="zScope" value="${v}"${v===def?' checked':''}${dis?' disabled':''}> ${label}　<span class="dim">（${cnt(list)}）</span></label>`;
+  modal('打包下載 SQL 原始檔',`<div class="form">
+    <label>範圍</label><div>
+      ${radio('sel','已勾選的檔案',sel,!sel.length)}
+      ${radio('view','目前篩選結果',S.view,!S.view.length)}
+      ${radio('all','全部檔案',all,!all.length)}
+    </div>
+    <label>選項</label><div>
+      <label style="display:block;margin:3px 0"><input type="checkbox" id="zKeep" checked> 保留資料夾結構</label>
+      <label style="display:block;margin:3px 0"><input type="checkbox" id="zCsv" checked> 附上清冊 CSV（用途、分類、後續說明等）</label>
+    </div>
+  </div>
+  <p class="dim">ZIP 內為原始檔案（不轉碼、不壓縮）。不保留資料夾結構時，同名檔案會自動加上序號。</p>`,
+  [{t:'取消'},{t:'📦 開始打包',cls:'pri',fn:(m)=>{
+    const scope=(m.querySelector('input[name=zScope]:checked')||{}).value;
+    if(!scope){ toast('沒有可打包的檔案'); return false; }
+    const list = scope==='sel'?sel : scope==='view'?[...S.view] : all;
+    makeZip(list, m.querySelector('#zKeep').checked, m.querySelector('#zCsv').checked);
+  }}]);
+}
+async function makeZip(paths,keepTree,withCsv){
+  const ok=paths.filter(p=>S.getters.has(p));
+  if(!ok.length){ toast('範圍內沒有可下載的檔案（可能皆已遺失）','error'); return; }
+  const total=ok.reduce((a,p)=>a+(S.catalog.files[p].size||0),0);
+  if(total>500*1048576 && !confirm(`打包內容約 ${fmtSize(total)}，可能耗用大量記憶體，確定繼續？`)) return;
+  const root=S.catalog.rootName, entries=[], used=new Set(), skipped=paths.filter(p=>!S.getters.has(p));
+  const uniq=n=>{ if(!used.has(n.toLowerCase())){ used.add(n.toLowerCase()); return n; }
+    const i=n.lastIndexOf('.'), b=i>0?n.slice(0,i):n, x=i>0?n.slice(i):''; let k=2; while(used.has((b+'_'+k+x).toLowerCase())) k++; used.add((b+'_'+k+x).toLowerCase()); return b+'_'+k+x; };
+  try{
+    let done=0;
+    for(const p of ok){
+      try{
+        const {data,date}=await readOriginal(p);
+        entries.push({name:root+'/'+(keepTree?p:uniq(baseName(p))), data, date});
+      }catch(e){ skipped.push(p+'（讀取失敗：'+e.message+'）'); }
+      done++; if(done%25===0||done===ok.length) showProgress(done,ok.length,`打包中… ${done} / ${ok.length}`);
+    }
+    const enc=new TextEncoder();
+    if(withCsv) entries.push({name:root+'/_SQL清冊.csv', data:enc.encode(csvText(ok)), date:new Date()});
+    if(skipped.length) entries.push({name:root+'/_略過清單.txt', data:enc.encode('\uFEFF以下檔案未打包：\r\n'+skipped.join('\r\n')), date:new Date()});
+    showProgress(ok.length,ok.length,'產生 ZIP 中…');
+    const blob=buildZip(entries);
+    downloadBlob(`SQL打包_${root}_${stamp()}.zip`,blob);
+    toast(`打包完成：${entries.length-(withCsv?1:0)-(skipped.length?1:0)} 支，${fmtSize(blob.size)}`+(skipped.length?`\n略過 ${skipped.length} 支（見 _略過清單.txt）`:''),'ok',6000);
+  }catch(e){ toast('打包失敗：'+e.message,'error',6000); }
+  finally{ $('#progress').style.display='none'; }
+}
+
+/* ---------- 12. 事件綁定與啟動 ---------- */
+function clearFilters(render=true){
+  Object.keys(S.filters).forEach(k=>S.filters[k]=''); S.query=null;
+  $('#q').value=''; $$('#quick button').forEach(b=>b.classList.remove('on'));
+  if(render){ renderFilterOptions(); renderTree(); refreshList(); if(S.current) renderPreview(S.current); }
+}
+function bind(){
+  $('#btnPick').onclick=pickDir;
+  $('#btnRestore').onclick=restoreDir;
+  $('#btnScan').onclick=async()=>{ if(S.pending) await saveNow(); scan(); };
+  $('#btnSave').onclick=manualSave;
+  $('#btnBatch').onclick=openBatch;
+  $('#btnManage').onclick=openManage;
+  $('#btnDash').onclick=openDash;
+  $('#btnSettings').onclick=openSettings;
+  $('#btnHelp').onclick=openHelp;
+  $('#btnZip').onclick=openZip;
+  $('#listEmpty').addEventListener('click',ev=>{ if(ev.target.closest('#wResume')){ disarmAutoResume(); restoreDir(); } });
+  $('#btnClear').onclick=()=>clearFilters();
+  $('#btnSelClear').onclick=()=>{ S.selected.clear(); renderRows(); updateCounts(); };
+  $('#btnExport').onclick=ev=>{ ev.stopPropagation(); $('#ddExport').classList.toggle('open'); };
+  document.addEventListener('click',ev=>{ if(!ev.target.closest('#ddExport')) $('#ddExport').classList.remove('open'); });
+  $$('#ddExport .menu button').forEach(b=>b.onclick=()=>doExport(b.dataset.ex));
+  $('#importInput').onchange=ev=>{ const f=ev.target.files[0]; if(f && S.catalog) importJson(f); else if(f) toast('請先選擇目錄再匯入','error'); };
+  $('#fallbackInput').onchange=ev=>openFallback(ev.target.files);
+
+  const doSearch=debounce(()=>{ S.filters.q=$('#q').value; S.query=parseQuery(S.filters.q); refreshList(); if(S.current) renderPreview(S.current); },200);
+  $('#q').addEventListener('input',doSearch);
+  $('#quick').onclick=ev=>{ const b=ev.target.closest('button'); if(!b) return;
+    const on=S.filters.quick===b.dataset.q; S.filters.quick=on?'':b.dataset.q;
+    $$('#quick button').forEach(x=>x.classList.toggle('on',x.dataset.q===S.filters.quick)); refreshList(); };
+  const bindSel=(id,key)=>$(id).addEventListener('change',ev=>{ S.filters[key]=ev.target.value; refreshList(); });
+  bindSel('#fCategory','category'); bindSel('#fSqlType','sqlType'); bindSel('#fScan','scanStatus'); bindSel('#fLife','lifecycle'); bindSel('#fTodo','todoStatus');
+  const bindIn=(id,key)=>$(id).addEventListener('input',debounce(ev=>{ S.filters[key]=ev.target.value; refreshList(); },250));
+  bindIn('#fTag','tag'); bindIn('#fTable','table');
+
+  $('#tree').onclick=ev=>{
+    const n=ev.target.closest('.tn'); if(!n) return; const p=n.dataset.path;
+    if(ev.target.dataset.tw && p){ S.expanded.has(p)?S.expanded.delete(p):S.expanded.add(p); renderTree(); return; }
+    S.filters.folder=p; if(p) S.expanded.add(p); renderTree(); refreshList();
+  };
+
+  $('#listBody').addEventListener('scroll',()=>requestAnimationFrame(renderRows));
+  window.addEventListener('resize',debounce(renderRows,100));
+  $('#listRows').addEventListener('click',ev=>{
+    const r=ev.target.closest('.row'); if(!r) return; const i=+r.dataset.i, p=S.view[i];
+    if(ev.target.dataset.chk){
+      if(ev.shiftKey && S.lastSelIdx>=0){ const [a,b]=[Math.min(S.lastSelIdx,i),Math.max(S.lastSelIdx,i)]; const on=ev.target.checked; for(let k=a;k<=b;k++){ on?S.selected.add(S.view[k]):S.selected.delete(S.view[k]); } }
+      else { ev.target.checked?S.selected.add(p):S.selected.delete(p); }
+      S.lastSelIdx=i; renderRows(); updateCounts(); return;
+    }
+    if(ev.ctrlKey||ev.metaKey){ S.selected.has(p)?S.selected.delete(p):S.selected.add(p); S.lastSelIdx=i; updateCounts(); }
+    selectCurrent(p,false);
+  });
+  $('#chkAll').onchange=ev=>{ S.view.forEach(p=>ev.target.checked?S.selected.add(p):S.selected.delete(p)); renderRows(); updateCounts(); };
+  $('#listHead').onclick=ev=>{ const s=ev.target.closest('[data-sort]'); if(!s) return;
+    const k=s.dataset.sort; S.sort = S.sort.key===k ? {key:k,dir:-S.sort.dir} : {key:k,dir:1}; refreshList(); };
+
+  const ed=$('#edPane');
+  ed.addEventListener('input',onEdInput);
+  ed.addEventListener('change',onEdChange);
+  ed.addEventListener('keydown',ev=>{
+    if(ev.target.id==='tagIn'){
+      if(ev.key==='Enter'||ev.key===','||ev.key==='，'){ ev.preventDefault(); if(ev.target.value.trim()) addTag(ev.target.value); }
+      else if(ev.key==='Backspace' && !ev.target.value){ const e=S.catalog.files[S.current]; if(e.tags.length){ e.tags.pop(); touch(e); renderEditor(); $('#tagIn').focus(); } }
+    }
+  });
+  ed.addEventListener('focusout',ev=>{ if(ev.target.id==='tagIn' && ev.target.value.trim()) addTag(ev.target.value); });
+  ed.addEventListener('click',ev=>{
+    const t=ev.target, p=S.current; if(!p) return; const e=S.catalog.files[p];
+    if(t.dataset.rm!==undefined){ e.tags=e.tags.filter(x=>x!==t.dataset.rm); touch(e); renderEditor(); }
+    else if(t.id==='cpPath') copyFullPath(p);
+    else if(t.id==='cpName') copyText(baseName(p));
+    else if(t.id==='cpSql') copyText(S.content.get(p)||'');
+    else if(t.id==='dlFile') downloadOne(p);
+    else if(t.id==='useHeader'){ e.purpose=e.headerComment; touch(e); renderEditor(); }
+    else if(t.id==='tblAuto'){ e.tablesLocked=false; if(S.content.has(p)) e.tables=parseSql(S.content.get(p)).tables; touch(e); renderDatalists(); renderEditor(); }
+    else if(t.id==='rmEntry'){ if(confirm('確定移除此遺失紀錄？說明會一併刪除。')){ delete S.catalog.files[p]; S.selected.delete(p); S.current=null; refreshAll(); scheduleSave(); } }
+  });
+
+  document.addEventListener('keydown',ev=>{
+    if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='s'){ ev.preventDefault(); if(S.catalog) manualSave(); return; }
+    if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='f'){ ev.preventDefault(); $('#q').focus(); $('#q').select(); return; }
+    if(document.querySelector('.mask')) return;
+    const tag=(document.activeElement||{}).tagName;
+    if(['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+    if(ev.key==='ArrowDown'||ev.key==='ArrowUp'){
+      if(!S.view.length) return; ev.preventDefault();
+      let i=S.view.indexOf(S.current); i = i<0 ? 0 : Math.max(0,Math.min(S.view.length-1,i+(ev.key==='ArrowDown'?1:-1)));
+      selectCurrent(S.view[i],true);
+    }
+  });
+  window.addEventListener('beforeunload',ev=>{ if(S.pending){ saveNow(); ev.preventDefault(); ev.returnValue=''; } });
+}
+/* 自動恢復上次目錄
+ * 1) 若 Chrome 仍保有權限（含「每次造訪時都允許」）→ 直接開啟
+ * 2) 否則瀏覽器規定必須有使用者操作才能要求權限 → 等待第一次點擊／按鍵後自動跳出授權 */
+function onFirstGesture(ev){
+  if(!S.autoArmed) return;
+  const t=ev.target;
+  // 這些按鈕有自己的用途，不攔截
+  if(t.closest && t.closest('#btnPick,#btnRestore,#wResume,#btnSettings,#btnHelp,.mask,#fallbackInput,#importInput')) return;
+  if(ev.type==='keydown' && ['Shift','Control','Alt','Meta','Tab'].includes(ev.key)) return;
+  disarmAutoResume();
+  restoreDir();
+}
+function armAutoResume(){
+  if(S.autoArmed) return; S.autoArmed=true;
+  document.addEventListener('pointerdown',onFirstGesture,true);
+  document.addEventListener('keydown',onFirstGesture,true);
+}
+function disarmAutoResume(){
+  S.autoArmed=false;
+  document.removeEventListener('pointerdown',onFirstGesture,true);
+  document.removeEventListener('keydown',onFirstGesture,true);
+}
+async function init(){
+  bind(); renderList(); renderEditor(); renderTree();
+  if(!window.showDirectoryPicker) toast('此瀏覽器不支援 File System Access API，將以唯讀模式運作。建議使用 Chrome 86 以上版本。','error',8000);
+  try{ S.savedSettings=await idb.get('settings')||null; }catch(e){}
+  try{
+    const h=await idb.get('rootHandle');
+    if(h){
+      S.lastHandle=h;
+      $('#btnRestore').style.display=''; $('#btnRestore').textContent='↩️ 恢復上次目錄：'+h.name;
+      if(await h.queryPermission({mode:'readwrite'})==='granted') await openRoot(h);
+      else { renderList(); armAutoResume(); }
+    }
+  }catch(e){ console.warn(e); }
+}
+init();
+</script>
+</body>
+</html>

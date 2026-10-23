@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<title>SQL SPA Tools｜Oracle SQL Compare</title>
+<style>
+*{box-sizing:border-box}
+input[type=checkbox],input[type=radio]{accent-color:#616161}
+html,body{margin:0;height:100%}
+body{font-family:var(--theme-font-sans);font-size:14px;color:#464646;background:#f4f4f4;display:flex;flex-direction:column}
+header{background:#616161;color:#fefefe;padding:8px 16px;display:flex;align-items:center;gap:12px}
+header h1{font-size:17px;margin:0;font-weight:600}
+header .ver{font-size:12px;opacity:.7}
+header .sp{flex:1}
+header .hint{font-size:12px;opacity:.8}
+.toolbar{background:#fefefe;border-bottom:1px solid #d1d1d1;padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.toolbar .grp{display:flex;gap:10px;align-items:center;padding-right:14px;border-right:1px solid #e4e4e4}
+.toolbar .grp:last-child{border-right:none}
+.toolbar label{cursor:pointer;user-select:none;white-space:nowrap}
+.toolbar .ttl{font-size:12px;color:#6b6b6b}
+button{font:inherit;border:1px solid #d1d1d1;background:#efefef;border-radius:6px;padding:4px 12px;cursor:pointer;white-space:nowrap}
+button:hover{background:#eaeaea}
+button.primary{background:#616161;border-color:#616161;color:#fefefe;font-weight:600}
+button.primary:hover{background:#505050}
+button:disabled{opacity:.45;cursor:default}
+select{font:inherit;padding:3px 4px;border-radius:6px;border:1px solid #d1d1d1}
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+#editView{flex:1;min-height:0;display:flex;gap:10px;padding:10px 16px}
+.pane{flex:1;min-width:0;display:flex;flex-direction:column;background:#fefefe;border:1px solid #d1d1d1;border-radius:8px;overflow:hidden}
+.pane.drag{outline:3px dashed #616161;outline-offset:-3px}
+.pane-hd{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#efefef;border-bottom:1px solid #d1d1d1}
+.pane-hd b{font-size:13px}
+.pane-hd .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6b6b;font-size:12px}
+.pane-hd .cnt{font-size:12px;color:#6b6b6b}
+.pane textarea{flex:1;border:none;resize:none;padding:8px 10px;font-family:var(--theme-font-mono);font-size:13px;line-height:1.5;outline:none;white-space:pre;overflow:auto;tab-size:4}
+#resultView{flex:1;min-height:0;display:none;flex-direction:column}
+#resultInfo{padding:6px 16px;background:#fefefe;border-bottom:1px solid #d1d1d1;display:flex;gap:16px;align-items:center;font-size:13px;flex-wrap:wrap}
+#resultInfo .files{color:#6b6b6b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#resultScroll{flex:1;min-height:0;overflow:auto;background:#fefefe}
+.tabs{display:flex;gap:4px}
+.tab{border-radius:6px;padding:3px 12px;font-size:13px}
+.tab.on{background:#616161;border-color:#616161;color:#fefefe}
+.tab .bdg{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:#616161;color:#fefefe;font-size:11px;line-height:16px;text-align:center}
+.tab .bdg.zero{background:#6e6e6e}
+#summaryBody{display:none}
+#identical{display:none;padding:40px;text-align:center;font-size:16px;color:#727272}
+footer{background:#fefefe;border-top:1px solid #d1d1d1;padding:6px 16px;display:flex;gap:16px;align-items:center;font-size:13px}
+footer .sp{flex:1}
+.stat-add{color:#727272;font-weight:600}.stat-del{color:#696969;font-weight:600}.stat-mod{color:#797979;font-weight:600}.stat-skip{color:#6e6e6e}.stat-mv{color:#8f8f8f;font-weight:600}
+#toast{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:#464646;color:#fefefe;padding:8px 18px;border-radius:6px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
+#toast.show{opacity:.92}
+</style>
+</head>
+<body>
+<header>
+  <h1>SQL SPA Tools｜Oracle SQL Compare</h1><span class="ver">SQL 差異比對</span>
+  <span class="sp"></span>
+  <span class="hint">Ctrl+Enter 比對 ｜ F7 / Shift+F7 跳差異 ｜ Alt+1 / Alt+2 切換頁籤 ｜ Esc 返回編輯</span>
+</header>
+
+<div class="toolbar">
+  <div class="grp">
+    <span class="ttl">比對選項</span>
+    <label><input type="checkbox" id="optCase" checked> 忽略大小寫</label>
+    <label><input type="checkbox" id="optWS" checked> 忽略空白</label>
+    <label><input type="checkbox" id="optComment"> 忽略註解</label>
+    <label><input type="checkbox" id="optBlank" checked> 忽略空行</label>
+    <label title="忽略行尾分號，以及單獨一行的 /"><input type="checkbox" id="optTerm"> 忽略結尾 ; 與 /</label>
+  </div>
+  <div class="grp">
+    <span class="ttl">顯示</span>
+    <label><input type="radio" name="view" value="side" checked> 並排</label>
+    <label><input type="radio" name="view" value="inline"> 整合</label>
+    <label><input type="checkbox" id="optOnlyDiff"> 僅顯示差異</label>
+    <label><input type="checkbox" id="optWrap" checked> 自動換行</label>
+  </div>
+  <div class="grp">
+    <span class="ttl">編碼</span>
+    <select id="optEnc"><option value="auto">自動 (UTF-8 → Big5)</option><option value="utf-8">UTF-8</option><option value="big5">Big5 / MS950</option></select>
+  </div>
+  <div class="grp">
+    <button class="primary" id="btnCompare">▶ 比對</button>
+    <button id="btnEdit" disabled>✎ 返回編輯</button>
+    <button id="btnSwap">⇄ 交換</button>
+    <button id="btnClear">清除</button>
+    <button id="btnSample">範例</button>
+  </div>
+</div>
+
+<main>
+  <div id="editView">
+    <div class="pane" id="paneA">
+      <div class="pane-hd"><b>舊版</b><span class="fname" id="nameA">（貼上 SQL 或拖放檔案）</span><span class="cnt" id="cntA"></span>
+        <button data-open="A">開啟檔案</button><input type="file" id="fileA" accept=".sql,.txt,.pks,.pkb,.prc,.fnc,.trg,.vw,.pls,.pck,*" hidden></div>
+      <textarea id="txtA" spellcheck="false" placeholder="貼上舊版 SQL，或將檔案拖放到此處"></textarea>
+    </div>
+    <div class="pane" id="paneB">
+      <div class="pane-hd"><b>新版</b><span class="fname" id="nameB">（貼上 SQL 或拖放檔案）</span><span class="cnt" id="cntB"></span>
+        <button data-open="B">開啟檔案</button><input type="file" id="fileB" accept=".sql,.txt,.pks,.pkb,.prc,.fnc,.trg,.vw,.pls,.pck,*" hidden></div>
+      <textarea id="txtB" spellcheck="false" placeholder="貼上新版 SQL，或將檔案拖放到此處"></textarea>
+    </div>
+  </div>
+  <div id="resultView">
+    <div id="resultInfo"><div class="tabs"><button class="tab on" id="tabDiff" data-tab="diff">逐行差異</button><button class="tab" id="tabSum" data-tab="sum">結構差異摘要<span class="bdg" id="sumBadge"></span></button></div><span class="files" id="resFiles"></span><span id="resOpts" style="color:#6b6b6b;font-size:12px"></span></div>
+    <div id="resultScroll"><div id="identical">✔ 依目前比對選項，兩邊內容完全相同</div><div id="resultBody"></div><div id="summaryBody"></div></div>
+  </div>
+</main>
+
+<footer>
+  <span id="stats">尚未比對</span>
+  <span class="sp"></span>
+  <button id="btnPrev" disabled>▲ 上一個</button>
+  <span id="navPos">0 / 0</span>
+  <button id="btnNext" disabled>▼ 下一個</button>
+  <button id="btnCopy" disabled>複製差異 (Unified)</button>
+  <button id="btnCopySum" disabled>複製結構摘要</button>
+  <button id="btnExport" disabled>匯出 HTML 報表</button>
+</footer>
+<div id="toast"></div>
+
+<!-- ====================== 比對引擎（純函式） ====================== -->
+<script id="engine">
+"use strict";
+const TOKRE = /'(?:[^']|'')*'?|"[^"]*"?|\s+|[A-Za-z0-9_$#\u0080-\uFFFF]+|[^\s]/g;
+const isWS = t => /^\s+$/.test(t);
+const SQLKW = new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL LIKE BETWEEN EXISTS AS ON JOIN INNER LEFT RIGHT FULL OUTER CROSS NATURAL USING GROUP BY ' +
+  'HAVING ORDER ASC DESC NULLS FIRST LAST UNION ALL INTERSECT MINUS EXCEPT DISTINCT UNIQUE CASE WHEN THEN ELSE END INSERT INTO VALUES UPDATE SET ' +
+  'DELETE MERGE MATCHED WITH CREATE REPLACE TABLE VIEW INDEX ALTER DROP TRUNCATE GRANT REVOKE BEGIN DECLARE IF LOOP FOR WHILE EXIT RETURN ' +
+  'COMMIT ROLLBACK START CONNECT PRIOR OVER PARTITION FETCH OFFSET ROWS ONLY NOCYCLE SIBLINGS LATERAL APPLY PIVOT UNPIVOT ANY SOME ' +
+  'ESCAPE RETURNING LOG ERRORS SAMPLE MODEL').split(' '));
+
+/* ====================== 差異演算法 ====================== */
+/* Myers O(ND) diff。a、b 為可用 === 比較的陣列。回傳 [[op, ai, bi], ...]，op 為 '=' '-' '+' */
+function myers(a, b) {
+  const n = a.length, m = b.length;
+  let s = 0; while (s < n && s < m && a[s] === b[s]) s++;
+  let e = 0; while (e < n - s && e < m - s && a[n - 1 - e] === b[m - 1 - e]) e++;
+  const N = n - s - e, M = m - s - e;
+  const ops = [];
+  for (let i = 0; i < s; i++) ops.push(['=', i, i]);
+  const mid = [];
+  if (N === 0) { for (let j = 0; j < M; j++) mid.push(['+', -1, s + j]); }
+  else if (M === 0) { for (let i = 0; i < N; i++) mid.push(['-', s + i, -1]); }
+  else {
+    const A = (i) => a[s + i], B = (j) => b[s + j];
+    const max = N + M, off = max + 1, LIMIT = 8000;
+    const v = new Int32Array(2 * max + 3);
+    const trace = [];
+    let found = -1;
+    for (let d = 0; d <= max && d <= LIMIT; d++) {
+      for (let k = -d; k <= d; k += 2) {
+        let x = (k === -d || (k !== d && v[off + k - 1] < v[off + k + 1])) ? v[off + k + 1] : v[off + k - 1] + 1;
+        let y = x - k;
+        while (x < N && y < M && A(x) === B(y)) { x++; y++; }
+        v[off + k] = x;
+        if (x >= N && y >= M) { found = d; break; }
+      }
+      trace.push(v.slice(off - d, off + d + 1));
+      if (found >= 0) break;
+    }
+    if (found < 0) {
+      for (let i = 0; i < N; i++) mid.push(['-', s + i, -1]);
+      for (let j = 0; j < M; j++) mid.push(['+', -1, s + j]);
+    } else {
+      let x = N, y = M;
+      for (let d = found; d > 0; d--) {
+        const vp = trace[d - 1], g = (k) => vp[k + d - 1];
+        const k = x - y;
+        const prevK = (k === -d || (k !== d && g(k - 1) < g(k + 1))) ? k + 1 : k - 1;
+        const px = g(prevK), py = px - prevK;
+        while (x > px && y > py) { x--; y--; mid.push(['=', s + x, s + y]); }
+        if (x === px) { y--; mid.push(['+', -1, s + y]); } else { x--; mid.push(['-', s + x, -1]); }
+        x = px; y = py;
+      }
+      while (x > 0 && y > 0) { x--; y--; mid.push(['=', s + x, s + y]); }
+      mid.reverse();
+    }
+  }
+  for (const o of mid) ops.push(o);
+  for (let i = 0; i < e; i++) ops.push(['=', n - e + i, m - e + i]);
+  return ops;
+}
+/* 找出兩區段中「各只出現一次」的行，取最長遞增子序列作為錨點（Patience Diff） */
+function uniqueAnchors(a, b, a0, a1, b0, b1) {
+  const ca = new Map(), cb = new Map();
+  for (let i = a0; i < a1; i++) { const e = ca.get(a[i]); if (e) e.c++; else ca.set(a[i], { c: 1 }); }
+  for (let j = b0; j < b1; j++) { const e = cb.get(b[j]); if (e) e.c++; else cb.set(b[j], { c: 1, j }); }
+  const cand = [];
+  for (let i = a0; i < a1; i++) { if (ca.get(a[i]).c !== 1) continue; const eb = cb.get(a[i]); if (eb && eb.c === 1) cand.push([i, eb.j]); }
+  const tails = [], prev = new Array(cand.length);
+  for (let x = 0; x < cand.length; x++) {
+    const j = cand[x][1]; let lo = 0, hi = tails.length;
+    while (lo < hi) { const md = (lo + hi) >> 1; if (cand[tails[md]][1] < j) lo = md + 1; else hi = md; }
+    prev[x] = lo > 0 ? tails[lo - 1] : -1; tails[lo] = x;
+  }
+  const res = []; let x = tails.length ? tails[tails.length - 1] : -1;
+  while (x >= 0) { res.push(cand[x]); x = prev[x]; }
+  return res.reverse();
+}
+/* 行層級差異：Patience 錨點切段 + Myers 補細節，避免 ( ) , END; 等常見行造成錯位 */
+function diffSeq(a, b) {
+  const ops = [];
+  const rec = (a0, a1, b0, b1) => {
+    while (a0 < a1 && b0 < b1 && a[a0] === b[b0]) { ops.push(['=', a0, b0]); a0++; b0++; }
+    const tail = [];
+    while (a1 > a0 && b1 > b0 && a[a1 - 1] === b[b1 - 1]) { a1--; b1--; tail.push(['=', a1, b1]); }
+    if (a0 === a1 || b0 === b1) {
+      for (let i = a0; i < a1; i++) ops.push(['-', i, -1]);
+      for (let j = b0; j < b1; j++) ops.push(['+', -1, j]);
+    } else {
+      const anc = uniqueAnchors(a, b, a0, a1, b0, b1);
+      if (!anc.length) {
+        for (const [op, i, j] of myers(a.slice(a0, a1), b.slice(b0, b1))) ops.push([op, i < 0 ? -1 : i + a0, j < 0 ? -1 : j + b0]);
+      } else {
+        let pa = a0, pb = b0;
+        for (const [i, j] of anc) { rec(pa, i, pb, j); ops.push(['=', i, j]); pa = i + 1; pb = j + 1; }
+        rec(pa, a1, pb, b1);
+      }
+    }
+    for (let k = tail.length - 1; k >= 0; k--) ops.push(tail[k]);
+  };
+  rec(0, a.length, 0, b.length);
+  return ops;
+}
+/* 依選項遮罩 SQL：註解 → 空白（保留換行），字串外轉小寫。字串與 "識別字" 原樣保留 */
+function maskSql(text, o) {
+  const out = []; const n = text.length; let i = 0, cs = 0;
+  const flushCode = (to) => { if (to > cs) { const seg = text.slice(cs, to); out.push(o.ignoreCase ? seg.toLowerCase() : seg); } };
+  const keepCmt = (seg) => o.ignoreComments ? seg.replace(/[^\n]/g, ' ') : (o.ignoreCase ? seg.toLowerCase() : seg);
+  while (i < n) {
+    const c = text[i], d = text[i + 1];
+    let j = -1, kind = '';
+    if (c === '-' && d === '-') { j = text.indexOf('\n', i); if (j < 0) j = n; kind = 'c'; }
+    else if (c === '/' && d === '*') { j = text.indexOf('*/', i + 2); j = j < 0 ? n : j + 2; kind = 'c'; }
+    else if ((c === 'q' || c === 'Q') && d === "'" && !/[\w$#]/.test(text[i - 1] || '')) {
+      const op = text[i + 2] || ''; const cl = ({ '[': ']', '(': ')', '{': '}', '<': '>' })[op] || op;
+      j = text.indexOf(cl + "'", i + 3); j = j < 0 ? n : j + 2; kind = 's';
+    }
+    else if (c === "'") { j = i + 1; while (j < n) { if (text[j] === "'") { if (text[j + 1] === "'") j += 2; else { j++; break; } } else j++; } kind = 's'; }
+    else if (c === '"') { j = text.indexOf('"', i + 1); j = j < 0 ? n : j + 1; kind = 's'; }
+    if (kind) {
+      flushCode(i);
+      const seg = text.slice(i, j);
+      out.push(kind === 'c' ? keepCmt(seg) : seg);
+      i = cs = j;
+    } else i++;
+  }
+  flushCode(n);
+  return out.join('');
+}
+function lineKey(line, o) {
+  if (o.ignoreWS) {
+    let t = (line.match(TOKRE) || []).filter(x => !isWS(x));
+    if (o.ignoreTerm) { if (t.length === 1 && t[0] === '/') t = []; else if (t[t.length - 1] === ';') t.pop(); }
+    return t.join('\u0001');
+  }
+  let k = o.ignoreComments ? line.replace(/\s+$/, '') : line;
+  if (o.ignoreTerm) { if (k.trim() === '/') k = ''; else k = k.replace(/;(\s*)$/, '$1'); }
+  return k;
+}
+function prepare(text, o) {
+  const raw = text.replace(/\r\n?/g, '\n');
+  const lines = raw.split('\n');
+  const masked = maskSql(raw, o).split('\n');
+  if (lines.length > 1 && lines[lines.length - 1] === '') { lines.pop(); masked.pop(); }
+  if (lines.length === 1 && lines[0] === '') { lines.pop(); masked.pop(); }
+  const keys = [], skip = [];
+  for (let i = 0; i < lines.length; i++) {
+    const k = lineKey(masked[i] ?? '', o);
+    keys.push(k);
+    skip.push(k.trim() === '' && (lines[i].trim() !== '' || o.ignoreBlank));
+  }
+  return { lines, keys, skip };
+}
+const escHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+/* 行內 Token 差異，回傳兩側 HTML（含語意清理：夾在變更中的 . , 空白 等小片段併入變更，減少破碎標示） */
+function inlineDiff(a, b, o) {
+  const ta = a.match(TOKRE) || [], tb = b.match(TOKRE) || [];
+  const key = t => isWS(t) ? (o.ignoreWS ? ' ' : t) : (o.ignoreCase && !/^['"]/.test(t) ? t.toLowerCase() : t);
+  let ops = myers(ta.map(key), tb.map(key));
+  const tiny = t => isWS(t) || (t.length === 1 && !/[\w$#\u0080-\uFFFF]/.test(t));
+  const segs = [];
+  for (const op of ops) { const eq = op[0] === '='; if (!segs.length || segs[segs.length - 1].eq !== eq) segs.push({ eq, ops: [] }); segs[segs.length - 1].ops.push(op); }
+  for (let s = 1; s < segs.length - 1; s++) {
+    const sg = segs[s];
+    if (sg.eq && sg.ops.length <= 2 && sg.ops.every(([, i]) => tiny(ta[i]))) {
+      sg.ops = sg.ops.flatMap(([, i, j]) => [['-', i, -1], ['+', -1, j]]);
+    }
+  }
+  ops = segs.flatMap(s => s.ops);
+  let ha = '', hb = '', bufA = '', bufB = '', markA = false, markB = false;
+  const pA = (t, mk) => { if (mk !== markA) { ha += markA ? '<span class="hl">' + bufA + '</span>' : bufA; bufA = ''; markA = mk; } bufA += escHtml(t); };
+  const pB = (t, mk) => { if (mk !== markB) { hb += markB ? '<span class="hl">' + bufB + '</span>' : bufB; bufB = ''; markB = mk; } bufB += escHtml(t); };
+  for (const [op, i, j] of ops) {
+    if (op === '=') { pA(ta[i], false); pB(tb[j], false); }
+    else if (op === '-') pA(ta[i], !(o.ignoreWS && isWS(ta[i])));
+    else pB(tb[j], !(o.ignoreWS && isWS(tb[j])));
+  }
+  pA('', !markA); pB('', !markB);
+  return [ha, hb];
+}
+/* ---------- 修改行配對 ---------- */
+function tokW(t) {
+  if (/^[A-Za-z_]/.test(t) && SQLKW.has(t.toUpperCase())) return 0.6;
+  if (t.length === 1 && !/[\w$#\u0080-\uFFFF]/.test(t)) return 0.25;
+  return 1;
+}
+function bigramDice(x, y) {
+  if (x === y) return 1; if (x.length < 2 || y.length < 2) return 0;
+  const m = new Map();
+  for (let i = 0; i < x.length - 1; i++) { const g = x.substr(i, 2); m.set(g, (m.get(g) || 0) + 1); }
+  let hit = 0;
+  for (let i = 0; i < y.length - 1; i++) { const g = y.substr(i, 2); const c = m.get(g); if (c) { hit++; m.set(g, c - 1); } }
+  return 2 * hit / (x.length + y.length - 2);
+}
+const lineToks = (s, o) => (s.match(TOKRE) || []).filter(t => !isWS(t)).map(t => o.ignoreCase && !/^['"]/.test(t) ? t.toLowerCase() : t);
+/* 相似度 = 加權 Token LCS（關鍵字、標點權重較低）× 0.65 + 字元雙字母組 × 0.35（可抓到 BALANCE → CUR_BALANCE 這類改名） */
+function lineSim(a, b, o) {
+  const ta = lineToks(a, o), tb = lineToks(b, o);
+  if (!ta.length && !tb.length) return 1;
+  if (!ta.length || !tb.length) return 0;
+  let wa = 0, wb = 0, wm = 0;
+  for (const t of ta) wa += tokW(t);
+  for (const t of tb) wb += tokW(t);
+  for (const [op, i] of myers(ta, tb)) if (op === '=') wm += tokW(ta[i]);
+  return 0.65 * (2 * wm / (wa + wb)) + 0.35 * bigramDice(ta.join(' '), tb.join(' '));
+}
+/* 依相似度配對修改行：保持順序、DP 取最大總分；短行需更高門檻；位置接近者加分；大區塊分段處理 */
+function pairLines(da, ib, o) {
+  const n = da.length, m = ib.length;
+  if (!n || !m) return [];
+  if (n * m > 40000) {
+    const parts = Math.ceil(Math.max(n, m) / 150), res = [];
+    for (let p = 0; p < parts; p++) {
+      const i0 = Math.floor(n * p / parts), i1 = Math.floor(n * (p + 1) / parts);
+      const j0 = Math.floor(m * p / parts), j1 = Math.floor(m * (p + 1) / parts);
+      for (const [x, y] of pairLines(da.slice(i0, i1), ib.slice(j0, j1), o)) res.push([x + i0, y + j0]);
+    }
+    return res;
+  }
+  const wt = s => lineToks(s, o).reduce((x, t) => x + tokW(t), 0);
+  const ca = da.map(wt), cb = ib.map(wt);
+  const sc = Array.from({ length: n }, () => new Float64Array(m));
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    const s = lineSim(da[i], ib[j], o);
+    const th = (ca[i] < 1.5 || cb[j] < 1.5) ? 0.75 : 0.45;
+    sc[i][j] = s >= th ? s + 0.1 * (1 - Math.abs((i + 0.5) / n - (j + 0.5) / m)) : -1;
+  }
+  const f = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
+    let best = Math.max(f[i + 1][j], f[i][j + 1]);
+    if (sc[i][j] >= 0) best = Math.max(best, sc[i][j] + f[i + 1][j + 1]);
+    f[i][j] = best;
+  }
+  const res = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (sc[i][j] >= 0 && f[i][j] === sc[i][j] + f[i + 1][j + 1]) { res.push([i, j]); i++; j++; }
+    else if (f[i][j] === f[i + 1][j]) i++; else j++;
+  }
+  return res;
+}
+/* 主比對：回傳 rows 與統計 */
+function compareSql(textA, textB, o) {
+  const A = prepare(textA, o), B = prepare(textB, o);
+  const incA = [], incB = [];
+  A.skip.forEach((s, i) => { if (!s) incA.push(i); });
+  B.skip.forEach((s, i) => { if (!s) incB.push(i); });
+  const dict = new Map(); const id = k => { let v = dict.get(k); if (v === undefined) { v = dict.size; dict.set(k, v); } return v; };
+  const ops = diffSeq(incA.map(i => id(A.keys[i])), incB.map(i => id(B.keys[i])));
+  const rows = []; let pl = 0, pr = 0;
+  const flushL = (upto) => { while (pl < A.lines.length && pl < upto) { if (A.skip[pl]) rows.push({ t: 'skip', l: pl }); pl++; } };
+  const flushR = (upto) => { while (pr < B.lines.length && pr < upto) { if (B.skip[pr]) rows.push({ t: 'skip', r: pr }); pr++; } };
+  let k = 0;
+  while (k < ops.length) {
+    if (ops[k][0] === '=') {
+      const l = incA[ops[k][1]], r = incB[ops[k][2]];
+      flushL(l); flushR(r);
+      rows.push({ t: 'eq', l, r, soft: A.lines[l] !== B.lines[r] });
+      pl = l + 1; pr = r + 1; k++; continue;
+    }
+    const dels = [], ins = [];
+    while (k < ops.length && ops[k][0] !== '=') { if (ops[k][0] === '-') dels.push(incA[ops[k][1]]); else ins.push(incB[ops[k][2]]); k++; }
+    const emitDel = l => { flushL(l); rows.push({ t: 'del', l }); pl = l + 1; };
+    const emitAdd = r => { flushR(r); rows.push({ t: 'add', r }); pr = r + 1; };
+    const emitMod = (l, r) => { flushL(l); flushR(r); const [hl, hr] = inlineDiff(A.lines[l], B.lines[r], o); rows.push({ t: 'mod', l, r, hl, hr }); pl = l + 1; pr = r + 1; };
+    let di = 0, ii = 0;
+    for (const [pd, pi] of pairLines(dels.map(i => A.lines[i]), ins.map(j => B.lines[j]), o)) {
+      while (di < pd) emitDel(dels[di++]);
+      while (ii < pi) emitAdd(ins[ii++]);
+      emitMod(dels[di++], ins[ii++]);
+    }
+    while (di < dels.length) emitDel(dels[di++]);
+    while (ii < ins.length) emitAdd(ins[ii++]);
+  }
+  flushL(Infinity); flushR(Infinity);
+  /* 搬移偵測：刪除行與新增行內容相同（依比對選項）者標示為搬移 */
+  const movable = key => (key.match(/[A-Za-z0-9_\u0080-\uFFFF]+/g) || []).length >= 2 && key.replace(/\u0001/g, '').trim().length >= 6;
+  const pool = new Map();
+  for (const r of rows) if (r.t === 'add' && movable(B.keys[r.r])) { const kk = B.keys[r.r]; if (!pool.has(kk)) pool.set(kk, []); pool.get(kk).push(r); }
+  for (const r of rows) if (r.t === 'del') { const l = pool.get(A.keys[r.l]); if (l && l.length) { const t = l.shift(); r.mv = t.r; t.mv = r.l; } }
+  const stats = { add: 0, del: 0, mod: 0, skip: 0, move: 0, linesA: A.lines.length, linesB: B.lines.length };
+  for (const r of rows) {
+    if (r.t === 'eq') continue;
+    if (r.mv !== undefined) { if (r.t === 'del') stats.move++; continue; }
+    stats[r.t]++;
+  }
+  const blocks = []; let inB = false;
+  rows.forEach((r, i) => {
+    const ch = r.t === 'add' || r.t === 'del' || r.t === 'mod';
+    if (ch && !inB) blocks.push([i, i]);
+    if (ch) blocks[blocks.length - 1][1] = i;
+    inB = ch || (r.t === 'skip' && inB);
+  });
+  let sum = null, sumErr = '';
+  try { sum = compareStructure(textA, textB, o); } catch (err) { sumErr = String(err && err.message || err); }
+  return { rows, stats, blocks, A, B, sum, sumErr };
+}
+/* 產生 Unified 格式差異文字（已忽略的行不列出） */
+function unifiedText(res, nameA, nameB, ctx = 3) {
+  const rows = res.rows.filter(r => r.t !== 'skip');
+  const ch = rows.map(r => r.t !== 'eq');
+  const out = ['--- ' + nameA, '+++ ' + nameB];
+  let i = 0;
+  while (i < rows.length) {
+    if (!ch[i]) { i++; continue; }
+    let s = Math.max(0, i - ctx), e = i;
+    while (true) { let nx = e + 1; while (nx < rows.length && !ch[nx]) nx++; if (nx < rows.length && nx - e <= ctx * 2) e = nx; else break; }
+    e = Math.min(rows.length - 1, e + ctx);
+    const seg = rows.slice(s, e + 1);
+    const la = seg.find(r => r.l !== undefined), rb = seg.find(r => r.r !== undefined);
+    out.push(`@@ 舊 第 ${la ? la.l + 1 : '-'} 行 / 新 第 ${rb ? rb.r + 1 : '-'} 行 @@`);
+    for (const r of seg) {
+      if (r.t === 'eq') out.push(' ' + res.B.lines[r.r]);
+      else if (r.t === 'del') out.push('-' + res.A.lines[r.l]);
+      else if (r.t === 'add') out.push('+' + res.B.lines[r.r]);
+      else { out.push('-' + res.A.lines[r.l]); out.push('+' + res.B.lines[r.r]); }
+    }
+    i = e + 1;
+  }
+  return out.join('\n');
+}
+
+/* ====================== SQL 結構解析 ====================== */
+function lexSql(text) {
+  const toks = [], n = text.length; let i = 0, ln = 0;
+  const add = (t, v, l) => toks.push({ t, v, u: t === 'str' ? v : v.toUpperCase(), ln: l });
+  const nl = s => { let c = 0; for (let x = 0; x < s.length; x++) if (s[x] === '\n') c++; return c; };
+  const isW = ch => !!ch && /[A-Za-z0-9_$#\u0080-\uFFFF]/.test(ch) && !/\s/.test(ch);
+  const readQ = st => { let j = st + 1; while (j < n) { if (text[j] === "'") { if (text[j + 1] === "'") j += 2; else return j + 1; } else j++; } return n; };
+  const ID = /[A-Za-z0-9_$#\u0080-\uFFFF]+/y, NUM = /(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?[fFdD]?/y;
+  while (i < n) {
+    const c = text[i], d = text[i + 1];
+    if (c === '\n') { ln++; i++; continue; }
+    if (/\s/.test(c)) { i++; continue; }
+    let j;
+    if (c === '-' && d === '-') { j = text.indexOf('\n', i); if (j < 0) j = n; if (text[i + 2] === '+') add('hint', text.slice(i, j), ln); i = j; continue; }
+    if (c === '/' && d === '*') { j = text.indexOf('*/', i + 2); j = j < 0 ? n : j + 2; const s = text.slice(i, j); if (s[2] === '+') add('hint', s, ln); ln += nl(s); i = j; continue; }
+    const prevW = i > 0 && isW(text[i - 1]);
+    if ((c === 'q' || c === 'Q') && d === "'" && !prevW) {
+      const op = text[i + 2] || ''; const cl = ({ '[': ']', '(': ')', '{': '}', '<': '>' })[op] || op;
+      j = text.indexOf(cl + "'", i + 3); j = j < 0 ? n : j + 2;
+      const s = text.slice(i, j); add('str', s, ln); ln += nl(s); i = j; continue;
+    }
+    if ((c === 'n' || c === 'N') && d === "'" && !prevW) { j = readQ(i + 1); const s = text.slice(i, j); add('str', s, ln); ln += nl(s); i = j; continue; }
+    if (c === "'") { j = readQ(i); const s = text.slice(i, j); add('str', s, ln); ln += nl(s); i = j; continue; }
+    if (c === '"') { j = text.indexOf('"', i + 1); j = j < 0 ? n : j + 1; const s = text.slice(i, j); add('qid', s, ln); ln += nl(s); i = j; continue; }
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(d || '') && !prevW)) { NUM.lastIndex = i; const mm = NUM.exec(text); if (mm) { add('num', mm[0], ln); i += mm[0].length; continue; } }
+    if (isW(c)) { ID.lastIndex = i; const mm = ID.exec(text); add('id', mm[0], ln); i += mm[0].length; continue; }
+    if (c === ':' && d && /[A-Za-z0-9_"\u0080-\uFFFF]/.test(d)) { ID.lastIndex = i + 1; const mm = ID.exec(text); const w = mm ? mm[0] : d; add('bind', ':' + w, ln); i += 1 + w.length; continue; }
+    if (c === '&' && /[&A-Za-z_]/.test(d || '')) { let st = i + 1; if (text[st] === '&') st++; ID.lastIndex = st; const mm = ID.exec(text); const w = mm ? mm[0] : ''; add('bind', text.slice(i, st) + w, ln); i = st + w.length; continue; }
+    if (text.startsWith('(+)', i)) { add('op', '(+)', ln); i += 3; continue; }
+    const two = text.substr(i, 2);
+    if (['<=', '>=', '<>', '!=', '^=', '||', ':=', '=>', '..', '**'].includes(two)) { add('op', two, ln); i += 2; continue; }
+    add('p', c, ln); i++;
+  }
+  return toks;
+}
+const isK = (t, w) => !!t && t.t === 'id' && t.u === w;
+function depthScan(toks, fn) {
+  let d = 0;
+  for (let k = 0; k < toks.length; k++) {
+    const v = toks[k].v;
+    if (v === '(') { if (fn(k, d) === false) return; d++; }
+    else if (v === ')') { d = Math.max(0, d - 1); if (fn(k, d) === false) return; }
+    else if (fn(k, d) === false) return;
+  }
+}
+function matchParen(toks, k) { let d = 0; for (let x = k; x < toks.length; x++) { if (toks[x].v === '(') d++; else if (toks[x].v === ')') { d--; if (d === 0) return x; } } return toks.length - 1; }
+function stripParens(toks) { while (toks.length >= 2 && toks[0].v === '(' && matchParen(toks, 0) === toks.length - 1) toks = toks.slice(1, -1); return toks; }
+function splitTop(toks, sep) { const out = [[]]; depthScan(toks, (k, d) => { if (d === 0 && toks[k].v === sep) out.push([]); else out[out.length - 1].push(toks[k]); }); return out.filter(x => x.length); }
+function hasTopOr(toks) { let r = false, cs = 0; depthScan(toks, (k, d) => { if (d) return; const t = toks[k]; if (isK(t, 'CASE')) cs++; else if (isK(t, 'END') && cs) cs--; else if (!cs && isK(t, 'OR')) { r = true; return false; } }); return r; }
+function splitAnd(toks) {
+  toks = stripParens(toks);
+  if (!toks.length) return [];
+  if (hasTopOr(toks)) return [toks];
+  const out = [[]]; let betw = 0, cs = 0;
+  depthScan(toks, (k, d) => {
+    const t = toks[k];
+    if (d === 0) {
+      if (isK(t, 'CASE')) cs++; else if (isK(t, 'END') && cs) cs--;
+      if (!cs && isK(t, 'BETWEEN')) betw++;
+      if (!cs && isK(t, 'AND')) { if (betw > 0) betw--; else { out.push([]); return; } }
+    }
+    out[out.length - 1].push(t);
+  });
+  return out.filter(x => x.length).map(stripParens);
+}
+function clauses(toks, defs) {
+  const C = { HEAD: [] }; let cur = 'HEAD', d = 0;
+  for (let k = 0; k < toks.length; k++) {
+    const t = toks[k];
+    if (d === 0 && t.t === 'id') {
+      const def = defs.find(s => s.every((w, x) => isK(toks[k + x], w)));
+      if (def) { cur = def.join(' '); if (!C[cur]) C[cur] = []; k += def.length - 1; continue; }
+    }
+    if (t.v === '(') d++; else if (t.v === ')') d = Math.max(0, d - 1);
+    C[cur].push(t);
+  }
+  return C;
+}
+const SPACE_KW = SQLKW;
+function fmt(toks) {
+  let s = '', prev = null;
+  for (const t of toks) {
+    if (prev) {
+      const noSp = t.v === ',' || t.v === ')' || t.v === '.' || t.v === '(+)' || prev.v === '(' || prev.v === '.' ||
+        (t.v === '(' && (prev.t === 'id' || prev.t === 'qid') && !SPACE_KW.has(prev.u));
+      if (!noSp) s += ' ';
+    }
+    s += t.v; prev = t;
+  }
+  return s;
+}
+function keyOf(toks, ctx) {
+  const parts = [];
+  for (let k = 0; k < toks.length; k++) {
+    const t = toks[k];
+    let v = t.t === 'str' ? t.v : (ctx.ci ? t.u : t.v);
+    if (t.t === 'qid' && ctx.ci && /^"[A-Z0-9_$#]+"$/.test(t.v)) v = t.v.slice(1, -1);
+    if (t.t === 'id' && ctx.alias && toks[k + 1] && toks[k + 1].v === '.' && ctx.alias.has(t.u)) v = ctx.alias.get(t.u);
+    parts.push(v);
+  }
+  return parts.join(' ');
+}
+const CMP = /^(=|<>|!=|\^=|<|>|<=|>=)$/;
+function condKey(toks, ctx) {
+  const idx = []; let bad = false;
+  depthScan(toks, (k, d) => { if (d) return; const t = toks[k]; if (t.t !== 'str' && CMP.test(t.v)) idx.push(k); if (t.t === 'id' && ['AND', 'OR', 'CASE'].includes(t.u)) bad = true; });
+  if (!bad && idx.length === 1 && toks[idx[0]].v === '=') {
+    const l = keyOf(toks.slice(0, idx[0]), ctx), r = keyOf(toks.slice(idx[0] + 1), ctx);
+    return l < r ? l + ' = ' + r : r + ' = ' + l;
+  }
+  return keyOf(toks, ctx);
+}
+function condLhs(toks, ctx) {
+  let cut = -1;
+  depthScan(toks, (k, d) => { if (d) return; const t = toks[k]; if ((t.t !== 'str' && CMP.test(t.v)) || (t.t === 'id' && ['IN', 'LIKE', 'BETWEEN', 'IS', 'NOT', 'EXISTS'].includes(t.u))) { cut = k; return false; } });
+  return cut > 0 ? keyOf(toks.slice(0, cut), ctx) : null;
+}
+const mk = (toks, ctx, extra) => Object.assign({ key: keyOf(toks, ctx), txt: fmt(toks), ln: toks.length ? toks[0].ln : -1, toks }, extra || {});
+function condItem(toks, ctx) {
+  const it = mk(toks, ctx);
+  it.key = condKey(toks, ctx);
+  it.k2 = condKey(toks.filter(t => t.v !== '(+)'), ctx);
+  it.name = condLhs(toks, ctx);
+  return it;
+}
+function readName(toks, k) {
+  const st = k;
+  if (!toks[k]) return { name: '', key: '', end: k };
+  k++;
+  while (toks[k] && (toks[k].v === '.' || toks[k].v === '@') && toks[k + 1]) k += 2;
+  const nt = toks.slice(st, k);
+  const at = nt.findIndex(t => t.v === '@');
+  const pre = (at >= 0 ? nt.slice(0, at) : nt).filter(t => t.t === 'id' || t.t === 'qid');
+  const last = pre[pre.length - 1] || nt[0];
+  return { name: fmt(nt), key: last.t === 'qid' ? last.v.replace(/"/g, '') : last.u, end: k };
+}
+function parseRef(rt, o) {
+  if (!rt.length) return { name: '?', key: '?', alias: null, sub: null, ln: -1 };
+  let sub = null, name, key, rest;
+  if (rt[0].v === '(') {
+    const e = matchParen(rt, 0); const inner = rt.slice(1, e);
+    if (isK(inner[0], 'SELECT') || isK(inner[0], 'WITH') || (inner[0] && inner[0].v === '(')) sub = parseQuery(inner, o);
+    name = '(子查詢)'; key = '(SUB)'; rest = rt.slice(e + 1);
+  } else if ((isK(rt[0], 'TABLE') || isK(rt[0], 'LATERAL')) && rt[1] && rt[1].v === '(') {
+    const e = matchParen(rt, 1); name = fmt(rt.slice(0, e + 1)); key = name.toUpperCase(); rest = rt.slice(e + 1);
+  } else {
+    const r = readName(rt, 0); name = r.name; key = r.key; rest = rt.slice(r.end);
+  }
+  let alias = null;
+  for (let k = 0; k < rest.length; k++) {
+    const t = rest[k];
+    if (isK(t, 'PARTITION') || isK(t, 'SUBPARTITION') || isK(t, 'SAMPLE')) { const p = rest.findIndex((x, y) => y > k && x.v === '('); if (p > 0) { k = matchParen(rest, p); continue; } }
+    if (isK(t, 'AS')) continue;
+    if ((t.t === 'id' && !SQLKW.has(t.u)) || t.t === 'qid') { alias = t.t === 'qid' ? t.v.replace(/"/g, '') : t.u; break; }
+  }
+  if (sub) key = '(SUB)' + (alias || '');
+  return { name, key, alias, sub, ln: rt[0].ln };
+}
+function normJoin(w) {
+  const s = w.filter(x => x !== 'OUTER' || w.includes('APPLY')).join(' ');
+  return s === 'JOIN' ? 'INNER JOIN' : s;
+}
+const JOINW = ['NATURAL', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'OUTER', 'CROSS', 'JOIN', 'APPLY'];
+function parseFrom(toks, o) {
+  const segs = []; let join = 'FROM', buf = [], d = 0;
+  for (let k = 0; k < toks.length; k++) {
+    const t = toks[k];
+    if (d === 0) {
+      if (t.v === ',') { segs.push({ join, toks: buf }); join = ','; buf = []; continue; }
+      if (t.t === 'id' && JOINW.includes(t.u)) {
+        const w = []; let m = k;
+        while (m < toks.length && toks[m].t === 'id' && JOINW.includes(toks[m].u)) { w.push(toks[m].u); m++; if (toks[m - 1].u === 'JOIN' || toks[m - 1].u === 'APPLY') break; }
+        if (w.includes('JOIN') || w.includes('APPLY')) { segs.push({ join, toks: buf }); join = normJoin(w); buf = []; k = m - 1; continue; }
+      }
+    }
+    if (t.v === '(') d++; else if (t.v === ')') d = Math.max(0, d - 1);
+    buf.push(t);
+  }
+  segs.push({ join, toks: buf });
+  return segs.filter(s => s.toks.length).map(sg => {
+    let cut = -1, kind = '';
+    depthScan(sg.toks, (k, dd) => { if (!dd && (isK(sg.toks[k], 'ON') || isK(sg.toks[k], 'USING'))) { cut = k; kind = sg.toks[k].u; return false; } });
+    const ref = parseRef(cut >= 0 ? sg.toks.slice(0, cut) : sg.toks, o);
+    ref.join = sg.join;
+    ref.onToks = cut >= 0 && kind === 'ON' ? sg.toks.slice(cut + 1) : [];
+    ref.usingToks = cut >= 0 && kind === 'USING' ? sg.toks.slice(cut) : [];
+    return ref;
+  });
+}
+function mkCtx(srcs, o) {
+  const alias = new Map();
+  for (const s of srcs) { if (s.alias) alias.set(s.alias, s.key); }
+  return { ci: o.ignoreCase, alias };
+}
+function colItem(toks, ctx) {
+  const n = toks.length, last = toks[n - 1];
+  let name = null, expr = toks;
+  if (n >= 2 && ((last.t === 'id' && !SQLKW.has(last.u)) || last.t === 'qid')) {
+    const pv = toks[n - 2];
+    const nm = last.t === 'qid' ? last.v.replace(/"/g, '') : last.u;
+    if (isK(pv, 'AS')) { name = nm; expr = toks.slice(0, n - 2); }
+    else if (pv.v !== '.' && ((pv.t === 'id' && !SQLKW.has(pv.u)) || isK(pv, 'END') || isK(pv, 'NULL') || ['qid', 'str', 'num', 'bind'].includes(pv.t) || pv.v === ')')) { name = nm; expr = toks.slice(0, n - 1); }
+  }
+  if (!name && ((last.t === 'id' && !SQLKW.has(last.u)) || last.t === 'qid') && (n === 1 || toks[n - 2].v === '.')) name = last.t === 'qid' ? last.v.replace(/"/g, '') : last.u;
+  const it = mk(toks, ctx, { name });
+  it.key = keyOf(expr, ctx) + (expr !== toks ? ' AS ' + name : '');
+  it.star = last.v === '*' && (n === 1 || toks[n - 2].v === '.');
+  return it;
+}
+const BLOCK_KW = [['SELECT'], ['BULK', 'COLLECT', 'INTO'], ['INTO'], ['FROM'], ['WHERE'], ['START', 'WITH'], ['CONNECT', 'BY'], ['GROUP', 'BY'], ['HAVING'],
+  ['ORDER', 'SIBLINGS', 'BY'], ['ORDER', 'BY'], ['FETCH', 'FIRST'], ['FETCH', 'NEXT'], ['FOR', 'UPDATE']];
+function parseBlock(toks, o) {
+  const b = { distinct: '', cols: [], into: [], from: [], where: [], connect: [], groupBy: [], having: [], orderBy: [], tail: [], ln: toks.length ? toks[0].ln : -1 };
+  if (!isK(toks[0], 'SELECT')) { b.raw = mk(toks, { ci: o.ignoreCase }); return b; }
+  const C = clauses(toks, BLOCK_KW);
+  let sel = C.SELECT || [];
+  if (sel[0] && sel[0].t === 'id' && ['DISTINCT', 'UNIQUE', 'ALL'].includes(sel[0].u)) { b.distinct = sel[0].u === 'ALL' ? '' : 'DISTINCT'; sel = sel.slice(1); }
+  b.from = C.FROM ? parseFrom(C.FROM, o) : [];
+  const ctx = mkCtx(b.from, o); b.ctx = ctx;
+  b.cols = splitTop(sel, ',').map(t => colItem(t, ctx));
+  b.into = splitTop(C.INTO || C['BULK COLLECT INTO'] || [], ',').map(t => mk(t, ctx));
+  for (const s of b.from) {
+    s.on = splitAnd(s.onToks).map(t => condItem(t, ctx));
+    if (s.usingToks.length) s.on.push(condItem(s.usingToks, ctx));
+  }
+  b.where = splitAnd(C.WHERE || []).map(t => condItem(t, ctx));
+  if (C['START WITH']) b.connect.push(mk(C['START WITH'], ctx, { name: 'START WITH' }));
+  if (C['CONNECT BY']) b.connect.push(mk(C['CONNECT BY'], ctx, { name: 'CONNECT BY' }));
+  b.connect.forEach(c => { c.txt = c.name + ' ' + c.txt; });
+  b.groupBy = splitTop(C['GROUP BY'] || [], ',').map(t => mk(t, ctx));
+  b.having = splitAnd(C.HAVING || []).map(t => condItem(t, ctx));
+  b.orderBy = splitTop(C['ORDER BY'] || C['ORDER SIBLINGS BY'] || [], ',').map(t => mk(t, ctx, { name: keyOf(t.filter(x => !(x.t === 'id' && ['ASC', 'DESC', 'NULLS', 'FIRST', 'LAST'].includes(x.u))), ctx) }));
+  for (const kk of ['FETCH FIRST', 'FETCH NEXT', 'FOR UPDATE']) if (C[kk]) b.tail.push(Object.assign(mk(C[kk], ctx, { name: kk }), { txt: kk + ' ' + fmt(C[kk]) }));
+  /* 舊式外部連接 (+)：WHERE 中 alias.col(+) 所屬的表視為外部連接 */
+  for (const s of b.from) {
+    if (s.join !== ',' ) continue;
+    const al = s.alias || s.key;
+    if (b.where.some(c => c.toks.some((t, k) => t.t === 'id' && t.u === al && c.toks[k + 1] && c.toks[k + 1].v === '.' && c.toks[k + 3] && c.toks[k + 3].v === '(+)'))) s.join = '(+)';
+  }
+  return b;
+}
+function parseQuery(toks, o) {
+  toks = stripParens(toks);
+  const q = { ctes: [], blocks: [] };
+  let k = 0;
+  if (isK(toks[0], 'WITH')) {
+    k = 1;
+    while (k < toks.length) {
+      const nt = toks[k]; k++;
+      if (toks[k] && toks[k].v === '(') k = matchParen(toks, k) + 1;
+      if (isK(toks[k], 'AS')) k++;
+      if (toks[k] && toks[k].v === '(') { const e = matchParen(toks, k); q.ctes.push({ name: nt.t === 'qid' ? nt.v : nt.u, ln: nt.ln, q: parseQuery(toks.slice(k + 1, e), o) }); k = e + 1; }
+      else break;
+      while (toks[k] && (isK(toks[k], 'SEARCH') || isK(toks[k], 'CYCLE'))) { while (toks[k] && toks[k].v !== ',' && !isK(toks[k], 'SELECT')) k++; }
+      if (toks[k] && toks[k].v === ',') { k++; continue; }
+      break;
+    }
+  }
+  const body = toks.slice(k);
+  const parts = []; let op = null, buf = [], pend = false;
+  depthScan(body, (i, d) => {
+    const t = body[i];
+    if (d === 0 && t.t === 'id' && ['UNION', 'INTERSECT', 'MINUS', 'EXCEPT'].includes(t.u)) { parts.push({ op, toks: buf }); op = t.u; buf = []; pend = true; return; }
+    if (pend) { pend = false; if (isK(t, 'ALL')) { op += ' ALL'; return; } if (isK(t, 'DISTINCT')) return; }
+    buf.push(t);
+  });
+  parts.push({ op, toks: buf });
+  q.blocks = parts.filter(p => p.toks.length).map(p => {
+    const inner = stripParens(p.toks);
+    if (isK(inner[0], 'WITH')) { const sq = parseQuery(inner, o); const b = sq.blocks[0] || parseBlock(inner, o); q.ctes.push(...sq.ctes); return Object.assign(b, { op: p.op }); }
+    return Object.assign(parseBlock(inner, o), { op: p.op });
+  });
+  return q;
+}
+function setItems(toks, ctx) {
+  return splitTop(toks, ',').map(t => { let eq = -1; depthScan(t, (k, d) => { if (d === 0 && t[k].v === '=') { eq = k; return false; } }); return mk(t, ctx, { name: keyOf(eq > 0 ? t.slice(0, eq) : t, ctx) }); });
+}
+function insertPart(toks, k, ctx, o) {
+  const r = { cols: [], vals: null, q: null, map: null };
+  if (toks[k] && toks[k].v === '(' && !(isK(toks[k + 1], 'SELECT') || isK(toks[k + 1], 'WITH'))) {
+    const e = matchParen(toks, k); r.cols = splitTop(toks.slice(k + 1, e), ',').map(t => mk(t, ctx, { name: keyOf(t, ctx) })); k = e + 1;
+  }
+  if (isK(toks[k], 'VALUES')) { if (toks[k + 1] && toks[k + 1].v === '(') { const e = matchParen(toks, k + 1); r.vals = splitTop(toks.slice(k + 2, e), ',').map(t => mk(t, ctx)); } }
+  else if (k < toks.length) {
+    let rest = toks.slice(k); const cut = rest.findIndex(t => isK(t, 'RETURNING') || isK(t, 'LOG')); if (cut > 0) rest = rest.slice(0, cut);
+    r.q = parseQuery(rest, o);
+  }
+  const src = r.vals || (r.q && r.q.blocks.length === 1 ? r.q.blocks[0].cols : null);
+  if (r.cols.length && src && src.length === r.cols.length)
+    r.map = r.cols.map((c, i) => ({ key: c.key + ' <- ' + src[i].key, name: c.key, txt: `${c.txt} ← ${src[i].txt}`, ln: src[i].ln, toks: src[i].toks }));
+  return r;
+}
+function parseInsert(toks, o) {
+  let k = 1;
+  if (isK(toks[k], 'ALL') || isK(toks[k], 'FIRST')) return { kind: 'other', type: 'INSERT ' + toks[k].u, target: '', tkey: '' };
+  if (isK(toks[k], 'INTO')) k++;
+  const r = readName(toks, k); k = r.end;
+  let alias = null;
+  if (toks[k] && toks[k].t === 'id' && !['VALUES', 'SELECT', 'WITH'].includes(toks[k].u)) { alias = toks[k].u; k++; }
+  const ctx = { ci: o.ignoreCase, alias: new Map(alias ? [[alias, r.key]] : []) };
+  return Object.assign({ kind: 'insert', type: 'INSERT', target: r.name, tkey: r.key }, insertPart(toks, k, ctx, o));
+}
+function parseUpdate(toks, o) {
+  const C = clauses(toks, [['UPDATE'], ['SET'], ['WHERE'], ['RETURNING'], ['RETURN'], ['LOG', 'ERRORS']]);
+  const ref = parseRef(C.UPDATE || [], o); const ctx = mkCtx([ref], o);
+  return { kind: 'update', type: 'UPDATE', target: ref.name, tkey: ref.key, alias: ref.alias, set: setItems(C.SET || [], ctx), where: splitAnd(C.WHERE || []).map(t => condItem(t, ctx)), hasWhere: !!C.WHERE };
+}
+function parseDelete(toks, o) {
+  const C = clauses(toks, [['DELETE'], ['FROM'], ['WHERE'], ['RETURNING'], ['RETURN'], ['LOG', 'ERRORS']]);
+  const ref = parseRef(C.FROM && C.FROM.length ? C.FROM : (C.DELETE || []), o); const ctx = mkCtx([ref], o);
+  return { kind: 'delete', type: 'DELETE', target: ref.name, tkey: ref.key, alias: ref.alias, where: splitAnd(C.WHERE || []).map(t => condItem(t, ctx)), hasWhere: !!C.WHERE };
+}
+function parseMerge(toks, o) {
+  const C = clauses(toks, [['MERGE'], ['USING'], ['ON'], ['WHEN', 'MATCHED', 'THEN'], ['WHEN', 'NOT', 'MATCHED', 'THEN']]);
+  let mt = C.MERGE || []; if (isK(mt[0], 'INTO')) mt = mt.slice(1);
+  const tgt = parseRef(mt, o), src = parseRef(C.USING || [], o);
+  tgt.join = 'FROM'; src.join = 'USING'; tgt.on = []; src.on = [];
+  const ctx = mkCtx([tgt, src], o);
+  const M = clauses(C['WHEN MATCHED THEN'] || [], [['UPDATE', 'SET'], ['WHERE'], ['DELETE', 'WHERE']]);
+  const N = C['WHEN NOT MATCHED THEN'] || [];
+  let ins = { cols: [], vals: null, map: null };
+  if (isK(N[0], 'INSERT')) { let nn = N.slice(1); const w = nn.findIndex(t => isK(t, 'WHERE')); if (w > 0) nn = nn.slice(0, w); ins = insertPart(nn, 0, ctx, o); }
+  return {
+    kind: 'merge', type: 'MERGE', target: tgt.name, tkey: tgt.key, tgt, src,
+    on: splitAnd(C.ON || []).map(t => condItem(t, ctx)), set: setItems(M['UPDATE SET'] || [], ctx),
+    updWhere: splitAnd(M.WHERE || []).map(t => condItem(t, ctx)), delWhere: splitAnd(M['DELETE WHERE'] || []).map(t => condItem(t, ctx)), ins
+  };
+}
+const UNIT_TYPES = ['PROCEDURE', 'FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'TRIGGER', 'TYPE', 'TYPE BODY'];
+function findTopKw(toks, from, words, test) {
+  let d = 0;
+  for (let k = 0; k < toks.length; k++) {
+    const v = toks[k].v;
+    if (v === '(') { d++; continue; } if (v === ')') { d = Math.max(0, d - 1); continue; }
+    if (k >= from && d === 0 && toks[k].t === 'id' && words.includes(toks[k].u) && (!test || test(k))) return k;
+  }
+  return -1;
+}
+function parseCreate(toks, o) {
+  let k = 1;
+  const skip = ['OR', 'REPLACE', 'EDITIONABLE', 'NONEDITIONABLE', 'EDITIONING', 'FORCE', 'NOFORCE', 'NO', 'GLOBAL', 'PRIVATE', 'TEMPORARY', 'UNIQUE', 'BITMAP', 'PUBLIC', 'SHARDED', 'DUPLICATED', 'IMMUTABLE', 'BLOCKCHAIN'];
+  while (toks[k] && toks[k].t === 'id' && skip.includes(toks[k].u)) k++;
+  let ot = toks[k] ? toks[k].u : ''; k++;
+  if (ot === 'MATERIALIZED' && isK(toks[k], 'VIEW')) { ot = 'MATERIALIZED VIEW'; k++; }
+  if ((ot === 'PACKAGE' || ot === 'TYPE') && isK(toks[k], 'BODY')) { ot += ' BODY'; k++; }
+  const r = readName(toks, k); k = r.end;
+  const ctx = { ci: o.ignoreCase };
+  const s = { kind: 'create', type: 'CREATE ' + ot, target: r.name, tkey: r.key };
+  const isQ = x => isK(toks[x + 1], 'SELECT') || isK(toks[x + 1], 'WITH') || (toks[x + 1] && toks[x + 1].v === '(');
+  if (UNIT_TYPES.includes(ot)) {
+    const e = findTopKw(toks, k, ['IS', 'AS', 'BEGIN', 'DECLARE', 'COMPOUND']);
+    Object.assign(s, { kind: 'unit', unitStart: true, head: mk(toks.slice(0, e < 0 ? toks.length : e), ctx), bodyAt: e });
+    return s;
+  }
+  if (ot === 'TABLE') {
+    if (toks[k] && toks[k].v === '(') {
+      const e = matchParen(toks, k);
+      s.cols = splitTop(toks.slice(k + 1, e), ',').map(t => {
+        const f = t[0], con = ['CONSTRAINT', 'PRIMARY', 'UNIQUE', 'FOREIGN', 'CHECK'].includes(f.u);
+        const name = con ? (f.u === 'CONSTRAINT' && t[1] ? 'CONSTRAINT ' + t[1].u : f.u + ' ' + keyOf(t.slice(1), ctx)) : (f.t === 'qid' ? f.v.replace(/"/g, '') : f.u);
+        return mk(t, ctx, { name });
+      });
+      k = e + 1;
+    }
+    const as = findTopKw(toks, k, ['AS'], isQ);
+    if (as >= 0) s.q = parseQuery(toks.slice(as + 1), o);
+    s.opts = mk(toks.slice(k, as >= 0 ? as : toks.length), ctx);
+    return s;
+  }
+  if (ot === 'VIEW' || ot === 'MATERIALIZED VIEW') {
+    const as = findTopKw(toks, k, ['AS'], isQ);
+    s.head = mk(toks.slice(k, as >= 0 ? as : toks.length), ctx);
+    if (as >= 0) s.q = parseQuery(toks.slice(as + 1), o);
+    return s;
+  }
+  if (ot === 'INDEX' && isK(toks[k], 'ON')) {
+    const t2 = readName(toks, k + 1); s.table = t2.name; let m = t2.end;
+    if (toks[m] && toks[m].t === 'id' && !SQLKW.has(toks[m].u)) m++;
+    if (toks[m] && toks[m].v === '(') { const e = matchParen(toks, m); s.cols = splitTop(toks.slice(m + 1, e), ',').map(t => mk(t, ctx)); m = e + 1; }
+    s.opts = mk(toks.slice(m), ctx);
+    return s;
+  }
+  s.body = mk(toks.slice(k), ctx);
+  return s;
+}
+const DML = ['SELECT', 'WITH', 'INSERT', 'UPDATE', 'DELETE', 'MERGE'];
+function parseDml(toks, o) {
+  const f = toks[0].u;
+  if (f === 'SELECT' || f === 'WITH' || toks[0].v === '(') {
+    const q = parseQuery(toks, o); const b0 = q.blocks[0]; const s0 = b0 && b0.from && b0.from[0];
+    return { kind: 'query', type: 'SELECT', target: s0 ? s0.name : '', tkey: s0 ? s0.key : '', q };
+  }
+  if (f === 'INSERT') return parseInsert(toks, o);
+  if (f === 'UPDATE') return parseUpdate(toks, o);
+  if (f === 'DELETE') return parseDelete(toks, o);
+  if (f === 'MERGE') return parseMerge(toks, o);
+  return null;
+}
+function findDml(toks, from) {
+  return findTopKw(toks, from, DML, k => !(toks[k].u === 'WITH' && isK(toks[k - 1], 'START')) && !(toks[k].u === 'UPDATE' && isK(toks[k - 1], 'FOR')) &&
+    !(toks[k].u === 'SELECT' && toks[k - 1] && toks[k - 1].v === '('));
+}
+function stmtBase(raw, o) {
+  const toks = raw.filter(t => t.t !== 'hint');
+  const binds = [...new Map(toks.filter(t => t.t === 'bind').map(t => [o.ignoreCase ? t.u : t.v, t.v])).values()];
+  return { hints: raw.filter(t => t.t === 'hint').map(h => h.v.replace(/\s+/g, ' ')).join(' '), binds, ln: raw[0].ln, lnEnd: raw[raw.length - 1].ln, full: keyOf(raw, { ci: o.ignoreCase }), toks };
+}
+function parseOther(toks, o) {
+  const two = toks[1] && toks[1].t === 'id' && ['TABLE', 'INDEX', 'VIEW', 'SEQUENCE', 'SYNONYM', 'TRIGGER', 'PROCEDURE', 'FUNCTION', 'PACKAGE', 'USER', 'ROLE', 'ON', 'IMMEDIATE', 'SESSION'].includes(toks[1].u);
+  return { kind: 'other', type: toks[0].u + (two ? ' ' + toks[1].u : ''), target: '', tkey: '', body: mk(toks, { ci: o.ignoreCase }) };
+}
+function parseStatement(raw, o, unit) {
+  const toks = raw.filter(t => t.t !== 'hint');
+  if (!toks.length) return [];
+  const f = toks[0];
+  if (isK(f, 'CREATE')) {
+    const c = Object.assign(stmtBase(raw, o), parseCreate(toks, o));
+    const res = [c];
+    if (c.unitStart && c.bodyAt >= 0) {
+      const k = findDml(toks, c.bodyAt);
+      if (k >= 0) { const sub = toks.slice(k), d = parseDml(sub, o); if (d) res.push(Object.assign(stmtBase(raw.filter(t => t.t === 'hint' || t.ln >= sub[0].ln), o), d, { unit: c.target })); }
+    }
+    return res;
+  }
+  let k = (f.t === 'id' && DML.includes(f.u)) || f.v === '(' ? 0 : -1;
+  if (k < 0 && unit) k = findDml(toks, 1);
+  if (k >= 0) {
+    const sub = toks.slice(k), d = parseDml(sub, o);
+    if (d) return [Object.assign(stmtBase(k ? raw.filter(t => t.ln >= sub[0].ln) : raw, o), d)];
+  }
+  return [Object.assign(stmtBase(raw, o), parseOther(toks, o))];
+}
+function parseScript(text, o) {
+  const all = lexSql(text.replace(/\r\n?/g, '\n'));
+  const pieces = []; let cur = [];
+  for (let k = 0; k < all.length; k++) {
+    const t = all[k];
+    const slash = t.v === '/' && (k === 0 || all[k - 1].ln !== t.ln) && (k === all.length - 1 || all[k + 1].ln !== t.ln);
+    if (t.v === ';' || slash) { if (cur.length) pieces.push(cur); cur = []; if (slash) pieces.push(null); continue; }
+    cur.push(t);
+  }
+  if (cur.length) pieces.push(cur);
+  const out = []; let unit = null;
+  for (const p of pieces) {
+    if (!p) { unit = null; continue; }
+    const f = p.find(t => t.t !== 'hint');
+    if (!unit && f && (isK(f, 'DECLARE') || isK(f, 'BEGIN'))) unit = '匿名 PL/SQL 區塊';
+    for (const s of parseStatement(p, o, unit)) {
+      if (s.unitStart) unit = s.target;
+      if (s.unit === undefined) s.unit = s.unitStart ? null : unit;
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+/* ====================== SQL 結構差異 ====================== */
+function bagDice(x, y) {
+  const a = x.split(' '), b = y.split(' ');
+  const m = new Map(); for (const t of a) m.set(t, (m.get(t) || 0) + 1);
+  let hit = 0; for (const t of b) { const c = m.get(t); if (c) { hit++; m.set(t, c - 1); } }
+  return a.length + b.length ? 2 * hit / (a.length + b.length) : 1;
+}
+const keySim = (x, y) => 0.6 * bagDice(x, y) + 0.4 * bigramDice(x, y);
+function diffItems(cat, A, B, out, opt = {}) {
+  const mA = new Array(A.length).fill(-1), mB = new Array(B.length).fill(-1), mods = [];
+  const pos = new Map();
+  B.forEach((b, j) => { if (!pos.has(b.key)) pos.set(b.key, []); pos.get(b.key).push(j); });
+  A.forEach((a, i) => { const l = pos.get(a.key); if (l && l.length) { const j = l.shift(); mA[i] = j; mB[j] = i; } });
+  const pair = (i, j) => { mA[i] = j; mB[j] = i; mods.push([i, j]); };
+  A.forEach((a, i) => { if (mA[i] >= 0 || !a.name) return; const j = B.findIndex((b, jj) => mB[jj] < 0 && b.name === a.name); if (j >= 0) pair(i, j); });
+  const cand = [];
+  A.forEach((a, i) => { if (mA[i] >= 0) return; B.forEach((b, j) => { if (mB[j] >= 0) return; const s = keySim(a.key, b.key); if (s >= (opt.th || 0.5)) cand.push([s, i, j]); }); });
+  cand.sort((x, y) => y[0] - x[0]);
+  for (const [, i, j] of cand) if (mA[i] < 0 && mB[j] < 0) pair(i, j);
+  mods.sort((x, y) => x[1] - y[1]);
+  for (const [i, j] of mods) { const it = { cat, k: 'mod', a: A[i].txt, b: B[j].txt, la: A[i].ln, lb: B[j].ln }; if (opt.note) opt.note(it, A[i], B[j]); out.push(it); }
+  A.forEach((a, i) => { if (mA[i] < 0) out.push({ cat, k: 'del', a: a.txt, la: a.ln, note: opt.delNote, nw: !!opt.delNote }); });
+  B.forEach((b, j) => { if (mB[j] < 0) out.push({ cat, k: 'add', b: b.txt, lb: b.ln, note: opt.addNote, nw: !!opt.addNote }); });
+  if (opt.ordered) {
+    let last = -1, moved = false;
+    A.forEach((a, i) => { const j = mA[i]; if (j < 0) return; if (j < last) moved = true; last = Math.max(last, j); });
+    if (moved) out.push({ cat, k: 'info', text: opt.orderMsg || '項目順序調整', la: A[0] && A[0].ln, lb: B[0] && B[0].ln });
+  }
+  return { del: mA.filter(x => x < 0).length, add: mB.filter(x => x < 0).length, mod: mods.length };
+}
+const litNote = (it, a, b) => {
+  const lit = x => x.toks.some(t => t.t === 'str' || t.t === 'num'), bind = x => x.toks.some(t => t.t === 'bind');
+  if (lit(a) && !bind(a) && bind(b)) it.note = '寫死值改為繫結變數/參數';
+  else if (bind(a) && !bind(b) && lit(b)) { it.note = '繫結變數改為寫死值'; it.nw = true; }
+};
+const JOIN_LABEL = { 'FROM': '主表', ',': '逗號連接（隱含 INNER）', '(+)': '舊式外部連接 (+)', 'USING': 'USING' };
+const joinLabel = j => JOIN_LABEL[j] || j;
+function joinNote(a, b) {
+  const inner = x => x === ',' || x === 'INNER JOIN' || x === 'FROM', outer = x => /LEFT|RIGHT|FULL/.test(x) || x === '(+)';
+  if (a === '(+)' && outer(b)) return ['舊式 (+) 改寫為 ANSI 外部連接，語意應相同，請確認方向', false];
+  if (inner(a) && outer(b)) return ['改為外部連接：未匹配的資料列將保留，筆數可能增加', true];
+  if (outer(a) && inner(b)) return ['改為內部連接：未匹配的資料列將被排除，筆數可能減少', true];
+  if (a === ',' && b === 'INNER JOIN') return ['改寫為 ANSI JOIN，語意相同', false];
+  if (b === 'CROSS JOIN') return ['CROSS JOIN 會產生笛卡兒積', true];
+  return ['', false];
+}
+function refAlias(toks, al) { return toks.some((t, k) => t.t === 'id' && t.u === al && toks[k + 1] && toks[k + 1].v === '.'); }
+function blockWarns(b) {
+  const w = [];
+  if (!b.from) return w;
+  for (const s of b.from) {
+    if (s.join !== 'LEFT JOIN' && s.join !== 'RIGHT JOIN' && s.join !== 'FULL JOIN') continue;
+    if (s.join !== 'LEFT JOIN') continue;
+    const al = s.alias || s.key;
+    for (const c of b.where) {
+      if (!refAlias(c.toks, al)) continue;
+      const U = c.toks.map(t => t.u).join(' ');
+      if (/\bIS NULL\b/.test(U) || /\b(NVL|NVL2|COALESCE|DECODE|CASE)\b/.test(U) || U.includes('(+)') || hasTopOr(c.toks)) continue;
+      w.push({ text: `LEFT JOIN ${s.name}${s.alias ? ' ' + s.alias : ''}，但 WHERE 條件「${c.txt}」過濾其欄位：未匹配列會被排除，效果等同 INNER JOIN（若要保留請移至 ON）`, ln: c.ln });
+    }
+  }
+  const comma = b.from.filter(s => s.join === ',' || s.join === 'FROM');
+  if (comma.length >= 2) for (const s of comma) {
+    const al = s.alias || s.key;
+    const linked = b.where.some(c => refAlias(c.toks, al) && b.from.some(x => x !== s && refAlias(c.toks, x.alias || x.key)));
+    if (!linked) w.push({ text: `資料表 ${s.name}${s.alias ? ' ' + s.alias : ''} 以逗號連接，但 WHERE 中找不到與其他表的關聯條件，可能產生笛卡兒積`, ln: s.ln });
+  }
+  return w;
+}
+function pushWarns(cat, wa, wb, out) {
+  const had = new Set(wa.map(x => x.text));
+  for (const x of wb) if (!had.has(x.text)) out.push({ cat, k: 'warn', text: x.text, lb: x.ln });
+}
+function diffSources(p, SA, SB, out, o, skipA, skipB) {
+  const mB = new Array(SB.length).fill(-1), mA = new Array(SA.length).fill(-1);
+  const pass = f => SA.forEach((a, i) => { if (mA[i] >= 0) return; const j = SB.findIndex((b, jj) => mB[jj] < 0 && f(a, b)); if (j >= 0) { mA[i] = j; mB[j] = i; } });
+  pass((a, b) => a.key === b.key && a.alias === b.alias);
+  pass((a, b) => a.key === b.key);
+  pass((a, b) => !!a.sub && !!b.sub);
+  const nm = s => s.name + (s.alias ? ' ' + s.alias : '');
+  SA.forEach((a, i) => {
+    const j = mA[i];
+    if (j < 0) { out.push({ cat: p + 'FROM / JOIN', k: 'del', a: `${joinLabel(a.join)}：${nm(a)}${a.on.length ? ' ON ' + a.on.map(c => c.txt).join(' AND ') : ''}`, la: a.ln, note: '移除資料表', nw: false }); return; }
+    const b = SB[j], cat = p + (b.join === 'USING' ? 'USING ' : 'FROM ') + nm(b);
+    if (!a.sub && a.name.toUpperCase() !== b.name.toUpperCase()) out.push({ cat, k: 'mod', a: a.name, b: b.name, la: a.ln, lb: b.ln, note: '資料表名稱/結構描述變更' });
+    if ((a.alias || '') !== (b.alias || '')) out.push({ cat, k: 'mod', a: '別名 ' + (a.alias || '（無）'), b: '別名 ' + (b.alias || '（無）'), la: a.ln, lb: b.ln });
+    if (a.join !== b.join && !(a.join === 'FROM' && b.join === 'FROM')) { const [n, w] = joinNote(a.join, b.join); out.push({ cat, k: 'mod', a: joinLabel(a.join), b: joinLabel(b.join), la: a.ln, lb: b.ln, note: n, nw: w }); }
+    diffItems(cat + ' › ON', a.on.filter(c => !skipA.has(c.k2)), b.on.filter(c => !skipB.has(c.k2)), out, { note: litNote });
+    if (a.sub && b.sub) diffQuery(cat + ' › ', a.sub, b.sub, out, o);
+  });
+  SB.forEach((b, j) => {
+    if (mB[j] >= 0) return;
+    const [n, w] = b.join === 'CROSS JOIN' ? joinNote('', b.join) : ['新增資料表', false];
+    out.push({ cat: p + 'FROM / JOIN', k: 'add', b: `${joinLabel(b.join)}：${nm(b)}${b.on.length ? ' ON ' + b.on.map(c => c.txt).join(' AND ') : ''}`, lb: b.ln, note: n, nw: w });
+  });
+}
+function diffBlock(p, A, B, out, o, flags) {
+  if (A.raw || B.raw) {
+    const ka = A.raw ? A.raw.key : 'SELECT', kb = B.raw ? B.raw.key : 'SELECT';
+    if (ka !== kb) out.push({ cat: p + '查詢', k: 'mod', a: A.raw ? A.raw.txt : 'SELECT …', b: B.raw ? B.raw.txt : 'SELECT …', la: A.ln, lb: B.ln });
+    return;
+  }
+  if (A.distinct !== B.distinct) out.push({ cat: p + 'SELECT', k: 'mod', a: A.distinct || '（無 DISTINCT）', b: B.distinct || '（無 DISTINCT）', la: A.ln, lb: B.ln, note: B.distinct ? '新增 DISTINCT：重複列將被去除' : '移除 DISTINCT：可能出現重複列', nw: true });
+  if (!flags.skipCols) diffItems(p + 'SELECT 欄位', A.cols, B.cols, out, { ordered: true, orderMsg: 'SELECT 欄位順序調整（若下游依位置取值需注意）' });
+  if (B.cols.some(c => c.star) && !A.cols.some(c => c.star)) out.push({ cat: p + 'SELECT 欄位', k: 'warn', text: '使用 SELECT *：輸出欄位會隨資料表結構變動，建議明列欄位', lb: B.ln });
+  diffItems(p + 'INTO', A.into, B.into, out, { ordered: true });
+  const onA = new Set(A.from.flatMap(s => s.on.map(c => c.k2))), onB = new Set(B.from.flatMap(s => s.on.map(c => c.k2)));
+  const whA = new Set(A.where.map(c => c.k2)), whB = new Set(B.where.map(c => c.k2));
+  const w2on = A.where.filter(c => !whB.has(c.k2) && onB.has(c.k2) && !onA.has(c.k2));
+  const on2w = B.where.filter(c => !whA.has(c.k2) && onA.has(c.k2) && !onB.has(c.k2));
+  const skB = new Set(w2on.map(c => c.k2)), skA = new Set(on2w.map(c => c.k2));
+  diffSources(p, A.from, B.from, out, o, skA, skB);
+  for (const c of w2on) out.push({ cat: p + 'WHERE → ON', k: 'info', text: `條件由 WHERE 移至 JOIN … ON：${c.txt}`, la: c.ln });
+  for (const c of on2w) out.push({ cat: p + 'ON → WHERE', k: 'info', text: `條件由 JOIN … ON 移至 WHERE：${c.txt}`, lb: c.ln });
+  const r = diffItems(p + 'WHERE', A.where.filter(c => !skB.has(c.k2)), B.where.filter(c => !skA.has(c.k2)), out, { note: litNote });
+  if (r.del) out.push({ cat: p + 'WHERE', k: 'warn', text: `移除 ${r.del} 個 WHERE 條件，查詢範圍可能擴大、筆數可能增加`, la: A.where[0] && A.where[0].ln });
+  diffItems(p + 'CONNECT BY', A.connect, B.connect, out, {});
+  diffItems(p + 'GROUP BY', A.groupBy, B.groupBy, out, {});
+  diffItems(p + 'HAVING', A.having, B.having, out, { note: litNote });
+  diffItems(p + 'ORDER BY', A.orderBy, B.orderBy, out, { ordered: true, orderMsg: 'ORDER BY 排序優先順序調整' });
+  if (A.orderBy.length && !B.orderBy.length) out.push({ cat: p + 'ORDER BY', k: 'warn', text: '移除 ORDER BY：結果順序將不保證', la: A.orderBy[0].ln });
+  diffItems(p + '其他子句', A.tail, B.tail, out, {});
+  pushWarns(p + '注意', blockWarns(A), blockWarns(B), out);
+}
+function diffQuery(pre, qa, qb, out, o, flags = {}) {
+  const cA = new Map(qa.ctes.map(c => [c.name, c])), cB = new Map(qb.ctes.map(c => [c.name, c]));
+  for (const c of qa.ctes) { if (cB.has(c.name)) diffQuery(pre + 'WITH ' + c.name + ' › ', c.q, cB.get(c.name).q, out, o); else out.push({ cat: pre + 'WITH 子句', k: 'del', a: c.name, la: c.ln }); }
+  for (const c of qb.ctes) if (!cA.has(c.name)) out.push({ cat: pre + 'WITH 子句', k: 'add', b: c.name, lb: c.ln });
+  const n = Math.max(qa.blocks.length, qb.blocks.length);
+  for (let i = 0; i < n; i++) {
+    const ba = qa.blocks[i], bb = qb.blocks[i];
+    const p = n > 1 ? `${pre}第 ${i + 1} 段 › ` : pre;
+    const lbl = b => `${b.op ? b.op + ' ' : ''}SELECT … FROM ${b.from && b.from[0] ? b.from[0].name : '…'}`;
+    if (!ba) { out.push({ cat: pre + '集合運算', k: 'add', b: lbl(bb), lb: bb.ln }); continue; }
+    if (!bb) { out.push({ cat: pre + '集合運算', k: 'del', a: lbl(ba), la: ba.ln }); continue; }
+    if ((ba.op || '') !== (bb.op || '')) {
+      const note = ba.op === 'UNION' && bb.op === 'UNION ALL' ? '不再去除重複列，筆數可能增加' : ba.op === 'UNION ALL' && bb.op === 'UNION' ? '將去除重複列，筆數可能減少' : '';
+      out.push({ cat: p + '集合運算', k: 'mod', a: ba.op || '（無）', b: bb.op || '（無）', la: ba.ln, lb: bb.ln, note, nw: !!note });
+    }
+    diffBlock(p, ba, bb, out, o, i === 0 ? flags : {});
+  }
+}
+function diffStmt(a, b, o) {
+  const out = [];
+  if (a.type !== b.type) out.push({ cat: '敘述類型', k: 'mod', a: a.type, b: b.type, la: a.ln, lb: b.ln });
+  if (a.kind !== 'query' && a.kind !== 'other' && a.target && b.target && a.target.toUpperCase() !== b.target.toUpperCase()) out.push({ cat: '目標物件', k: 'mod', a: a.target, b: b.target, la: a.ln, lb: b.ln });
+  if (a.hints !== b.hints) {
+    if (a.hints && b.hints) out.push({ cat: 'Hint', k: 'mod', a: a.hints, b: b.hints, la: a.ln, lb: b.ln, note: '執行計畫可能改變', nw: true });
+    else if (b.hints) out.push({ cat: 'Hint', k: 'add', b: b.hints, lb: b.ln, note: '執行計畫可能改變', nw: true });
+    else out.push({ cat: 'Hint', k: 'del', a: a.hints, la: a.ln, note: '執行計畫可能改變', nw: true });
+  }
+  const bk = s => new Map(s.binds.map(v => [o.ignoreCase ? v.toUpperCase() : v, v]));
+  const ba = bk(a), bb = bk(b);
+  for (const [k, v] of ba) if (!bb.has(k)) out.push({ cat: '繫結變數', k: 'del', a: v, la: a.ln });
+  for (const [k, v] of bb) if (!ba.has(k)) out.push({ cat: '繫結變數', k: 'add', b: v, lb: b.ln, note: '執行時需提供此參數' });
+  const K = a.kind === b.kind ? a.kind : '';
+  if (K === 'query') diffQuery('', a.q, b.q, out, o);
+  else if (K === 'insert' || (K === 'merge' && false)) {
+    diffItems('INSERT 欄位', a.cols, b.cols, out, { ordered: true, orderMsg: 'INSERT 欄位順序調整' });
+    if (a.map && b.map) diffItems('欄位對應（欄位 ← 值）', a.map, b.map, out, { note: litNote });
+    else if (a.vals && b.vals) diffItems('VALUES', a.vals, b.vals, out, { ordered: true, note: litNote });
+    if (a.q && b.q) diffQuery('SELECT › ', a.q, b.q, out, o, { skipCols: !!(a.map && b.map) });
+    else if (!!a.q !== !!b.q) out.push({ cat: '資料來源', k: 'mod', a: a.q ? 'INSERT … SELECT' : 'INSERT … VALUES', b: b.q ? 'INSERT … SELECT' : 'INSERT … VALUES', la: a.ln, lb: b.ln });
+  } else if (K === 'update' || K === 'delete') {
+    if ((a.alias || '') !== (b.alias || '')) out.push({ cat: '別名', k: 'mod', a: a.alias || '（無）', b: b.alias || '（無）', la: a.ln, lb: b.ln });
+    if (K === 'update') diffItems('SET', a.set, b.set, out, { note: litNote });
+    const r = diffItems('WHERE', a.where, b.where, out, { note: litNote });
+    if (!b.hasWhere && a.hasWhere) out.push({ cat: 'WHERE', k: 'warn', text: `新版 ${b.type} 沒有 WHERE 條件，將影響整張表`, lb: b.ln });
+    else if (r.del) out.push({ cat: 'WHERE', k: 'warn', text: `移除 ${r.del} 個 WHERE 條件，${b.type} 影響範圍可能擴大`, la: a.ln });
+  } else if (K === 'merge') {
+    diffSources('', [a.src], [b.src], out, o, new Set(), new Set());
+    diffItems('ON（比對條件）', a.on, b.on, out, { note: litNote });
+    diffItems('WHEN MATCHED › SET', a.set, b.set, out, { note: litNote });
+    diffItems('WHEN MATCHED › WHERE', a.updWhere, b.updWhere, out, { note: litNote });
+    diffItems('WHEN MATCHED › DELETE WHERE', a.delWhere, b.delWhere, out, {});
+    if (a.ins.map && b.ins.map) diffItems('WHEN NOT MATCHED › 欄位對應', a.ins.map, b.ins.map, out, { note: litNote });
+    else { diffItems('WHEN NOT MATCHED › 欄位', a.ins.cols, b.ins.cols, out, { ordered: true }); diffItems('WHEN NOT MATCHED › VALUES', a.ins.vals || [], b.ins.vals || [], out, { ordered: true }); }
+  } else if (K === 'create') {
+    if (a.head || b.head) { if ((a.head && a.head.key) !== (b.head && b.head.key)) out.push({ cat: '定義', k: 'mod', a: a.head ? a.head.txt : '', b: b.head ? b.head.txt : '', la: a.ln, lb: b.ln }); }
+    if (a.cols || b.cols) diffItems(a.type === 'CREATE INDEX' ? '索引欄位' : '欄位定義', a.cols || [], b.cols || [], out, { ordered: true, orderMsg: '欄位順序調整' });
+    if (a.table !== undefined && a.table !== b.table) out.push({ cat: '索引資料表', k: 'mod', a: a.table, b: b.table, la: a.ln, lb: b.ln });
+    for (const kk of ['opts', 'body']) if ((a[kk] && a[kk].key) !== (b[kk] && b[kk].key)) out.push({ cat: kk === 'opts' ? '其他選項' : '內容', k: 'mod', a: a[kk] ? a[kk].txt || '（無）' : '（無）', b: b[kk] ? b[kk].txt || '（無）' : '（無）', la: a.ln, lb: b.ln });
+    if (a.q && b.q) diffQuery('AS SELECT › ', a.q, b.q, out, o);
+  } else if (K === 'unit') {
+    if (a.head.key !== b.head.key) out.push({ cat: '程式單元標頭（參數/回傳）', k: 'mod', a: a.head.txt, b: b.head.txt, la: a.ln, lb: b.ln });
+  } else if (K === 'other') {
+    out.push({ cat: a.type === b.type ? a.type : '敘述', k: 'mod', a: a.body.txt, b: b.body.txt, la: a.ln, lb: b.ln });
+  } else if (a.q && b.q) diffQuery('', a.q, b.q, out, o);
+  if (!out.length && a.full !== b.full) out.push({ cat: '其他', k: 'info', text: '有細部差異未歸類（如 PL/SQL 前後文），請參閱逐行差異', la: a.ln, lb: b.ln });
+  return out;
+}
+function stmtSim(a, b) {
+  return (a.type === b.type ? 0.35 : 0) + (a.tkey && a.tkey === b.tkey ? 0.35 : 0) + (a.unit === b.unit ? 0.05 : 0) + 0.25 * bagDice(a.full, b.full);
+}
+function pairStmts(A, B) {
+  const n = A.length, m = B.length;
+  if (!n || !m) return [];
+  if (n * m > 40000) { const r = []; for (let k = 0; k < Math.min(n, m); k++) if (A[k].type === B[k].type) r.push([k, k]); return r; }
+  const TH = 0.5;
+  const sc = A.map(a => B.map(b => stmtSim(a, b)));
+  const f = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
+    let best = Math.max(f[i + 1][j], f[i][j + 1]);
+    if (sc[i][j] >= TH) best = Math.max(best, sc[i][j] + f[i + 1][j + 1]);
+    f[i][j] = best;
+  }
+  const res = []; let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (sc[i][j] >= TH && f[i][j] === sc[i][j] + f[i + 1][j + 1]) { res.push([i, j]); i++; j++; }
+    else if (f[i][j] === f[i + 1][j]) i++; else j++;
+  }
+  return res;
+}
+function stmtLabel(s) {
+  const u = s.unit ? `〔${s.unit}〕` : '';
+  if (s.kind === 'query') return `${u}SELECT … FROM ${s.target || '…'}`;
+  if (s.kind === 'other') { const t = s.body ? s.body.txt : s.type; return u + (t.length > 60 ? t.slice(0, 60) + '…' : t); }
+  return `${u}${s.type}${s.target ? ' ' + s.target : ''}`;
+}
+function compareStructure(textA, textB, o) {
+  const SA = parseScript(textA, o), SB = parseScript(textB, o);
+  const dict = new Map(); const id = k => { let v = dict.get(k); if (v === undefined) { v = dict.size; dict.set(k, v); } return v; };
+  const ops = diffSeq(SA.map(s => id(s.full)), SB.map(s => id(s.full)));
+  const secs = [], other = []; let same = 0, k = 0;
+  const sec = (st, a, b, items) => ({ st, a, b, label: stmtLabel(b || a), items });
+  while (k < ops.length) {
+    if (ops[k][0] === '=') { same++; k++; continue; }
+    const dels = [], ins = [];
+    while (k < ops.length && ops[k][0] !== '=') { if (ops[k][0] === '-') dels.push(SA[ops[k][1]]); else ins.push(SB[ops[k][2]]); k++; }
+    const res = [];
+    const pushDel = s => s.kind === 'other' ? other.push({ cat: (s.unit ? `〔${s.unit}〕` : '') + s.type, k: 'del', a: s.body.txt, la: s.ln }) : res.push(sec('del', s, null, []));
+    const pushAdd = s => s.kind === 'other' ? other.push({ cat: (s.unit ? `〔${s.unit}〕` : '') + s.type, k: 'add', b: s.body.txt, lb: s.ln }) : res.push(sec('add', null, s, blockWarnsOf(s)));
+    let di = 0, ii = 0;
+    for (const [pd, pi] of pairStmts(dels, ins)) {
+      while (di < pd) pushDel(dels[di++]);
+      while (ii < pi) pushAdd(ins[ii++]);
+      const a = dels[di++], b = ins[ii++];
+      if (a.kind === 'other' && b.kind === 'other') other.push(...diffStmt(a, b, o).map(x => Object.assign(x, { cat: (b.unit ? `〔${b.unit}〕` : '') + x.cat })));
+      else res.push(sec('mod', a, b, diffStmt(a, b, o)));
+    }
+    while (di < dels.length) pushDel(dels[di++]);
+    while (ii < ins.length) pushAdd(ins[ii++]);
+    secs.push(...res);
+  }
+  /* 第二輪：跨區段配對（敘述被搬移位置） */
+  for (const d of secs) {
+    if (d.st !== 'del') continue;
+    let best = null, bs = 0.6;
+    for (const ad of secs) { if (ad.st !== 'add' || ad.used) continue; const v = stmtSim(d.a, ad.b); if (v >= bs && d.a.type === ad.b.type) { bs = v; best = ad; } }
+    if (!best) continue;
+    best.used = true;
+    const b = best.b, items = diffStmt(d.a, b, o).filter(x => !(x.k === 'info' && x.cat === '其他'));
+    items.unshift({ cat: '位置', k: 'info', text: `敘述位置搬移：舊 L${d.a.ln + 1} → 新 L${b.ln + 1}`, la: d.a.ln, lb: b.ln });
+    Object.assign(d, { st: 'mod', b, label: stmtLabel(b), items });
+  }
+  for (let x = secs.length - 1; x >= 0; x--) if (secs[x].used) secs.splice(x, 1);
+  if (other.length) secs.push({ st: 'oth', a: null, b: null, label: '其他敘述（PL/SQL 邏輯、DDL、DCL 等）', items: other });
+  return { secs, same, nA: SA.length, nB: SB.length };
+}
+function blockWarnsOf(s) {
+  const out = [];
+  if (s.q) for (const b of s.q.blocks) for (const w of blockWarns(b)) out.push({ cat: '注意', k: 'warn', text: w.text, lb: w.ln });
+  if ((s.kind === 'update' || s.kind === 'delete') && !s.hasWhere) out.push({ cat: '注意', k: 'warn', text: `${s.type} 沒有 WHERE 條件，將影響整張表`, lb: s.ln });
+  return out;
+}
+/* 產生純文字摘要 */
+function summaryText(S, nameA, nameB) {
+  const L = [`SQL 結構差異摘要`, `舊版：${nameA}`, `新版：${nameB}`,
+    `敘述：舊 ${S.nA} 句 / 新 ${S.nB} 句；結構相同 ${S.same}、變更 ${S.secs.filter(s => s.st === 'mod').length}、新增 ${S.secs.filter(s => s.st === 'add').length}、刪除 ${S.secs.filter(s => s.st === 'del').length}`, ''];
+  const ST = { mod: '變更', add: '新增', del: '刪除', oth: '其他' }, MK = { add: '+', del: '-', mod: '~', info: 'i', warn: '!' };
+  for (const s of S.secs) {
+    const loc = [s.a ? `舊 L${s.a.ln + 1}` : '', s.b ? `新 L${s.b.ln + 1}` : ''].filter(Boolean).join(' / ');
+    L.push(`[${ST[s.st]}] ${s.label}${loc ? `（${loc}）` : ''}`);
+    for (const it of s.items) {
+      const body = it.k === 'mod' ? `${it.a}  →  ${it.b}` : it.k === 'add' ? it.b : it.k === 'del' ? it.a : it.text;
+      L.push(`  ${MK[it.k]} ${it.cat}：${body}${it.note ? `（${it.note}）` : ''}`);
+    }
+    L.push('');
+  }
+  if (!S.secs.length) L.push('未發現 SQL 結構差異。');
+  return L.join('\n');
+}
+if (typeof module !== 'undefined') module.exports = { myers, diffSeq, maskSql, prepare, compareSql, inlineDiff, unifiedText, lexSql, parseScript, compareStructure, summaryText, pairLines, lineSim };
+</script>
+
+<!-- ====================== 介面 ====================== -->
+<script>
+"use strict";
+const DIFF_CSS = `
+table.diff{border-collapse:collapse;width:100%;font-family:var(--theme-font-mono);font-size:13px;line-height:1.5;table-layout:fixed}
+table.diff td{padding:0 6px;vertical-align:top}
+table.diff td.ln{width:52px;text-align:right;color:#6e6e6e;background:#efefef;user-select:none;border-right:1px solid #e4e4e4}
+table.diff td.mk{width:20px;text-align:center;color:#6e6e6e;user-select:none}
+table.diff td.code{white-space:pre;overflow:hidden}
+table.diff.wrap td.code{white-space:pre-wrap;word-break:break-all}
+table.diff td.sep{border-left:2px solid #d8d8d8}
+tr.del td.cl,tr.del td.code.cl{background:#e8e8e8} tr.del td.cl .hl,tr.mod td.cl .hl{background:#8d8d8d7a;border-radius:2px}
+tr.add td.cr,tr.add td.code.cr{background:#e9e9e9} tr.add td.cr .hl,tr.mod td.cr .hl{background:#b0b0b080;border-radius:2px}
+tr.mod td.cl{background:#e8e8e8} tr.mod td.cr{background:#e9e9e9}
+tr.del td.ln.cl,tr.mod td.ln.cl{background:#e8e8e8} tr.add td.ln.cr,tr.mod td.ln.cr{background:#e9e9e9}
+tr.del td.cr.code,tr.add td.cl.code{background:repeating-linear-gradient(135deg,#efefef,#efefef 4px,#ebebeb 4px,#ebebeb 8px)}
+tr.skip td{color:#a4a4a4;font-style:italic}
+tr.skip td.code.on{background:#f7f7f7}
+tr.eq.soft td.mk{color:#616161}
+tr.fold td{background:#eaeaea;color:#757575;text-align:center;cursor:pointer;font-family:var(--theme-font-sans);font-size:12px;padding:2px}
+tr.fold:hover td{background:#dedede}
+tr.cur td.mk{background:#ebebeb}
+tr.cur td.ln{box-shadow:inset 3px 0 0 #acacac}
+tr.mv td.code.cl,tr.mv td.code.cr{background:#e8e8e8} tr.mv td.ln.cl,tr.mv td.ln.cr{background:#d3d3d3} tr.mv td.mk{color:#8f8f8f;font-weight:700}
+tr.flash td{animation:flash 1.8s ease-out}
+@keyframes flash{0%,35%{box-shadow:inset 0 0 0 999px #e3e3e399}}
+.sum{padding:12px 16px;background:#efefef;font-family:var(--theme-font-sans)}
+.sum-ov{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sum-card{background:#fefefe;border:1px solid #d1d1d1;border-radius:8px;padding:6px 14px;min-width:92px}
+.sum-card .v{font-size:20px;font-weight:700;line-height:1.3}
+.sum-card .l{font-size:12px;color:#6b6b6b}
+.sum-card.eq .v{color:#6b6b6b}.sum-card.mod .v{color:#797979}.sum-card.add .v{color:#727272}.sum-card.del .v{color:#696969}.sum-card.warn .v{color:#888888}
+.sum-none{background:#fefefe;border:1px solid #d1d1d1;border-radius:8px;padding:28px;text-align:center;color:#727272;font-size:15px}
+.sec{background:#fefefe;border:1px solid #d1d1d1;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.sec-hd{padding:7px 12px;background:#efefef;border-bottom:1px solid #d1d1d1;display:flex;gap:10px;align-items:center}
+.sec-hd .badge{font-size:12px;padding:1px 9px;border-radius:10px;color:#fefefe;white-space:nowrap}
+.badge.mod{background:#616161}.badge.add{background:#727272}.badge.del{background:#696969}.badge.oth{background:#959595}
+.sec-hd .lbl{font-family:var(--theme-font-mono);font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-hd .loc{font-size:12px;color:#757575;white-space:nowrap}
+.sec-hd .loc[data-ln]{cursor:pointer;text-decoration:underline dotted}
+table.sumt{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+table.sumt th{text-align:left;font-weight:600;color:#6b6b6b;font-size:12px;padding:4px 8px;border-bottom:1px solid #e4e4e4;background:#f7f7f7}
+table.sumt td{padding:4px 8px;border-bottom:1px solid #ebebeb;vertical-align:top}
+table.sumt td.c{color:#6b6b6b;font-size:12px;word-break:break-all}
+table.sumt td.k{text-align:center;font-weight:700}
+table.sumt td.a,table.sumt td.b{font-family:var(--theme-font-mono);white-space:pre-wrap;word-break:break-all}
+table.sumt td.t{white-space:normal}
+tr.k-add td.k{color:#727272} tr.k-del td.k{color:#696969} tr.k-mod td.k{color:#797979} tr.k-info td.k{color:#757575} tr.k-warn td.k{color:#888888}
+tr.k-add td.b{background:#e9e9e9} tr.k-del td.a{background:#e8e8e8} tr.k-mod td.a{background:#eeeeee} tr.k-mod td.b{background:#e9e9e9}
+tr.k-warn td{background:#ebebeb} tr.k-info td.t{color:#777777}
+.note{font-family:var(--theme-font-sans);font-size:12px;color:#6b6b6b;margin-top:2px;white-space:normal}
+.note.w{color:#888888;font-weight:600}
+tr.jump{cursor:pointer} tr.jump:hover td{filter:brightness(.96)}
+pre.sum-code{margin:0;padding:8px 12px;font-family:var(--theme-font-mono);font-size:12.5px;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;color:#464646}
+.sec.add pre.sum-code{background:#e9e9e9}.sec.del pre.sum-code{background:#e8e8e8}
+`;
+document.head.insertAdjacentHTML('beforeend', '<style>' + DIFF_CSS + '</style>');
+
+const $ = id => document.getElementById(id);
+const state = { res: null, names: { A: '', B: '' }, expanded: new Set(), cur: -1, view: 'side', tab: 'diff', foldOf: new Map() };
+const CONTEXT = 3;
+
+function opts() {
+  return {
+    ignoreCase: $('optCase').checked, ignoreWS: $('optWS').checked, ignoreComments: $('optComment').checked,
+    ignoreBlank: $('optBlank').checked, ignoreTerm: $('optTerm').checked
+  };
+}
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800); }
+function updateCount(side) { const v = $('txt' + side).value; $('cnt' + side).textContent = v ? (v.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').length + ' 行') : ''; }
+
+/* ---------- 讀檔與編碼偵測 ---------- */
+async function loadFile(side, file) {
+  const buf = await file.arrayBuffer();
+  const enc = $('optEnc').value; let text, used = enc;
+  if (enc === 'auto') {
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); used = 'UTF-8'; }
+    catch { text = new TextDecoder('big5').decode(buf); used = 'Big5'; }
+  } else { text = new TextDecoder(enc).decode(buf); used = enc === 'big5' ? 'Big5' : 'UTF-8'; }
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  $('txt' + side).value = text;
+  state.names[side] = file.name;
+  $('name' + side).textContent = `${file.name}（${used}）`;
+  $('name' + side).title = file.name;
+  updateCount(side);
+}
+for (const side of ['A', 'B']) {
+  const pane = $('pane' + side), fi = $('file' + side);
+  pane.querySelector('[data-open]').onclick = () => fi.click();
+  fi.onchange = () => { if (fi.files[0]) loadFile(side, fi.files[0]); fi.value = ''; };
+  pane.addEventListener('dragover', e => { e.preventDefault(); pane.classList.add('drag'); });
+  pane.addEventListener('dragleave', () => pane.classList.remove('drag'));
+  pane.addEventListener('drop', e => { e.preventDefault(); pane.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) loadFile(side, f); });
+  const ta = $('txt' + side);
+  ta.addEventListener('input', () => { updateCount(side); if (!ta.value) { state.names[side] = ''; $('name' + side).textContent = '（貼上 SQL 或拖放檔案）'; } });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText('    ', s, ta.selectionEnd, 'end'); updateCount(side); }
+  });
+}
+
+/* ---------- 比對與畫面 ---------- */
+function runCompare() {
+  const a = $('txtA').value, b = $('txtB').value;
+  if (!a && !b) { toast('請先輸入或開啟要比對的 SQL'); return; }
+  const t0 = performance.now();
+  state.res = compareSql(a, b, opts());
+  state.ms = Math.round(performance.now() - t0);
+  state.expanded.clear(); state.cur = -1;
+  showResult();
+}
+
+function showResult() {
+  $('editView').style.display = 'none';
+  $('resultView').style.display = 'flex';
+  $('btnEdit').disabled = false;
+  render();
+  if (state.res.blocks.length) { if (state.tab === 'diff') goto(0); else { state.cur = 0; markCurrent(); } }
+}
+function showEdit() {
+  $('editView').style.display = 'flex';
+  $('resultView').style.display = 'none';
+  $('btnEdit').disabled = true;
+}
+
+function visibility(rows, blocks) {
+  const vis = new Array(rows.length).fill(!$('optOnlyDiff').checked);
+  if ($('optOnlyDiff').checked) for (const [s, e] of blocks) for (let i = Math.max(0, s - CONTEXT); i <= Math.min(rows.length - 1, e + CONTEXT); i++) vis[i] = true;
+  return vis;
+}
+
+function render() {
+  const res = state.res; if (!res) return;
+  const o = opts(); const { rows, stats, blocks, A, B } = res;
+  const side = state.view === 'side';
+  const nA = state.names.A || '舊版（貼上內容）', nB = state.names.B || '新版（貼上內容）';
+  $('resFiles').textContent = `舊：${nA}　⇄　新：${nB}`;
+  $('resOpts').textContent = optText(o);
+
+  const vis = visibility(rows, blocks);
+  const h = [`<table class="diff${$('optWrap').checked ? ' wrap' : ''}" id="diffTable">`];
+  h.push(side ? '<colgroup><col style="width:52px"><col style="width:20px"><col><col style="width:52px"><col style="width:20px"><col></colgroup>'
+              : '<colgroup><col style="width:52px"><col style="width:52px"><col style="width:20px"><col></colgroup>');
+  const E = escHtml;
+  const mvC = r => r.mv !== undefined ? ' mv' : '';
+  const mvT = r => r.mv === undefined ? '' : ` title="${r.t === 'del' ? `已搬移至新版第 ${r.mv + 1} 行` : `由舊版第 ${r.mv + 1} 行搬移而來`}"`;
+  state.foldOf = new Map();
+  for (let i = 0; i < rows.length; i++) {
+    if (!vis[i]) {
+      let j = i; while (j < rows.length && !vis[j]) j++;
+      if (state.expanded.has(i)) { for (let x = i; x < j; x++) vis[x] = true; }
+      else { for (let x = i; x < j; x++) state.foldOf.set(x, i); h.push(`<tr class="fold" data-fold="${i}"><td colspan="${side ? 6 : 4}">⋯ 展開 ${j - i} 行相同內容 ⋯</td></tr>`); i = j - 1; continue; }
+    }
+    const r = rows[i], id = `id="r${i}"`;
+    const L = r.l !== undefined ? r.l + 1 : '', R = r.r !== undefined ? r.r + 1 : '';
+    if (side) {
+      if (r.t === 'eq') h.push(`<tr ${id} class="eq${r.soft ? ' soft' : ''}"><td class="ln">${L}</td><td class="mk">${r.soft ? '≈' : ''}</td><td class="code">${E(A.lines[r.l])}</td><td class="ln sep">${R}</td><td class="mk">${r.soft ? '≈' : ''}</td><td class="code">${E(B.lines[r.r])}</td></tr>`);
+      else if (r.t === 'mod') h.push(`<tr ${id} class="mod"><td class="ln cl">${L}</td><td class="mk cl">~</td><td class="code cl">${r.hl}</td><td class="ln sep cr">${R}</td><td class="mk cr">~</td><td class="code cr">${r.hr}</td></tr>`);
+      else if (r.t === 'del') h.push(`<tr ${id} class="del${mvC(r)}"${mvT(r)}><td class="ln cl">${L}</td><td class="mk cl">${r.mv !== undefined ? '⇅' : '−'}</td><td class="code cl">${E(A.lines[r.l])}</td><td class="ln sep"></td><td class="mk"></td><td class="code cr"></td></tr>`);
+      else if (r.t === 'add') h.push(`<tr ${id} class="add${mvC(r)}"${mvT(r)}><td class="ln"></td><td class="mk"></td><td class="code cl"></td><td class="ln sep cr">${R}</td><td class="mk cr">${r.mv !== undefined ? '⇅' : '+'}</td><td class="code cr">${E(B.lines[r.r])}</td></tr>`);
+      else if (r.l !== undefined) h.push(`<tr ${id} class="skip" title="依比對選項忽略"><td class="ln">${L}</td><td class="mk">·</td><td class="code on">${E(A.lines[r.l])}</td><td class="ln sep"></td><td class="mk"></td><td class="code"></td></tr>`);
+      else h.push(`<tr ${id} class="skip" title="依比對選項忽略"><td class="ln"></td><td class="mk"></td><td class="code"></td><td class="ln sep">${R}</td><td class="mk">·</td><td class="code on">${E(B.lines[r.r])}</td></tr>`);
+    } else {
+      if (r.t === 'eq') h.push(`<tr ${id} class="eq${r.soft ? ' soft' : ''}"><td class="ln">${L}</td><td class="ln">${R}</td><td class="mk">${r.soft ? '≈' : ''}</td><td class="code">${E(B.lines[r.r])}</td></tr>`);
+      else if (r.t === 'mod') h.push(`<tr ${id} class="mod"><td class="ln cl">${L}</td><td class="ln cl"></td><td class="mk cl">−</td><td class="code cl">${r.hl}</td></tr><tr class="mod"><td class="ln cr"></td><td class="ln cr">${R}</td><td class="mk cr">+</td><td class="code cr">${r.hr}</td></tr>`);
+      else if (r.t === 'del') h.push(`<tr ${id} class="del${mvC(r)}"${mvT(r)}><td class="ln cl">${L}</td><td class="ln cl"></td><td class="mk cl">${r.mv !== undefined ? '⇅' : '−'}</td><td class="code cl">${E(A.lines[r.l])}</td></tr>`);
+      else if (r.t === 'add') h.push(`<tr ${id} class="add${mvC(r)}"${mvT(r)}><td class="ln cr"></td><td class="ln cr">${R}</td><td class="mk cr">${r.mv !== undefined ? '⇅' : '+'}</td><td class="code cr">${E(B.lines[r.r])}</td></tr>`);
+      else h.push(`<tr ${id} class="skip" title="依比對選項忽略"><td class="ln">${L}</td><td class="ln">${R}</td><td class="mk">·</td><td class="code on">${E(r.l !== undefined ? A.lines[r.l] : B.lines[r.r])}</td></tr>`);
+    }
+  }
+  h.push('</table>');
+  $('resultBody').innerHTML = blocks.length || rows.length ? h.join('') : '';
+
+  $('stats').innerHTML = `<span class="stat-add">+${stats.add} 新增</span>　<span class="stat-del">−${stats.del} 刪除</span>　<span class="stat-mod">~${stats.mod} 修改</span>　<span class="stat-mv">⇅${stats.move} 搬移</span>　<span class="stat-skip">·${stats.skip} 忽略</span>　｜　舊 ${stats.linesA} 行 / 新 ${stats.linesB} 行　｜　${state.ms} ms`;
+  for (const b of ['btnCopy', 'btnExport', 'btnCopySum']) $(b).disabled = false;
+  renderSummary();
+  applyTab();
+  $('btnPrev').disabled = $('btnNext').disabled = !blocks.length;
+  markCurrent();
+}
+
+function optText(o) {
+  const a = [];
+  if (o.ignoreCase) a.push('忽略大小寫'); if (o.ignoreWS) a.push('忽略空白'); if (o.ignoreComments) a.push('忽略註解');
+  if (o.ignoreBlank) a.push('忽略空行'); if (o.ignoreTerm) a.push('忽略結尾 ; /');
+  return a.length ? '選項：' + a.join('、') : '選項：完全比對';
+}
+
+/* ---------- 差異導覽 ---------- */
+function markCurrent() {
+  document.querySelectorAll('#diffTable tr.cur').forEach(tr => tr.classList.remove('cur'));
+  const bl = state.res ? state.res.blocks : [];
+  $('navPos').textContent = `${state.cur >= 0 ? state.cur + 1 : 0} / ${bl.length}`;
+  if (state.cur < 0 || !bl[state.cur]) return;
+  const [s, e] = bl[state.cur];
+  for (let i = s; i <= e; i++) { const tr = $('r' + i); if (tr) { tr.classList.add('cur'); if (tr.nextElementSibling && !tr.nextElementSibling.id && state.view === 'inline' && state.res.rows[i].t === 'mod') tr.nextElementSibling.classList.add('cur'); } }
+}
+function goto(n) {
+  const bl = state.res && state.res.blocks; if (!bl || !bl.length) return;
+  if (state.tab !== 'diff') setTab('diff');
+  state.cur = (n + bl.length) % bl.length;
+  markCurrent();
+  const tr = $('r' + bl[state.cur][0]);
+  if (tr) { const sc = $('resultScroll'); sc.scrollTop = tr.offsetTop - sc.clientHeight / 3; }
+}
+
+/* ---------- 結構差異摘要 ---------- */
+function sumCounts(S) {
+  return {
+    mod: S.secs.filter(s => s.st === 'mod').length, add: S.secs.filter(s => s.st === 'add').length, del: S.secs.filter(s => s.st === 'del').length,
+    warn: S.secs.reduce((n, s) => n + s.items.filter(i => i.k === 'warn' || i.nw).length, 0)
+  };
+}
+function summaryHtml(S, interactive) {
+  const E = escHtml, res = state.res, c = sumCounts(S);
+  const card = (l, v, cls) => `<div class="sum-card ${cls || ''}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  const loc = (side, ln) => ln == null || ln < 0 ? '' : ` data-side="${side}" data-ln="${ln}"`;
+  const cut = (t, n = 400) => { t = t == null ? '' : String(t); return t.length > n ? t.slice(0, n) + ' …' : t; };
+  const h = ['<div class="sum">'];
+  h.push('<div class="sum-ov">' + card('敘述數（舊 → 新）', `${S.nA} → ${S.nB}`) + card('結構相同', S.same, 'eq') + card('有變更', c.mod, 'mod') +
+    card('新增敘述', c.add, 'add') + card('刪除敘述', c.del, 'del') + card('需注意', c.warn, 'warn') + '</div>');
+  if (!S.secs.length) h.push(`<div class="sum-none">✔ 未發現 SQL 結構差異${res.blocks.length ? '（差異僅在註解、格式或未納入解析的內容，請參閱逐行差異）' : ''}</div>`);
+  const ST = { mod: '變更', add: '新增', del: '刪除', oth: '其他' }, MK = { add: '+', del: '−', mod: '~', info: 'ℹ', warn: '⚠' };
+  for (const sec of S.secs) {
+    const la = sec.a ? sec.a.ln : null, lb = sec.b ? sec.b.ln : null;
+    h.push(`<div class="sec ${sec.st}"><div class="sec-hd"><span class="badge ${sec.st}">${ST[sec.st]}</span><span class="lbl" title="${E(sec.label)}">${E(sec.label)}</span>`);
+    if (la != null) h.push(`<span class="loc"${interactive ? loc('A', la) : ''}>舊 L${la + 1}${sec.a.lnEnd > la ? '–' + (sec.a.lnEnd + 1) : ''}</span>`);
+    if (lb != null) h.push(`<span class="loc"${interactive ? loc('B', lb) : ''}>新 L${lb + 1}${sec.b.lnEnd > lb ? '–' + (sec.b.lnEnd + 1) : ''}</span>`);
+    h.push('</div>');
+    if (sec.st === 'add' || sec.st === 'del') {
+      const s0 = sec.a || sec.b, lines = (sec.a ? res.A : res.B).lines.slice(s0.ln, s0.lnEnd + 1);
+      h.push(`<pre class="sum-code">${E(lines.slice(0, 15).join('\n'))}${lines.length > 15 ? `\n… 其餘 ${lines.length - 15} 行` : ''}</pre>`);
+    }
+    if (sec.items.length) {
+      h.push('<table class="sumt"><colgroup><col style="width:210px"><col style="width:28px"><col><col></colgroup><tr><th>類別</th><th></th><th>舊版</th><th>新版</th></tr>');
+      for (const it of sec.items) {
+        const where = it.lb != null && it.lb >= 0 ? loc('B', it.lb) : it.la != null && it.la >= 0 ? loc('A', it.la) : '';
+        const note = it.note ? `<div class="note${it.nw ? ' w' : ''}">${it.nw ? '⚠ ' : ''}${E(it.note)}</div>` : '';
+        const tr = `<tr class="k-${it.k}${interactive && where ? ' jump' : ''}"${interactive ? where : ''}${interactive && where ? ' title="點擊跳至逐行差異"' : ''}><td class="c">${E(it.cat)}</td><td class="k">${MK[it.k]}</td>`;
+        if (it.k === 'info' || it.k === 'warn') h.push(`${tr}<td class="t" colspan="2">${E(it.text)}${note}</td></tr>`);
+        else if (it.k === 'add') h.push(`${tr}<td class="a"></td><td class="b">${E(cut(it.b))}${note}</td></tr>`);
+        else if (it.k === 'del') h.push(`${tr}<td class="a">${E(cut(it.a))}${note}</td><td class="b"></td></tr>`);
+        else h.push(`${tr}<td class="a">${E(cut(it.a))}</td><td class="b">${E(cut(it.b))}${note}</td></tr>`);
+      }
+      h.push('</table>');
+    }
+    h.push('</div>');
+  }
+  h.push('</div>');
+  return h.join('');
+}
+function renderSummary() {
+  const res = state.res, el = $('summaryBody'), bd = $('sumBadge');
+  if (!res.sum) { el.innerHTML = `<div class="sum"><div class="sum-none" style="color:#696969">結構解析失敗：${escHtml(res.sumErr || '未知錯誤')}（逐行差異不受影響）</div></div>`; bd.textContent = '!'; bd.className = 'bdg'; return; }
+  el.innerHTML = summaryHtml(res.sum, true);
+  const c = sumCounts(res.sum), n = c.mod + c.add + c.del + (res.sum.secs.some(s => s.st === 'oth') ? 1 : 0);
+  bd.textContent = n; bd.className = 'bdg' + (n ? '' : ' zero');
+  bd.title = `變更 ${c.mod}、新增 ${c.add}、刪除 ${c.del}、需注意 ${c.warn}`;
+}
+function applyTab() {
+  const sum = state.tab === 'sum', res = state.res;
+  $('tabDiff').classList.toggle('on', !sum); $('tabSum').classList.toggle('on', sum);
+  $('resultBody').style.display = sum ? 'none' : '';
+  $('summaryBody').style.display = sum ? 'block' : 'none';
+  $('identical').style.display = !sum && res && !res.blocks.length ? 'block' : 'none';
+}
+function setTab(t) { state.tab = t; applyTab(); saveOpts(); $('resultScroll').scrollTop = 0; if (t === 'diff' && state.cur >= 0) { const bl = state.res.blocks[state.cur]; const tr = bl && $('r' + bl[0]); if (tr) $('resultScroll').scrollTop = tr.offsetTop - $('resultScroll').clientHeight / 3; } }
+function jumpTo(side, ln) {
+  const rows = state.res.rows;
+  let idx = rows.findIndex(r => (side === 'A' ? r.l : r.r) === ln);
+  if (idx < 0) idx = rows.findIndex(r => (side === 'A' ? r.l : r.r) > ln);
+  if (idx < 0) return;
+  state.tab = 'diff';
+  if (state.foldOf.has(idx)) { state.expanded.add(state.foldOf.get(idx)); render(); }
+  applyTab(); saveOpts();
+  const bi = state.res.blocks.findIndex(([s, e]) => idx >= s && idx <= e);
+  if (bi >= 0) { state.cur = bi; markCurrent(); }
+  const tr = $('r' + idx); if (!tr) return;
+  const sc = $('resultScroll'); sc.scrollTop = tr.offsetTop - sc.clientHeight / 3;
+  tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash');
+}
+async function copyText(txt, msg) {
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast(msg);
+}
+
+/* ---------- 匯出 ---------- */
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+function exportHtml() {
+  const s = state.res.stats;
+  const nA = state.names.A || '舊版（貼上內容）', nB = state.names.B || '新版（貼上內容）';
+  const tbl = $('diffTable') ? $('diffTable').outerHTML.replace(/\s(cur|flash)\b/g, '').replace(/ class="(cur|flash)"/g, '') : '';
+  const doc = `<!DOCTYPE html><html lang="zh-Hant-TW"><head><meta charset="UTF-8"><title>SQL 差異報表 ${escHtml(nA)} vs ${escHtml(nB)}</title>
+<style>:root{--theme-font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Noto Sans CJK TC",system-ui,sans-serif;--theme-font-mono:"Cascadia Mono",Consolas,"SFMono-Regular",monospace}body{font-family:var(--theme-font-sans);margin:20px;color:#2f2f2f;background:#f4f4f4}h1{font-size:20px;color:#616161}h2{font-size:16px;margin:22px 0 0;color:#505050}table.meta td{padding:2px 12px 2px 0;font-size:14px}.wrapd{border:1px solid #d1d1d1;border-radius:6px;overflow:hidden;margin-top:14px}${DIFF_CSS}.diff-theme{background:#fefefe;color:#2f2f2f}.wrapd tr.del td.cl,.wrapd tr.mod td.cl{background:#e8e8e8}.wrapd tr.add td.cr,.wrapd tr.mod td.cr{background:#e9e9e9}</style></head><body>
+<h1>Oracle SQL 差異報表</h1>
+<table class="meta">
+<tr><td>舊版</td><td>${escHtml(nA)}（${s.linesA} 行）</td></tr>
+<tr><td>新版</td><td>${escHtml(nB)}（${s.linesB} 行）</td></tr>
+<tr><td>比對結果</td><td>新增 ${s.add} 行、刪除 ${s.del} 行、修改 ${s.mod} 行、搬移 ${s.move} 行、忽略 ${s.skip} 行，共 ${state.res.blocks.length} 處差異</td></tr>
+<tr><td>比對選項</td><td>${escHtml(optText(opts()).replace('選項：', ''))}</td></tr>
+<tr><td>產出時間</td><td>${new Date().toLocaleString('zh-TW')}</td></tr>
+</table>
+<h2>一、SQL 結構差異摘要</h2>
+<div class="wrapd">${state.res.sum ? summaryHtml(state.res.sum, false) : '<p style="padding:20px">結構解析失敗：' + escHtml(state.res.sumErr) + '</p>'}</div>
+<h2>二、逐行差異</h2>
+<div class="wrapd">${state.res.blocks.length ? tbl : '<p style="padding:20px">依比對選項，兩邊內容完全相同。</p>'}</div>
+</body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+  a.download = `SQL_Compare_${stamp()}.html`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('已匯出 HTML 報表');
+}
+async function copyUnified() {
+  const txt = unifiedText(state.res, state.names.A || 'old.sql', state.names.B || 'new.sql');
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast('已複製差異內容');
+}
+
+/* ---------- 範例 ---------- */
+const SAMPLE_A = `-- 客戶餘額查詢（舊版）
+SELECT A.CUSTID,
+       A.NAME,
+       B.BALANCE
+  FROM CM_CUSTOMER A,
+       CM_ACCOUNT  B
+ WHERE A.CUSTID = B.CUSTID
+   AND A.DATA_DT = '11508'
+   AND B.STATUS IN ('01','02')
+ ORDER BY A.CUSTID;
+/`;
+const SAMPLE_B = `/* 客戶餘額查詢（新版）
+   修改：改用 ANSI JOIN、期別參數化 */
+select a.custid,
+       a.name,
+       b.cur_balance,
+       b.ccy
+  from cm_customer a
+  LEFT JOIN cm_account b
+    ON a.custid = b.custid
+ where a.data_dt = :P_PERIOD
+   and b.status in ('01','02')
+ order by a.custid`;
+
+/* ---------- 事件 ---------- */
+$('btnCompare').onclick = runCompare;
+$('btnEdit').onclick = showEdit;
+$('btnSwap').onclick = () => {
+  [$('txtA').value, $('txtB').value] = [$('txtB').value, $('txtA').value];
+  [state.names.A, state.names.B] = [state.names.B, state.names.A];
+  [$('nameA').textContent, $('nameB').textContent] = [$('nameB').textContent, $('nameA').textContent];
+  updateCount('A'); updateCount('B');
+  if ($('resultView').style.display === 'flex') runCompare();
+};
+$('btnClear').onclick = () => {
+  for (const s of ['A', 'B']) { $('txt' + s).value = ''; state.names[s] = ''; $('name' + s).textContent = '（貼上 SQL 或拖放檔案）'; updateCount(s); }
+  state.res = null; showEdit(); $('stats').textContent = '尚未比對'; $('navPos').textContent = '0 / 0';
+  for (const b of ['btnCopy', 'btnExport', 'btnPrev', 'btnNext', 'btnCopySum']) $(b).disabled = true;
+};
+$('btnSample').onclick = () => {
+  $('txtA').value = SAMPLE_A; $('txtB').value = SAMPLE_B;
+  state.names.A = 'cust_balance_v1.sql'; state.names.B = 'cust_balance_v2.sql';
+  $('nameA').textContent = state.names.A + '（範例）'; $('nameB').textContent = state.names.B + '（範例）';
+  updateCount('A'); updateCount('B'); showEdit();
+};
+$('btnPrev').onclick = () => goto(state.cur - 1);
+$('btnNext').onclick = () => goto(state.cur + 1);
+$('btnExport').onclick = exportHtml;
+$('btnCopy').onclick = copyUnified;
+$('btnCopySum').onclick = () => { if (state.res && state.res.sum) copyText(summaryText(state.res.sum, state.names.A || '舊版（貼上內容）', state.names.B || '新版（貼上內容）'), '已複製結構摘要'); };
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { if (state.res) setTab(b.dataset.tab); }));
+$('summaryBody').addEventListener('click', e => {
+  const el = e.target.closest('[data-ln]'); if (!el) return;
+  jumpTo(el.dataset.side, +el.dataset.ln);
+});
+$('resultBody').addEventListener('click', e => {
+  const tr = e.target.closest('tr.fold'); if (!tr) return;
+  state.expanded.add(+tr.dataset.fold); render();
+});
+['optCase', 'optWS', 'optComment', 'optBlank', 'optTerm'].forEach(id => $(id).addEventListener('change', () => { saveOpts(); if (state.res && $('resultView').style.display === 'flex') runCompare(); }));
+['optOnlyDiff', 'optWrap'].forEach(id => $(id).addEventListener('change', () => { saveOpts(); state.expanded.clear(); render(); }));
+document.querySelectorAll('input[name=view]').forEach(r => r.addEventListener('change', () => { state.view = r.value; saveOpts(); render(); if (state.cur >= 0) goto(state.cur); }));
+$('optEnc').addEventListener('change', saveOpts);
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runCompare(); }
+  else if (e.key === 'F7') { e.preventDefault(); goto(state.cur + (e.shiftKey ? -1 : 1)); }
+  else if (e.key === 'Escape' && $('resultView').style.display === 'flex') showEdit();
+  else if (e.altKey && (e.key === '1' || e.key === '2') && state.res && $('resultView').style.display === 'flex') { e.preventDefault(); setTab(e.key === '1' ? 'diff' : 'sum'); }
+});
+
+/* ---------- 設定保存 ---------- */
+const OPT_IDS = ['optCase', 'optWS', 'optComment', 'optBlank', 'optTerm', 'optOnlyDiff', 'optWrap'];
+function saveOpts() {
+  try {
+    const o = {}; OPT_IDS.forEach(id => o[id] = $(id).checked); o.view = state.view; o.enc = $('optEnc').value; o.tab = state.tab;
+    localStorage.setItem('sqlCompareOpts', JSON.stringify(o));
+  } catch { }
+}
+(function loadOpts() {
+  try {
+    const o = JSON.parse(localStorage.getItem('sqlCompareOpts') || 'null'); if (!o) return;
+    OPT_IDS.forEach(id => { if (id in o) $(id).checked = o[id]; });
+    if (o.view) { state.view = o.view; document.querySelector(`input[name=view][value=${o.view}]`).checked = true; }
+    if (o.enc) $('optEnc').value = o.enc;
+    if (o.tab) state.tab = o.tab;
+  } catch { }
+})();
+</script>
+<a class="home-link" href="index.html">⌂ 工具入口</a>
+<button id="themeToggle" class="theme-toggle" type="button">☀️ 淺色模式</button>
+</body>
+</html>

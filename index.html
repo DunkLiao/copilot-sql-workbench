@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#202A33">
+  <meta name="description" content="SQL SPA Tools 銀行資料與 SQL 開發工具入口。">
+  <title>SQL SPA Tools｜鎖頭銀行</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --graphite: #202A33;
+      --ice: #70B7D5;
+      --ice-text: #365A69;
+      --silver: #D8E0E6;
+      --snow: #F7FAFC;
+      --slate: #25323C;
+      --muted: #59656E;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--snow);
+      color: var(--slate);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    }
+
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 clamp(20px, 6vw, 88px);
+      background: var(--graphite);
+      color: var(--snow);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 10px;
+      height: 28px;
+      border-radius: 5px;
+      background: var(--ice);
+    }
+
+    .context {
+      color: #D8E0E6;
+      font-size: 13px;
+    }
+
+    main {
+      width: min(100% - 40px, 1040px);
+      margin: auto;
+      padding: 76px 0 88px;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--ice-text);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      color: var(--graphite);
+      font-size: clamp(40px, 7vw, 68px);
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+
+    .lead {
+      max-width: 650px;
+      margin: 26px 0 0;
+      color: var(--muted);
+      font-size: clamp(17px, 2.5vw, 21px);
+      line-height: 1.8;
+    }
+
+    .entry-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 42px;
+    }
+
+    .entry-link {
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 0 24px;
+      border: 2px solid var(--graphite);
+      border-radius: 7px;
+      background: var(--graphite);
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background-color .16s ease, color .16s ease, transform .16s ease;
+    }
+
+    .entry-link:hover {
+      background: var(--ice);
+      color: var(--graphite);
+      transform: translateY(-1px);
+    }
+
+    .entry-link:focus-visible {
+      outline: 3px solid var(--ice);
+      outline-offset: 4px;
+    }
+
+    .arrow { font-size: 20px; line-height: 1; }
+
+    .entry-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .rule {
+      height: 2px;
+      width: min(100%, 720px);
+      margin-top: 64px;
+      background: var(--silver);
+    }
+
+    footer {
+      padding: 20px clamp(20px, 6vw, 88px);
+      border-top: 1px solid var(--silver);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 560px) {
+      .topbar { align-items: flex-start; flex-direction: column; justify-content: center; gap: 5px; padding-top: 14px; padding-bottom: 14px; }
+      main { padding-top: 58px; }
+      .entry-row { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="SQL SPA Tools 首頁">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>SQL SPA TOOLS</span>
+    </a>
+    <span class="context">鎖頭銀行 M365 Copilot 黑客松</span>
+  </header>
+
+  <main>
+    <p class="eyebrow">資料分析與開發工具</p>
+    <h1>SQL SPA Tools</h1>
+    <p class="lead">集中使用 SQL 開發、資料檢視與治理工具。從此入口前往 SQL SPA Tools 工作平台。</p>
+    <div class="entry-row">
+      <a class="entry-link" href="./sql-spa-tools-main/index.html">
+        <span>進入 SQL SPA Tools</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <span class="entry-note">開啟專案工作平台</span>
+    </div>
+    <div class="rule" aria-hidden="true"></div>
+  </main>
+
+  <footer>鎖頭銀行｜M365 Copilot 黑客松參賽原型</footer>
+</body>
+</html>

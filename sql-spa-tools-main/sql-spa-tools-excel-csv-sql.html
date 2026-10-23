@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL SPA Tools｜Excel／CSV 轉 SQL</title>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    :root { --csv-max: 1500px;  }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; font-family: var(--theme-font-sans); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .csv-app { width: min(var(--csv-max), calc(100% - 32px)); margin: 0 auto; padding: 26px 0 82px; }
+    .csv-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+    .csv-header h1 { margin: 0; color: var(--theme-text); font-size: clamp(24px, 4vw, 36px); }
+    .csv-header p { flex: 1; min-width: 260px; margin: 0; color: var(--theme-surface); line-height: 1.6; }
+    .csv-grid { display: grid; grid-template-columns: minmax(340px, .9fr) minmax(420px, 1.1fr); gap: 18px; align-items: start; }
+    .csv-panel { min-width: 0; border: 1px solid var(--theme-border); border-radius: 16px; background: var(--theme-surface); box-shadow: var(--theme-shadow); overflow: hidden; }
+    .csv-panel > h2 { margin: 0; padding: 15px 18px; border-bottom: 1px solid var(--theme-border); background: var(--theme-surface-alt); color: var(--theme-text); font-size: 17px; }
+    .csv-section { padding: 16px 18px; border-bottom: 1px solid var(--theme-border-soft); }
+    .csv-section:last-child { border-bottom: 0; }
+    .csv-section h3 { margin: 0 0 11px; color: var(--theme-text); font-size: 14px; }
+    .csv-drop { display: grid; min-height: 112px; place-items: center; gap: 7px; padding: 20px; border: 1px dashed var(--theme-secondary); border-radius: 11px; background: var(--theme-surface-soft); color: var(--theme-muted); text-align: center; }
+    .csv-drop.dragging { border-color: var(--theme-primary); background: var(--theme-info-soft); }
+    .csv-drop strong { color: var(--theme-primary); }
+    .csv-drop input { max-width: 100%; }
+    .csv-text { width: 100%; min-height: 168px; resize: vertical; border: 1px solid var(--theme-border); border-radius: 9px; padding: 11px; background: var(--theme-surface); color: var(--theme-text); font: 13px/1.55 var(--theme-font-mono); }
+    .csv-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 14px; }
+    .csv-field { display: grid; gap: 5px; color: var(--theme-muted); font-size: 13px; }
+    .csv-field.full { grid-column: 1 / -1; }
+    .csv-field input, .csv-field select { width: 100%; border: 1px solid var(--theme-border); border-radius: 8px; padding: 8px 9px; background: var(--theme-surface); color: var(--theme-text); }
+    .csv-check { display: flex; align-items: center; gap: 7px; min-height: 36px; color: var(--theme-text); }
+    .csv-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .csv-btn { border: 1px solid var(--theme-border); border-radius: 8px; padding: 8px 12px; background: var(--theme-surface); color: var(--theme-text); }
+    .csv-btn:hover { border-color: var(--theme-primary); background: var(--theme-surface-soft); }
+    .csv-btn.primary { border-color: var(--theme-primary-hover); background: var(--theme-primary); color: #fdfdfd; }
+    .csv-btn.secondary { border-color: var(--theme-secondary); background: var(--theme-secondary-soft); }
+    .csv-message { margin-top: 10px; padding: 9px 11px; border-radius: 8px; color: var(--theme-info); background: var(--theme-info-soft); font-size: 13px; line-height: 1.5; }
+    .csv-message.warning { color: var(--theme-warning); background: var(--theme-warning-soft); }
+    .csv-message.error { color: var(--theme-danger); background: var(--theme-danger-soft); }
+    .csv-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 13px; }
+    .csv-stat { padding: 8px 10px; border: 1px solid var(--theme-border); border-radius: 8px; background: var(--theme-surface-alt); color: var(--theme-text); font-size: 13px; }
+    .csv-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--theme-border); }
+    .csv-tab { border: 0; border-bottom: 2px solid transparent; padding: 9px 12px; background: transparent; color: var(--theme-muted); }
+    .csv-tab.active { border-bottom-color: var(--theme-primary); color: var(--theme-text); font-weight: 700; }
+    .csv-code { min-height: 310px; max-height: 560px; overflow: auto; margin: 13px 0 0; padding: 14px; border: 1px solid var(--theme-border); border-radius: 9px; background: var(--theme-surface-soft); color: var(--theme-text); font: 12px/1.6 var(--theme-font-mono); white-space: pre; }
+    .csv-column-wrap { overflow: auto; max-height: 350px; border: 1px solid var(--theme-border); border-radius: 9px; }
+    .csv-columns { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .csv-columns th, .csv-columns td { padding: 8px; border-bottom: 1px solid var(--theme-border-soft); text-align: left; vertical-align: middle; white-space: nowrap; }
+    .csv-columns th { position: sticky; top: 0; background: var(--theme-surface-alt); color: var(--theme-muted); }
+    .csv-columns td input, .csv-columns td select { max-width: 170px; border: 1px solid var(--theme-border); border-radius: 6px; padding: 5px; background: var(--theme-surface); color: var(--theme-text); }
+    .csv-empty { padding: 28px 12px; color: var(--theme-muted); text-align: center; }
+    @media (max-width: 900px) { .csv-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .csv-app { width: min(100% - 20px, var(--csv-max)); padding-top: 16px; } .csv-form { grid-template-columns: 1fr; } .csv-field.full { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <main class="csv-app">
+    <header class="csv-header">
+      <div><h1>SQL SPA Tools｜Excel／CSV 轉 SQL</h1><p>將試算表資料轉成 DDL 與批次 INSERT 語句。</p></div>
+    </header>
+    <div class="csv-grid">
+      <section class="csv-panel" aria-labelledby="input-title">
+        <h2 id="input-title">輸入與設定</h2>
+        <div class="csv-section">
+          <h3>1. 資料來源</h3>
+          <div class="csv-drop" id="dropZone"><strong>拖放 CSV／TSV／TXT 檔案至此</strong><span>或選擇檔案載入</span><label>檔案編碼：<select id="fileEncoding"><option value="auto">自動偵測 BOM</option><option value="utf-8">UTF-8</option><option value="big5">Big5／CP950</option><option value="utf-16le">UTF-16 LE</option><option value="utf-16be">UTF-16 BE</option></select></label><input id="fileInput" type="file" accept=".csv,.tsv,.txt,text/csv,text/plain"></div>
+          <textarea id="rawInput" class="csv-text" placeholder="也可以直接貼上 Excel／Google Sheets 的資料"></textarea>
+          <div class="csv-actions"><button class="csv-btn primary" id="parseBtn" type="button">解析資料</button><button class="csv-btn" id="sampleBtn" type="button">載入範例</button><button class="csv-btn" id="clearBtn" type="button">清除</button></div>
+          <div id="message" class="csv-message" hidden></div>
+        </div>
+        <div class="csv-section">
+          <h3>2. 產生參數</h3>
+          <div class="csv-form">
+            <label class="csv-field"><span>SQL 方言</span><select id="dialect"><option value="postgresql">PostgreSQL</option><option value="mysql">MySQL／MariaDB</option><option value="mssql">Microsoft SQL Server</option><option value="oracle">Oracle</option><option value="sqlite">SQLite</option></select></label>
+            <label class="csv-field"><span>資料表名稱</span><input id="tableName" value="imported_data" autocomplete="off"></label>
+            <label class="csv-field"><span>每批筆數（1－1000）</span><input id="batchSize" type="number" min="1" max="1000" value="500"></label>
+            <label class="csv-field full"><span>欄位名稱模式</span><select id="headerMode"><option value="header">首行作為欄位名稱</option><option value="auto">自動產生欄位名稱</option></select></label>
+            <label class="csv-check full"><input id="enableCustomHeaders" type="checkbox"> 啟用自訂欄位名稱</label>
+            <label class="csv-field full" id="customHeadersField" hidden><span>自訂欄位名稱（以逗號或 Tab 分隔）</span><input id="customHeaders" placeholder="member_id, city, postal_code, score" autocomplete="off"><button class="csv-btn secondary" id="applyCustomHeadersBtn" type="button">套用自訂欄位名稱</button></label>
+            <label class="csv-check"><input id="includeDDL" type="checkbox" checked> 產生 CREATE TABLE</label>
+            <label class="csv-check"><input id="dropTable" type="checkbox"> 附加 DROP TABLE</label>
+            <label class="csv-check"><input id="ifNotExists" type="checkbox" checked> 附加 IF NOT EXISTS</label>
+            <label class="csv-check"><input id="wrapTransaction" type="checkbox" checked> 包裝交易</label>
+          </div>
+        </div>
+        <div class="csv-section"><h3>3. 欄位推論與調整</h3><div id="columns"><div class="csv-empty">解析資料後會顯示欄位設定。</div></div></div>
+      </section>
+      <section class="csv-panel" aria-labelledby="preview-title">
+        <h2 id="preview-title">SQL 預覽與匯出</h2>
+        <div class="csv-section">
+          <div id="stats" class="csv-stats"><span class="csv-stat">尚未解析資料</span></div>
+          <div class="csv-tabs"><button class="csv-tab active" data-tab="ddl" type="button">DDL（Schema）</button><button class="csv-tab" data-tab="dml" type="button">DML（Insert）</button></div>
+          <pre id="sqlPreview" class="csv-code">請先貼上資料或載入檔案。</pre>
+          <div class="csv-actions"><button class="csv-btn primary" id="copyBtn" type="button" disabled>複製目前 SQL</button><button class="csv-btn secondary" id="downloadBtn" type="button" disabled>下載 .sql</button></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <a class="home-link" href="index.html">⌂ 工具入口</a>
+  <button id="themeToggle" class="theme-toggle" type="button">🌙 深色模式</button>
+  <script>
+    (() => {
+      const NULLS = new Set(['', 'NULL', 'null', 'N/A', 'nil', '-']);
+      const DIALECTS = {
+        postgresql: { quote: value => `"${value.replace(/"/g, '""')}"`, name: 'PostgreSQL' },
+        mysql: { quote: value => `\`${value.replace(/`/g, '``')}\``, name: 'MySQL／MariaDB' },
+        mssql: { quote: value => `[${value.replace(/]/g, ']]')}]`, name: 'SQL Server' },
+        oracle: { quote: value => `"${value.replace(/"/g, '""')}"`, name: 'Oracle' },
+        sqlite: { quote: value => `"${value.replace(/"/g, '""')}"`, name: 'SQLite' },
+      };
+
+      function decodeBytes(bytes, encoding = 'auto') {
+        const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        if (encoding === 'auto') {
+          if (data[0] === 0xFF && data[1] === 0xFE) return new TextDecoder('utf-16le').decode(data).replace(/^\uFEFF/, '');
+          if (data[0] === 0xFE && data[1] === 0xFF) return new TextDecoder('utf-16be').decode(data).replace(/^\uFEFF/, '');
+          try {
+            return new TextDecoder('utf-8', { fatal: true }).decode(data).replace(/^\uFEFF/, '');
+          } catch {
+            return new TextDecoder('big5').decode(data).replace(/^\uFEFF/, '');
+          }
+        }
+        return new TextDecoder(encoding).decode(data).replace(/^\uFEFF/, '');
+      }
+
+      function parseDelimited(text, explicitDelimiter) {
+        const source = String(text || '').replace(/^\uFEFF/, '');
+        const delimiter = explicitDelimiter || ((source.split(/\r?\n/, 1)[0].match(/\t/g) || []).length > (source.split(/\r?\n/, 1)[0].match(/,/g) || []).length ? '\t' : ',');
+        const rows = []; let row = []; let cell = ''; let quoted = false;
+        for (let index = 0; index < source.length; index += 1) {
+          const char = source[index];
+          if (char === '"') { if (quoted && source[index + 1] === '"') { cell += '"'; index += 1; } else { quoted = !quoted; } }
+          else if (char === delimiter && !quoted) { row.push(cell); cell = ''; }
+          else if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && source[index + 1] === '\n') index += 1; row.push(cell); cell = ''; if (row.some(value => value !== '')) rows.push(row); row = []; }
+          else { cell += char; }
+        }
+        if (cell !== '' || row.length) { row.push(cell); if (row.some(value => value !== '')) rows.push(row); }
+        const width = rows.reduce((max, current) => Math.max(max, current.length), 0);
+        return rows.map(current => current.concat(Array(width - current.length).fill('')));
+      }
+
+      function sanitizeHeaders(headers) {
+        const seen = new Map();
+        return headers.map((header, index) => {
+          let name = String(header || '').replace(/[\u0000-\u001F\u007F]/g, '').trim().toLowerCase().replace(/[^a-z0-9一-龥]+/g, '_').replace(/^_+|_+$/g, '') || `column_${index + 1}`;
+          const count = seen.get(name) || 0; seen.set(name, count + 1); if (count) name = `${name}_${count}`; return name;
+        });
+      }
+
+      function isNullValue(value, nullValues = NULLS) { return value === null || value === undefined || nullValues.has(String(value).trim()); }
+      function inferColumnType(values) {
+        const sample = values.filter(value => !isNullValue(value)).slice(0, 1000).map(value => String(value).trim());
+        if (!sample.length) return 'VARCHAR(50)';
+        const lower = sample.map(value => value.toLowerCase());
+        if (lower.every(value => ['true', 'false', '1', '0', 'y', 'n', 'yes', 'no'].includes(value))) return 'BOOLEAN';
+        if (sample.every(value => /^-?\d+$/.test(value)) && !sample.some(value => /^-?\d{2,}/.test(value) && value.replace('-', '').length > 1 && value.replace('-', '')[0] === '0')) return sample.some(value => Number(value) > 2147483647 || Number(value) < -2147483648) ? 'BIGINT' : 'INTEGER';
+        if (sample.every(value => /^-?\d+\.\d+$/.test(value))) { const parts = sample.map(value => value.replace('-', '').split('.')); const scale = Math.max(...parts.map(part => part[1].length)); const integerLength = Math.max(...parts.map(part => part[0].length)); return `DECIMAL(${integerLength + scale}, ${scale})`; }
+        if (sample.every(value => /^\d{4}[-/]\d{2}[-/]\d{2}$/.test(value))) return 'DATE';
+        if (sample.every(value => /^\d{4}[-/]\d{2}[-/]\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(value))) return 'TIMESTAMP';
+        const length = Math.max(...sample.map(value => value.length)); return length <= 50 ? 'VARCHAR(50)' : length <= 255 ? 'VARCHAR(255)' : 'TEXT';
+      }
+
+      function looksLikeDataRow(row) {
+        const values = row.filter(value => String(value || '').trim() !== '').map(value => String(value).trim());
+        if (values.length < 2) return false;
+        const dataValues = values.filter(value => /^-?\d+(\.\d+)?$/.test(value) || /^\d{4}[-/]\d{2}[-/]\d{2}/.test(value) || ['true', 'false', '1', '0', 'y', 'n', 'yes', 'no', 'null', 'n/a', 'nil', '-'].includes(value.toLowerCase()));
+        return dataValues.length >= 2 && dataValues.length / values.length >= 0.6;
+      }
+
+      function buildModel(rows, options = {}) {
+        if (!rows.length) throw new Error('沒有可解析的資料');
+        const width = rows[0].length; const mode = options.headerMode || (options.hasHeader === false ? 'auto' : 'header'); const customHeaders = Array.isArray(options.customHeaders) ? options.customHeaders : String(options.customHeaders || '').split(/[,\t]/).map(value => value.trim()).filter(Boolean);
+        if (mode === 'custom' && customHeaders.length !== width) throw new Error(`自訂欄位名稱數量（${customHeaders.length}）必須等於資料欄數（${width}）`);
+        const rawHeaders = mode === 'header' ? rows[0] : mode === 'custom' ? customHeaders : Array.from({ length: width }, (_, index) => `column_${index + 1}`); const dataRows = mode === 'header' ? rows.slice(1) : rows;
+        const names = sanitizeHeaders(rawHeaders); const columns = names.map((name, index) => ({ name, originalName: rawHeaders[index] || name, inferredType: inferColumnType(dataRows.map(row => row[index] || '')), overrideType: '', isPk: false, isNullable: true }));
+        return { rows: dataRows, columns, options: { ...options, headerMode: mode, tableName: options.tableName || 'imported_data', batchSize: Math.max(1, Math.min(1000, Number(options.batchSize) || 500)), wrapTransaction: options.wrapTransaction !== false } };
+      }
+
+      function quoteIdentifier(name, dialect) { return (DIALECTS[dialect] || DIALECTS.postgresql).quote(name); }
+      function escapeValue(value, type, dialect) {
+        if (isNullValue(value)) return 'NULL'; const clean = String(value).trim();
+        if (/^(INTEGER|BIGINT)$/.test(type)) return /^-?\d+$/.test(clean) ? clean : 'NULL';
+        if (/^(DECIMAL|FLOAT)/.test(type)) return /^-?\d+(\.\d+)?$/.test(clean) ? clean : 'NULL';
+        if (type === 'BOOLEAN') return ['true', '1', 'y', 'yes'].includes(clean.toLowerCase()) ? 'TRUE' : 'FALSE';
+        return `'${clean.replace(/'/g, "''")}'`;
+      }
+
+      function generateSql(model, dialect = 'postgresql', options = {}) {
+        const activeColumns = model.columns.map(column => ({ ...column, type: column.overrideType || column.inferredType })); const table = quoteIdentifier(model.options.tableName, dialect); const names = activeColumns.map(column => quoteIdentifier(column.name, dialect)).join(', '); const ddlLines = activeColumns.map(column => `  ${quoteIdentifier(column.name, dialect)} ${column.type}${column.isPk ? ' PRIMARY KEY' : ''}${column.isNullable ? '' : ' NOT NULL'}`); let ddl = '';
+        if (options.includeDDL !== false) {
+          const tableName = model.options.tableName.replace(/'/g, "''");
+          const createBody = `CREATE TABLE ${table} (\n${ddlLines.join(',\n')}\n);`;
+          if (dialect === 'mssql') {
+            const drop = options.dropTable ? `IF OBJECT_ID(N'${tableName}', N'U') IS NOT NULL DROP TABLE ${table};\n\n` : '';
+            const create = options.ifNotExists ? `IF OBJECT_ID(N'${tableName}', N'U') IS NULL BEGIN\n${createBody}\nEND;` : createBody;
+            ddl = drop + create;
+          } else {
+            const ifExists = options.ifNotExists && dialect !== 'oracle' ? ' IF NOT EXISTS' : '';
+            const drop = options.dropTable ? `DROP TABLE IF EXISTS ${table};\n\n` : '';
+            ddl = `${drop}${createBody.replace('CREATE TABLE ', `CREATE TABLE${ifExists} `)}`;
+          }
+        }
+        const chunks = []; for (let start = 0; start < model.rows.length; start += model.options.batchSize) chunks.push(model.rows.slice(start, start + model.options.batchSize));
+        const inserts = chunks.map(chunk => { const tuples = chunk.map(row => `(${activeColumns.map((column, index) => escapeValue(row[index] || '', column.type, dialect)).join(', ')})`); if (dialect === 'oracle') return `INSERT ALL\n${chunk.map((row, rowIndex) => `  INTO ${table} (${names}) VALUES ${tuples[rowIndex]}`).join('\n')}\nSELECT 1 FROM dual;`; return `INSERT INTO ${table} (${names})\nVALUES\n${tuples.join(',\n')};`; });
+        let dml = inserts.join('\n\n'); if (model.options.wrapTransaction && inserts.length) dml = `BEGIN TRANSACTION;\n\n${dml}\n\nCOMMIT;`; return { ddl, dml, batchCount: chunks.length, rowCount: model.rows.length };
+      }
+
+      const Core = { decodeBytes, parseDelimited, sanitizeHeaders, inferColumnType, looksLikeDataRow, buildModel, generateSql, escapeValue };
+      globalThis.ExcelCsvSqlCore = Core;
+      if (typeof document === 'undefined' || !document.getElementById('rawInput')) return;
+      const $ = id => document.getElementById(id); let state = { model: null, sql: null, tab: 'ddl' };
+      const showMessage = (text, type = '') => { $('message').textContent = text; $('message').className = `csv-message ${type}`; $('message').hidden = !text; };
+      const settings = () => ({ headerMode: $('enableCustomHeaders').checked ? 'custom' : $('headerMode').value, customHeaders: $('customHeaders').value.split(/[,\t]/).map(value => value.trim()).filter(Boolean), tableName: $('tableName').value.trim() || 'imported_data', batchSize: Number($('batchSize').value) || 500, wrapTransaction: $('wrapTransaction').checked });
+      const updateHeaderModeUI = () => { $('customHeadersField').hidden = !$('enableCustomHeaders').checked; };
+      function renderColumns() { if (!state.model) return; $('columns').innerHTML = `<div class="csv-column-wrap"><table class="csv-columns"><thead><tr><th>欄位</th><th>原始名稱</th><th>推論型態</th><th>覆寫型態</th><th>PK</th><th>NOT NULL</th></tr></thead><tbody>${state.model.columns.map((column, index) => `<tr><td>${column.name}</td><td>${String(column.originalName).replace(/[<&>]/g, '')}</td><td>${column.inferredType}</td><td><select data-column="${index}" data-key="overrideType"><option value="">使用推論</option>${['BOOLEAN', 'INTEGER', 'BIGINT', 'DECIMAL(18, 4)', 'DATE', 'TIMESTAMP', 'VARCHAR(50)', 'VARCHAR(255)', 'TEXT'].map(type => `<option value="${type}">${type}</option>`).join('')}</select></td><td><input data-column="${index}" data-key="isPk" type="checkbox"></td><td><input data-column="${index}" data-key="isNullable" type="checkbox" checked></td></tr>`).join('')}</tbody></table></div>`; }
+      function renderPreview() { if (!state.sql) return; const text = state.tab === 'ddl' ? (state.sql.ddl || '-- 未啟用 DDL') : state.sql.dml; $('sqlPreview').textContent = text || '-- 沒有可產生的 SQL'; }
+      function refresh() { if (!state.model) return; state.model.options = { ...state.model.options, ...settings() }; state.sql = generateSql(state.model, $('dialect').value, { includeDDL: $('includeDDL').checked, dropTable: $('dropTable').checked, ifNotExists: $('ifNotExists').checked }); $('stats').innerHTML = `<span class="csv-stat">資料列：${state.sql.rowCount}</span><span class="csv-stat">欄位：${state.model.columns.length}</span><span class="csv-stat">批次：${state.sql.batchCount}</span><span class="csv-stat">方言：${DIALECTS[$('dialect').value].name}</span>`; $('copyBtn').disabled = false; $('downloadBtn').disabled = false; renderPreview(); }
+      function parseInput() { try { const text = $('rawInput').value; if (!text.trim()) throw new Error('請先輸入資料'); if (text.length > 20 * 1024 * 1024) showMessage('輸入超過 20MB，建議分批處理以避免瀏覽器卡頓。', 'warning'); const rows = parseDelimited(text); const options = settings(); let autoDetected = false; if (options.headerMode === 'header' && looksLikeDataRow(rows[0])) { options.headerMode = 'auto'; $('headerMode').value = 'auto'; updateHeaderModeUI(); autoDetected = true; } state.model = buildModel(rows, options); renderColumns(); refresh(); showMessage(autoDetected ? '已偵測首列較像資料，已改用自動欄位名稱；若首列其實是標題，可切回「首行作為欄位名稱」。' : '資料解析完成。可在欄位表格中覆寫型態或設定約束。', autoDetected ? 'warning' : ''); } catch (error) { state.model = null; $('columns').innerHTML = '<div class="csv-empty">解析失敗，請修正輸入內容。</div>'; $('sqlPreview').textContent = '請先修正輸入資料。'; showMessage(error.message, 'error'); } }
+      $('parseBtn').addEventListener('click', parseInput); $('rawInput').addEventListener('input', () => { if ($('rawInput').value.length > 20 * 1024 * 1024) showMessage('輸入超過 20MB，建議分批處理。', 'warning'); });
+      $('sampleBtn').addEventListener('click', () => { $('rawInput').value = 'ID\tName\tAmount\tOrder Date\n1\tAlice\t120.50\t2026-01-01\n2\tBob\t80.00\t2026-01-02'; parseInput(); });
+      $('clearBtn').addEventListener('click', () => { $('rawInput').value = ''; state = { model: null, sql: null, tab: 'ddl' }; $('columns').innerHTML = '<div class="csv-empty">解析資料後會顯示欄位設定。</div>'; $('stats').innerHTML = '<span class="csv-stat">尚未解析資料</span>'; $('sqlPreview').textContent = '請先貼上資料或載入檔案。'; $('copyBtn').disabled = true; $('downloadBtn').disabled = true; showMessage(''); });
+      async function loadFile(file) { if (!file) return; $('rawInput').value = decodeBytes(await file.arrayBuffer(), $('fileEncoding').value); parseInput(); }
+      $('fileInput').addEventListener('change', async event => { await loadFile(event.target.files[0]); event.target.value = ''; });
+      $('dropZone').addEventListener('dragover', event => { event.preventDefault(); $('dropZone').classList.add('dragging'); }); $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('dragging')); $('dropZone').addEventListener('drop', async event => { event.preventDefault(); $('dropZone').classList.remove('dragging'); await loadFile(event.dataTransfer.files[0]); });
+      ['dialect', 'tableName', 'batchSize', 'includeDDL', 'dropTable', 'ifNotExists', 'wrapTransaction'].forEach(id => $(id).addEventListener('change', refresh)); $('headerMode').addEventListener('change', () => { updateHeaderModeUI(); if ($('rawInput').value.trim()) parseInput(); }); $('enableCustomHeaders').addEventListener('change', () => { updateHeaderModeUI(); if ($('enableCustomHeaders').checked) showMessage('已啟用自訂欄位名稱；輸入名稱後請按「套用自訂欄位名稱」。'); else if ($('rawInput').value.trim()) parseInput(); }); $('applyCustomHeadersBtn').addEventListener('click', () => { $('enableCustomHeaders').checked = true; updateHeaderModeUI(); parseInput(); }); $('columns').addEventListener('change', event => { const control = event.target.closest('[data-column]'); if (!control || !state.model) return; const column = state.model.columns[Number(control.dataset.column)]; column[control.dataset.key] = control.dataset.key === 'isNullable' ? control.checked : control.dataset.key === 'isPk' ? control.checked : control.value; refresh(); }); updateHeaderModeUI();
+      document.querySelectorAll('.csv-tab').forEach(button => button.addEventListener('click', () => { state.tab = button.dataset.tab; document.querySelectorAll('.csv-tab').forEach(item => item.classList.toggle('active', item === button)); renderPreview(); }));
+      $('copyBtn').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('sqlPreview').textContent); showMessage('目前預覽 SQL 已複製。'); } catch { showMessage('瀏覽器拒絕剪貼簿存取，請改用下載功能。', 'error'); } });
+      $('downloadBtn').addEventListener('click', () => { const content = `${state.sql.ddl ? `${state.sql.ddl}\n\n` : ''}${state.sql.dml}`; const blob = new Blob([content], { type: 'text/sql;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${$('tableName').value.trim() || 'imported_data'}.sql`; link.click(); URL.revokeObjectURL(url); showMessage('完整 SQL 已下載。'); });
+    })();
+  </script>
+</body>
+</html>

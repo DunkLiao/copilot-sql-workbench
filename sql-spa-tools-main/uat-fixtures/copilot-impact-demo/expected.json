@@ -1,0 +1,25 @@
+{
+  "caseId": "copilot-impact-demo-001",
+  "description": "DEMO_CUSTOMER.CUSTOMER_SEGMENT length changes from VARCHAR2(20) to VARCHAR2(40).",
+  "changedField": {
+    "object": "DEMO_CUSTOMER",
+    "column": "CUSTOMER_SEGMENT",
+    "changeType": "definition_changed",
+    "before": "VARCHAR2(20)",
+    "after": "VARCHAR2(40)"
+  },
+  "expectedImpacts": [
+    {
+      "object": "DEMO_MONTHLY_REPORT",
+      "column": "SEGMENT_LABEL",
+      "relationship": "直接",
+      "evidence": "DEMO_CUSTOMER.CUSTOMER_SEGMENT → DEMO_MONTHLY_REPORT.SEGMENT_LABEL"
+    },
+    {
+      "object": "DEMO_RISK_SEGMENTATION",
+      "column": "RISK_BUCKET",
+      "relationship": "間接",
+      "evidence": "DEMO_CUSTOMER.CUSTOMER_SEGMENT → DEMO_RISK_SEGMENTATION.RISK_BUCKET"
+    }
+  ]
+}

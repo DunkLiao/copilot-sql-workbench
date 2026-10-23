@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL SPA Tools｜工具入口</title>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    :root {
+      --index-max-width: 1120px;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: var(--theme-font-sans);
+    }
+
+    .index-shell {
+      width: min(var(--index-max-width), calc(100% - 40px));
+      margin: 0 auto;
+      padding: 72px 0 48px;
+    }
+
+    .index-hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--theme-primary);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--theme-text);
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.15;
+      letter-spacing: .02em;
+    }
+
+    .hero-copy {
+      max-width: 620px;
+      margin: 14px 0 0;
+      color: var(--theme-muted);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 14px;
+      color: var(--theme-text);
+      font-size: 18px;
+    }
+
+    .section-title::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--theme-border);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .tool-card {
+      grid-column: span 4;
+      display: flex;
+      min-height: 210px;
+      flex-direction: column;
+      padding: 22px;
+      border: 1px solid var(--theme-border);
+      border-radius: 18px;
+      background: var(--theme-surface);
+      box-shadow: var(--theme-shadow);
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--theme-primary);
+      box-shadow: var(--theme-shadow);
+    }
+
+    .tool-icon {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      margin-bottom: 18px;
+      border-radius: 13px;
+      background: var(--theme-primary);
+      color: var(--theme-surface);
+      font-size: 20px;
+    }
+
+    .tool-icon-cte {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    .tool-card h3 {
+      margin: 0;
+      color: var(--theme-text);
+      font-size: 18px;
+    }
+
+    .tool-card p {
+      flex: 1;
+      margin: 10px 0 20px;
+      color: var(--theme-muted);
+      line-height: 1.7;
+    }
+
+    .tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      color: var(--theme-primary);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .tool-link::after {
+      content: "→";
+      transition: transform .18s ease;
+    }
+
+    .tool-link:hover {
+      color: var(--theme-primary-hover);
+    }
+
+    .tool-link:hover::after {
+      transform: translateX(3px);
+    }
+
+    .index-footer {
+      margin-top: 34px;
+      color: var(--theme-muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 850px) {
+      .index-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .tool-card {
+        grid-column: span 6;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .index-shell {
+        width: min(100% - 24px, var(--index-max-width));
+        padding-top: 48px;
+      }
+
+      .tool-card {
+        grid-column: span 12;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="index-shell">
+    <section class="index-hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">SQL TOOLKIT</p>
+        <h1 id="page-title">SQL SPA Tools｜工具入口</h1>
+        <p class="hero-copy">Powered by M365 Copilot</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="tools-title">
+      <h2 class="section-title" id="tools-title">選擇工具</h2>
+      <div class="tool-grid">
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">✦</div>
+          <h3>Oracle SQL Formatter</h3>
+          <p>批次格式化 SQL、PL/SQL 檔案，支援健檢、差異預覽與報告匯出。</p>
+          <a class="tool-link" href="sql-spa-tools-oracle-formatter.html">開啟格式化工具</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⇄</div>
+          <h3>Oracle SQL Compare</h3>
+          <p>比較兩份 SQL 內容，檢視逐行差異與結構摘要，快速定位修改內容。</p>
+          <a class="tool-link" href="sql-spa-tools-sql-compare.html">開啟比對工具</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">◉</div>
+          <h3>SQL 個資清除器</h3>
+          <p>掃描 SQL 檔案中的個資與敏感識別資訊，提供遮罩、清除與報告匯出。</p>
+          <a class="tool-link" href="sql-spa-tools-pii-cleaner.html">開啟個資清除器</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">▤</div>
+          <h3>SQL Catalog</h3>
+          <p>建立 SQL 檔案清冊，管理用途、分類、標籤、待辦與後續說明。</p>
+          <a class="tool-link" href="sql-spa-tools-catalog.html">開啟 SQL 清冊</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⤴</div>
+          <h3>SQL 欄位血緣分析器</h3>
+          <p>分析 Oracle SQL 欄位來源與上下游關係，支援血緣圖、追溯與多種匯出格式。</p>
+          <a class="tool-link" href="sql-spa-tools-column-lineage.html">開啟血緣分析器</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">◇</div>
+          <h3>SQLScriptManage</h3>
+          <p>管理 SQL 專案、腳本草稿、版本分支與完整 JSON 備份。</p>
+          <a class="tool-link" href="sql-spa-tools-sqlscriptmanage.html">開啟 SQLScriptManage</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⇥</div>
+          <h3>Excel／CSV 轉 SQL</h3>
+          <p>將試算表資料轉成多種資料庫方言的 DDL 與批次 INSERT 語句。</p>
+          <a class="tool-link" href="sql-spa-tools-excel-csv-sql.html">開啟轉換工具</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon tool-icon-cte" aria-hidden="true">WITH</div>
+          <h3>Excel／CSV 轉 SQL CTE</h3>
+          <p>將試算表資料轉成含 SQLite 在內多種資料庫可用的 WITH CTE 查詢資料。</p>
+          <a class="tool-link" href="sql-spa-tools-excel-csv-sql-cte.html">開啟 CTE 轉換工具</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⧉</div>
+          <h3>SQL 欄位映射</h3>
+          <p>建立來源與目標資料表欄位映射，產生 DDL、SQL 與程式碼設定。</p>
+          <a class="tool-link" href="sql-spa-tools-schema-studio.html">開啟欄位映射工具</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⌨</div>
+          <h3>SQL Lab</h3>
+          <p>在瀏覽器中建立工作區、匯入資料並執行 SQL，管理常用片段、測試案例與查詢歷史。</p>
+          <a class="tool-link" href="sql-spa-tools-sql-lab.html">開啟 SQL Lab</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">✓</div>
+          <h3>資料品質稽核中心</h3>
+          <p>匯入資料集並執行品質稽核，檢視規則命中、欄位概況與稽核報告。</p>
+          <a class="tool-link" href="sql-spa-tools-data-quality-audit-center.html">開啟品質稽核</a>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon" aria-hidden="true">⌘</div>
+          <h3>資料關聯探索器</h3>
+          <p>探索資料表關聯、欄位相依與 ER 圖，並匯出分析結果。</p>
+          <a class="tool-link" href="sql-spa-tools-data-relationship-explorer.html">開啟關聯探索器</a>
+        </article>
+      </div>
+    </section>
+
+    <footer class="index-footer">SQL SPA Tools · 直接開啟本頁即可進入工具</footer>
+  </main>
+
+  <button id="themeToggle" class="theme-toggle" type="button">☀️ 淺色模式</button>
+</body>
+</html>

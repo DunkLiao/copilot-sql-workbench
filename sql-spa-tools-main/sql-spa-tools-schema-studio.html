@@ -1,0 +1,855 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>SQL SPA Tools｜SQL 欄位映射</title>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+:root{color-scheme:light}
+*{box-sizing:border-box}html{min-width:340px;background:var(--theme-page);scroll-behavior:smooth}body{margin:0;background:var(--theme-page);color:var(--theme-text);font-family:var(--theme-font-sans);font-size:13px;min-height:100vh}button,input,select,textarea{font:inherit}button{color:inherit;cursor:pointer}.app-shell{max-width:1640px;margin:0 auto;padding:0 34px}.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--theme-border-soft);gap:24px}.brand{display:flex;gap:11px;align-items:center;color:inherit;text-decoration:none;flex-shrink:0}.brand-mark{width:35px;height:35px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,#c6c6c6,#949494);color:#151515;font:800 18px var(--theme-font-sans);letter-spacing:-2px;box-shadow:0 0 22px #b1b1b122}.brand-mark span{font-size:10px;margin-left:-4px}.brand h1{display:block;margin:0;font:700 14px var(--theme-font-sans);letter-spacing:-.25px}.brand small{display:block;margin-top:2px;color:var(--theme-muted);font:500 8px var(--theme-font-mono);letter-spacing:1px}.header-actions,.output-actions{display:flex;align-items:center;gap:9px}.local-badge{display:flex;align-items:center;gap:7px;color:var(--theme-muted);font:500 10px var(--theme-font-mono);margin-right:7px}.local-badge i,.live-indicator i{width:6px;height:6px;border-radius:50%;background:var(--theme-success);box-shadow:0 0 9px #88888877}.button,.icon-button,.small-action,.text-button{border:1px solid transparent;background:none;border-radius:7px;transition:background .16s,border-color .16s,color .16s}.button{min-height:33px;padding:0 11px;font-size:11px;font-weight:600;white-space:nowrap}.button-quiet{color:var(--theme-text);border-color:var(--theme-border);background:var(--theme-surface)}.button-quiet:hover,.small-action:hover{background:var(--theme-surface-soft);border-color:var(--theme-border);color:var(--theme-text)}.button-primary{background:var(--theme-primary);border-color:var(--theme-primary);color:#fdfdfd;box-shadow:var(--theme-shadow)}.button-primary:hover{background:var(--theme-primary-hover)}.button-primary span{font-size:14px;margin-right:4px}.icon-button{height:33px;width:34px;border-color:var(--theme-border);background:var(--theme-surface);color:var(--theme-text);font-size:18px}.workspace-bar{display:flex;align-items:end;gap:13px;padding:18px 0 15px;border-bottom:1px solid var(--theme-border-soft)}.table-name,.select-name{display:flex;flex-direction:column;gap:6px;color:var(--theme-muted);font-size:10px;font-weight:600}.table-name{width:220px}.input-wrap{height:34px;display:flex;align-items:center;gap:8px;border:1px solid var(--theme-border);border-radius:7px;padding:0 9px;background:var(--theme-surface)}.input-wrap:focus-within{border-color:#838383;box-shadow:0 0 0 2px #88888815}.db-icon{color:var(--theme-primary);font-size:13px}.input-wrap input{width:100%;outline:0;border:0;background:none;color:var(--theme-text);font:500 11px var(--theme-font-mono)}.flow-arrow{color:var(--theme-muted);padding-bottom:9px}.select-name select,.transform-dialog select{height:34px;min-width:137px;border:1px solid var(--theme-border);border-radius:7px;background:var(--theme-surface);color:var(--theme-text);padding:0 10px;font-size:11px;outline:0}.toggle-option{display:flex;align-items:center;gap:7px;padding-bottom:9px;color:var(--theme-text);font-size:10px;white-space:nowrap;cursor:pointer}.toggle-option input{position:absolute;opacity:0}.toggle-ui{position:relative;width:25px;height:14px;border-radius:10px;background:var(--theme-border);transition:background .15s}.toggle-ui:after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--theme-surface);transition:transform .15s,background .15s}.toggle-option input:checked+.toggle-ui{background:var(--theme-primary)}.toggle-option input:checked+.toggle-ui:after{transform:translateX(11px);background:#fdfdfd}.toggle-option input:focus-visible+.toggle-ui{outline:2px solid var(--theme-primary)}
+.mapping-layout{display:grid;grid-template-columns:minmax(265px,1fr) minmax(340px,1.16fr) minmax(265px,1fr);gap:14px;padding-top:17px;align-items:stretch}.schema-panel,.canvas-panel{min-width:0;border:1px solid var(--theme-border);border-radius:var(--radius);background:var(--theme-surface);overflow:hidden}.schema-panel{display:flex;flex-direction:column;min-height:414px}.panel-heading{min-height:68px;padding:15px 15px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--theme-border-soft)}.eyebrow{display:block;color:var(--theme-muted);font:500 8px var(--theme-font-mono);letter-spacing:1.5px}.panel-heading h2,.output-heading h2{margin:5px 0 0;font:700 14px var(--theme-font-sans);letter-spacing:-.25px}.count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:17px;margin-left:5px;padding:0 5px;border-radius:5px;background:var(--theme-surface-alt);color:var(--theme-muted);font:500 9px var(--theme-font-mono);vertical-align:1px}.small-action{padding:6px 8px;color:var(--theme-text);font-size:10px;border:1px solid var(--theme-border);background:var(--theme-surface-alt);white-space:nowrap}.small-action span{color:var(--theme-muted);margin-left:3px}.schema-meta{height:35px;padding:0 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--theme-border-soft);color:var(--theme-muted);font-size:9px}.status-dot{height:5px;width:5px;border-radius:50%;background:var(--theme-border)}.status-dot.ready{background:var(--theme-success);box-shadow:0 0 8px #88888888}.text-button{margin-left:auto;padding:4px 0;color:var(--theme-muted);font-size:9px}.text-button:hover{color:var(--theme-text)}.field-list{flex:1;min-height:195px;max-height:385px;overflow:auto;padding:7px 8px;scrollbar-width:thin;scrollbar-color:var(--theme-border) transparent}.field-row{position:relative;min-height:39px;display:flex;align-items:center;gap:9px;padding:5px 9px;border:1px solid transparent;border-radius:7px;transition:background .14s,border-color .14s;user-select:none}.field-row:hover{background:var(--theme-surface-soft);border-color:var(--theme-border)}.field-row.selected{background:var(--theme-secondary-soft);border-color:var(--theme-border)}.field-row.mapped{background:var(--theme-surface-soft);box-shadow:inset 3px 0 0 var(--theme-primary)}.field-main{min-width:0;flex:1;display:flex;align-items:center;gap:8px}.field-kind{display:grid;place-items:center;width:21px;height:21px;flex-shrink:0;border-radius:5px;background:var(--theme-surface-alt);color:var(--theme-muted);font:500 9px var(--theme-font-mono)}.target-panel .field-kind{background:var(--theme-surface-soft);color:var(--theme-text)}.field-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 10px var(--theme-font-mono);color:var(--theme-text)}.field-type{margin-left:auto;color:var(--theme-muted);font:400 9px var(--theme-font-mono);white-space:nowrap}.field-flags{display:flex;gap:3px}.field-tag{font:500 7px var(--theme-font-mono);padding:2px 4px;border-radius:3px;background:var(--theme-surface-alt);color:var(--theme-muted)}.field-tag.pk{background:var(--theme-success-soft);color:var(--theme-success)}.field-tag.nn{background:var(--theme-warning-soft);color:var(--theme-warning)}.endpoint{width:9px;height:9px;position:absolute;top:50%;transform:translateY(-50%);border:2px solid var(--theme-muted);border-radius:50%;background:var(--theme-surface);z-index:2;cursor:crosshair;transition:all .15s}.source-panel .endpoint{right:-5px}.target-panel .endpoint{left:-5px}.source-panel .field-row:hover .endpoint,.source-panel .field-row.selected .endpoint{border-color:var(--theme-primary);background:var(--theme-primary);box-shadow:0 0 0 4px #88888818}.target-panel .field-row:hover .endpoint,.target-panel .field-row.pending-target .endpoint{border-color:var(--theme-secondary);background:var(--theme-secondary);box-shadow:0 0 0 4px #b8b8b820}.row-actions{display:flex;gap:2px;opacity:0;transition:opacity .12s}.field-row:hover .row-actions,.field-row:focus-within .row-actions{opacity:1}.mini-button{border:0;background:transparent;color:var(--theme-muted);padding:3px;font-size:11px}.mini-button:hover{color:var(--theme-text)}.add-field{height:35px;margin:0 9px 9px;border:1px dashed var(--theme-border);border-radius:6px;background:var(--theme-surface-alt);color:var(--theme-muted);font-size:9px}.add-field:hover{border-color:var(--theme-primary);color:var(--theme-primary)}
+.canvas-panel{min-height:414px;display:flex;flex-direction:column;position:relative;background:var(--theme-surface)}.canvas-heading{border-bottom-color:var(--theme-border-soft)}.canvas-legend{height:35px;display:flex;align-items:center;justify-content:center;gap:20px;border-bottom:1px solid var(--theme-border-soft);font-size:9px;color:var(--theme-muted)}.canvas-legend span{display:flex;align-items:center;gap:7px}.legend-line{width:17px;height:2px;border-radius:2px;background:var(--theme-primary)}.legend-active{background:var(--theme-warning)}.canvas-viewport{position:relative;flex:1;min-height:245px;overflow:hidden}.connector-layer{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}.connector{fill:none;stroke:var(--theme-secondary);stroke-width:1.5;opacity:.82;filter:drop-shadow(0 0 3px #95959524);pointer-events:stroke;cursor:pointer}.connector.active{stroke:var(--theme-warning);stroke-width:2;filter:drop-shadow(0 0 5px #b6b6b640)}.connector:hover{stroke:var(--theme-text);stroke-width:3;opacity:1}.connector-label{font:9px var(--theme-font-mono);fill:var(--theme-muted)}.connector-label-bg{fill:var(--theme-surface-alt);stroke:var(--theme-border);stroke-width:1}.canvas-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:var(--theme-muted);text-align:center;font-size:10px;line-height:1.7;pointer-events:none}.canvas-empty strong{font:600 11px var(--theme-font-sans);color:var(--theme-text)}.canvas-empty[hidden]{display:none}.empty-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:var(--theme-surface-alt);color:var(--theme-muted);font-size:22px}.drag-hint{position:absolute;z-index:3;top:10px;left:50%;transform:translateX(-50%);padding:7px 10px;border:1px solid var(--theme-border);border-radius:7px;background:var(--theme-surface-alt);color:var(--theme-text);font-size:9px;white-space:nowrap}.drag-hint[hidden]{display:none}.drag-hint button{margin-left:6px;border:0;background:none;color:var(--theme-primary);text-decoration:underline;font-size:9px}.canvas-footer{height:35px;padding:0 13px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--theme-border-soft)}.mapping-summary{color:var(--theme-muted);font:500 9px var(--theme-font-mono)}.canvas-tip{color:var(--theme-muted);font-size:9px}.pending-line{stroke:var(--theme-primary);stroke-dasharray:4 4;opacity:.8}
+.output-section{padding-top:27px}.output-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.output-heading h2{font-size:15px}.live-indicator{display:flex;align-items:center;gap:6px;margin-right:5px;color:var(--theme-muted);font:500 9px var(--theme-font-mono)}.live-indicator i{width:5px;height:5px}.copy-button{min-width:105px}.code-card{overflow:hidden;border:1px solid var(--theme-border);border-radius:var(--radius);background:var(--theme-surface);box-shadow:var(--theme-shadow)}.code-tabs{height:43px;display:flex;align-items:stretch;padding:0 12px;border-bottom:1px solid var(--theme-border);gap:4px}.code-tabs button{position:relative;display:flex;align-items:center;gap:7px;padding:0 12px;border:0;background:none;color:var(--theme-muted);font-size:10px;white-space:nowrap}.code-tabs button:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:transparent;border-radius:2px}.code-tabs button[aria-selected="true"]{color:var(--theme-text)}.code-tabs button[aria-selected="true"]:after{background:var(--theme-primary)}.code-tabs button:hover{color:var(--theme-text)}.tab-icon{font-size:11px;color:var(--theme-muted)}.code-toolbar{height:30px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--theme-border-soft);color:var(--theme-muted);font:500 8px var(--theme-font-mono);letter-spacing:.3px}.code-output{margin:0;padding:15px 17px;min-height:165px;max-height:310px;overflow:auto;color:var(--theme-text);font:10px/1.85 var(--theme-font-mono);tab-size:4;scrollbar-width:thin;scrollbar-color:var(--theme-border) transparent}.code-output code{white-space:pre}.code-footer{height:28px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--theme-border-soft);color:var(--theme-muted);font:8px var(--theme-font-mono)}.app-footer{height:57px;display:flex;align-items:center;justify-content:space-between;color:var(--theme-muted);font-size:9px}.footer-separator{padding:0 5px;color:var(--theme-border)}.keyboard-key{padding:2px 4px;border:1px solid var(--theme-border);border-radius:3px;color:var(--theme-muted);font:8px var(--theme-font-mono)}
+.dialog{width:min(570px,calc(100vw - 30px));max-height:calc(100vh - 36px);padding:0;border:1px solid var(--theme-border);border-radius:14px;background:var(--theme-surface);color:var(--theme-text);box-shadow:var(--theme-shadow)}.dialog::backdrop{background:#070707cc;backdrop-filter:blur(4px)}.dialog-card{padding:21px}.dialog-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.dialog-heading h2{margin:5px 0 0;font:700 17px var(--theme-font-sans)}.close-dialog{font-size:21px}.dialog-copy{margin:0 0 13px;color:var(--theme-muted);font-size:11px;line-height:1.65}.schema-dialog textarea,.transform-dialog textarea{display:block;width:100%;resize:vertical;min-height:140px;border:1px solid var(--theme-border);border-radius:8px;outline:0;background:var(--theme-surface-alt);color:var(--theme-text);padding:12px;font:10px/1.7 var(--theme-font-mono)}.schema-dialog textarea:focus,.transform-dialog textarea:focus,.transform-dialog select:focus{border-color:#838383;box-shadow:0 0 0 2px #88888816}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.dialog-actions-split{justify-content:space-between;align-items:center}.dialog-actions-split>div{display:flex;gap:8px}.button-danger{color:var(--theme-danger);border-color:var(--theme-danger);background:var(--theme-danger-soft)}.button-danger:hover{background:var(--theme-surface-soft)}.dialog-error{min-height:14px;margin-top:7px;color:var(--theme-danger);font-size:10px}.match-list{display:flex;flex-direction:column;gap:6px;max-height:310px;overflow:auto;padding:1px}.match-item{min-height:45px;display:grid;grid-template-columns:24px minmax(0,1fr) 22px minmax(0,1fr) 53px;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--theme-border);border-radius:7px;background:var(--theme-surface-alt)}.match-item input{accent-color:var(--theme-primary)}.match-column{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:10px var(--theme-font-mono)}.match-arrow{color:var(--theme-muted)}.match-level{color:var(--theme-muted);text-align:right;font:8px var(--theme-font-mono)}.match-empty{padding:24px;text-align:center;color:var(--theme-muted);font-size:11px}.transform-context{margin:0 0 15px;padding:10px;border:1px solid var(--theme-border);border-radius:7px;background:var(--theme-surface-alt);color:var(--theme-text);font:10px/1.65 var(--theme-font-mono)}.transform-dialog select{display:block;width:100%;margin-bottom:13px}.form-label{display:flex;justify-content:space-between;gap:8px;margin:12px 0 6px;color:var(--theme-text);font-size:10px;font-weight:600}.form-label small{color:var(--theme-muted);font-size:8px;font-weight:400}.transform-dialog textarea{min-height:82px}.transform-presets{display:flex;gap:9px;margin-top:11px}.transform-presets label{display:flex;flex:1;flex-direction:column;gap:5px;color:var(--theme-muted);font-size:9px}.transform-presets input{width:100%;height:30px;padding:0 8px;border:1px solid var(--theme-border);border-radius:6px;outline:0;background:var(--theme-surface);color:var(--theme-text);font:9px var(--theme-font-mono)}.toast-region{position:fixed;right:20px;bottom:19px;z-index:20;display:flex;flex-direction:column;gap:8px;pointer-events:none}.toast{padding:10px 13px;border:1px solid var(--theme-border);border-radius:8px;background:var(--theme-surface);color:var(--theme-text);font-size:11px;box-shadow:var(--theme-shadow);animation:toast-in .18s ease-out}.toast.error{border-color:var(--theme-danger);background:var(--theme-danger-soft);color:var(--theme-danger)}@keyframes toast-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:1130px){.app-shell{padding:0 22px}.workspace-bar{flex-wrap:wrap;align-items:end}.table-name{width:min(220px,28vw)}.toggle-option{padding-bottom:9px}.mapping-layout{grid-template-columns:minmax(230px,1fr) minmax(290px,1.05fr) minmax(230px,1fr);gap:9px}.header-actions{gap:6px}.local-badge{display:none}}
+@media(max-width:850px){.app-shell{padding:0 15px}.topbar{height:auto;min-height:70px;flex-wrap:wrap;padding:13px 0;gap:12px}.header-actions{flex:1;justify-content:flex-end}.header-actions .button-quiet span{display:none}.mapping-layout{grid-template-columns:1fr 1fr}.source-panel{grid-column:1}.target-panel{grid-column:2;grid-row:1}.canvas-panel{grid-column:1/-1;grid-row:2;min-height:280px}.field-list{max-height:300px}.schema-panel{min-height:360px}.workspace-bar{gap:10px}.table-name{width:calc(50% - 18px)}.flow-arrow{display:none}.select-name{width:calc(50% - 7px)}.toggle-option{flex:1;padding:5px 0}.output-heading{align-items:flex-start;gap:12px}.output-actions{flex-wrap:wrap;justify-content:flex-end}.live-indicator{display:none}}
+@media(max-width:540px){.app-shell{padding:0 11px}.brand h1{font-size:12px}.brand-mark{width:31px;height:31px}.brand small{font-size:7px}.header-actions{gap:5px}.header-actions .button{padding:0 7px;font-size:9px}.header-actions .button-primary{font-size:0;min-width:34px}.header-actions .button-primary span{font-size:15px;margin:0}.icon-button{width:31px}.workspace-bar{padding:14px 0 11px}.table-name{width:100%}.select-name{width:100%}.select-name select{width:100%}.toggle-option{flex:1;font-size:9px}.mapping-layout{grid-template-columns:1fr;gap:9px;padding-top:11px}.source-panel,.target-panel,.canvas-panel{grid-column:1;grid-row:auto}.schema-panel{min-height:275px}.field-list{max-height:230px;min-height:130px}.canvas-panel{min-height:250px}.output-section{padding-top:21px}.output-heading{display:block}.output-actions{justify-content:flex-start;margin-top:12px;gap:6px}.output-actions .button{font-size:9px;padding:0 8px}.copy-button{min-width:0}.code-tabs{overflow:auto;padding:0 5px}.code-tabs button{padding:0 8px;font-size:9px}.code-tabs button .tab-icon{display:none}.code-output{font-size:9px;padding:12px}.app-footer{font-size:8px}.app-footer>span:last-child{display:none}.transform-presets{flex-wrap:wrap}.transform-presets label{min-width:28%}.match-item{grid-template-columns:20px minmax(0,1fr) 14px minmax(0,1fr) 45px;gap:4px}.match-column{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.mapping-layout{position:relative}
+.mapping-layout>.connector-layer{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:4}
+.mapping-layout>.connector-layer .connector{pointer-events:stroke}
+.mapping-layout>.connector-layer .pending-line{pointer-events:none}
+.source-panel .endpoint{right:6px}
+.target-panel .endpoint{left:6px}
+.source-panel .field-main{padding-right:9px}
+.target-panel .field-main{padding-left:9px}
+.schema-panel,.canvas-panel{position:relative;z-index:1}
+.list-empty{padding:25px 12px;color:var(--theme-muted);font-size:10px;text-align:center;line-height:1.7}
+.tok-keyword{color:var(--theme-text)}.tok-string{color:var(--theme-info)}.tok-comment{color:var(--theme-muted)}.tok-tag{color:var(--theme-success)}.tok-macro{color:var(--theme-purple)}
+
+
+
+body{background:var(--theme-page);color:var(--theme-text);font-family:var(--theme-font-sans)}
+.code-output,.field-label,.field-type,.mapping-summary,.match-column,.transform-context,.input-wrap input,textarea{font-family:var(--theme-font-mono)}
+.schema-panel,.canvas-panel,.code-card,.dialog,.match-item{background:var(--theme-surface);color:var(--theme-text)}
+.input-wrap,.select-name select,.transform-dialog select,.transform-presets input,textarea{background:var(--theme-surface);color:var(--theme-text);border-color:var(--theme-border)}
+.field-row:hover,.small-action:hover,.button-quiet:hover{background:var(--theme-surface-soft)}
+.button-primary{background:var(--theme-primary);border-color:var(--theme-primary);color:var(--theme-surface)}
+.field-row.selected{background:var(--theme-secondary-soft);border-color:var(--theme-border)}
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="SQL SPA Tools">
+        <span class="brand-mark" aria-hidden="true">S<span>↔</span></span>
+        <span><h1>SQL SPA Tools｜SQL 欄位映射</h1><small>SQL MAPPER &amp; DDL SCAFFOLDER</small></span>
+      </a>
+      <div class="header-actions">
+        <span class="local-badge"><i></i> 僅在本機執行</span>
+        <a class="home-link" href="index.html">⌂ 工具入口</a>
+        <button class="theme-toggle" id="themeToggle" type="button">🌙 深色模式</button>
+        <button class="button button-quiet" id="exampleButton">載入範例</button>
+        <button class="button button-quiet" id="swapButton">⇄ <span>交換</span></button>
+        <button class="button button-quiet" id="clearButton">清除全部</button>
+        <button class="button button-primary" id="autoMatchButton"><span>✳</span> 自動配對</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="workspace-bar" aria-label="資料表設定">
+        <label class="table-name"><span>來源資料表</span><div class="input-wrap"><span class="db-icon">▤</span><input id="sourceTable" value="source_users" aria-label="來源資料表名稱"></div></label>
+        <span class="flow-arrow" aria-hidden="true">→</span>
+        <label class="table-name"><span>目標資料表</span><div class="input-wrap"><span class="db-icon">▤</span><input id="targetTable" value="dim_user_profile" aria-label="目標資料表名稱"></div></label>
+        <label class="select-name"><span>目標 SQL 方言</span><select id="dialect"><option value="postgresql">PostgreSQL</option><option value="mysql">MySQL</option><option value="oracle">Oracle</option><option value="tsql">SQL Server</option><option value="sqlite">SQLite</option></select></label>
+        <label class="toggle-option"><input id="quoteIdentifiers" type="checkbox" checked><span class="toggle-ui"></span>引用識別字</label>
+        <label class="toggle-option"><input id="uppercaseKeywords" type="checkbox" checked><span class="toggle-ui"></span>關鍵字大寫</label>
+        <label class="toggle-option"><input id="auditFields" type="checkbox"><span class="toggle-ui"></span>補齊稽核欄位</label>
+      </section>
+
+      <section class="mapping-layout" id="mappingLayout" aria-label="Schema 欄位映射工作區">
+        <svg class="connector-layer" id="connectorSvg" aria-hidden="true"></svg>
+        <article class="schema-panel source-panel">
+          <div class="panel-heading">
+            <div><span class="eyebrow">SOURCE SCHEMA</span><h2>來源結構 <span class="count-pill" id="sourceCount">0</span></h2></div>
+            <button class="small-action" id="sourceInputButton">輸入結構 <span>⌄</span></button>
+          </div>
+          <div class="schema-meta"><span class="status-dot"></span><span id="sourceStatus">等待輸入來源欄位</span><button class="text-button" id="sourcePasteButton">貼上 DDL / JSON</button></div>
+          <div class="field-list" id="sourceFields" aria-label="來源欄位"></div>
+          <button class="add-field" id="addSourceButton">＋ 新增來源欄位</button>
+        </article>
+
+        <article class="canvas-panel">
+          <div class="panel-heading canvas-heading">
+            <div><span class="eyebrow">MAPPING CANVAS</span><h2>欄位映射</h2></div>
+            <button class="small-action" id="newMappingButton">＋ 新增映射</button>
+          </div>
+          <div class="canvas-legend"><span><i class="legend-line"></i> 已建立映射</span><span><i class="legend-line legend-active"></i> 含轉換規則</span></div>
+          <div class="canvas-viewport" id="canvasViewport">
+            <div class="canvas-empty" id="canvasEmpty"><span class="empty-icon">⤳</span><strong>從來源連到目標</strong><span>點擊來源欄位，再選擇目標欄位<br>即可建立映射</span></div>
+            <div class="drag-hint" id="dragHint" hidden>選擇一個目標欄位完成連線 <button id="cancelMapping">取消</button></div>
+          </div>
+          <div class="canvas-footer"><span class="mapping-summary" id="mappingSummary">0 個目標欄位已映射</span><span class="canvas-tip">拖曳端點或點擊欄位來連線</span></div>
+        </article>
+
+        <article class="schema-panel target-panel">
+          <div class="panel-heading">
+            <div><span class="eyebrow">TARGET SCHEMA</span><h2>目標結構 <span class="count-pill" id="targetCount">0</span></h2></div>
+            <button class="small-action" id="targetInputButton">輸入結構 <span>⌄</span></button>
+          </div>
+          <div class="schema-meta"><span class="status-dot"></span><span id="targetStatus">等待輸入目標欄位</span><button class="text-button" id="targetPasteButton">貼上 DDL / JSON</button></div>
+          <div class="field-list" id="targetFields" aria-label="目標欄位"></div>
+          <button class="add-field" id="addTargetButton">＋ 新增目標欄位</button>
+        </article>
+      </section>
+
+      <section class="output-section">
+        <div class="output-heading">
+          <div><span class="eyebrow">GENERATED CODE</span><h2>產生的程式碼</h2></div>
+          <div class="output-actions"><span class="live-indicator"><i></i> 即時更新</span><button class="button button-quiet" id="importButton">匯入設定</button><button class="button button-quiet" id="exportButton">匯出 JSON</button><button class="button button-quiet" id="downloadButton">下載程式碼</button><button class="button button-primary copy-button" id="copyButton">複製程式碼</button><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+        </div>
+        <div class="code-card">
+          <div class="code-tabs" role="tablist" aria-label="程式碼輸出格式" id="codeTabs">
+            <button role="tab" data-tab="sql" aria-selected="true"><span class="tab-icon">◉</span> SQL SELECT</button>
+            <button role="tab" data-tab="ddl" aria-selected="false"><span class="tab-icon">▤</span> Target DDL</button>
+            <button role="tab" data-tab="pandas" aria-selected="false"><span class="tab-icon">◈</span> Pandas</button>
+            <button role="tab" data-tab="dbt" aria-selected="false"><span class="tab-icon">◉</span> dbt Model</button>
+            <button role="tab" data-tab="mybatis" aria-selected="false"><span class="tab-icon">◇</span> MyBatis XML</button>
+          </div>
+          <div class="code-toolbar"><span id="codeLanguage">SQL</span><span id="codeFilename">migration.sql</span></div>
+          <pre class="code-output"><code id="codeOutput" aria-live="polite"></code></pre>
+          <div class="code-footer"><span id="codeLineCount">0 行</span><span>所有程式碼皆於本機產生</span></div>
+        </div>
+      </section>
+      <footer class="app-footer"><span>SQL SPA Tools｜SQL 欄位映射 <span class="footer-separator">·</span> 本機優先的資料庫移轉工作區</span><span><span class="keyboard-key">⌘</span> <span class="keyboard-key">K</span> 快速操作即將推出</span></footer>
+    </main>
+  </div>
+
+  <dialog id="schemaDialog" class="dialog schema-dialog">
+    <form method="dialog" class="dialog-card" id="schemaForm">
+      <div class="dialog-heading"><div><span class="eyebrow">SCHEMA INPUT</span><h2 id="dialogTitle">輸入結構</h2></div><button class="icon-button close-dialog" value="cancel" aria-label="關閉">×</button></div>
+      <p class="dialog-copy">貼上 CREATE TABLE、JSON、JSON Schema、CSV 標頭或每行一個欄位。</p>
+      <textarea id="schemaText" rows="12" spellcheck="false" placeholder="CREATE TABLE users (\n  user_id BIGINT PRIMARY KEY,\n  email VARCHAR(255) NOT NULL\n);"></textarea>
+      <div class="dialog-error" id="schemaError" role="alert"></div>
+      <div class="dialog-actions"><button class="button button-quiet" value="cancel">取消</button><button class="button button-primary" id="parseSchemaButton" value="default">解析欄位</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="matchDialog" class="dialog match-dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-heading"><div><span class="eyebrow">SMART MATCH</span><h2>確認欄位配對</h2></div><button class="icon-button close-dialog" value="cancel" aria-label="關閉">×</button></div>
+      <p class="dialog-copy">確認要套用的候選項目。欄位名稱完全相同的候選會優先排列。</p>
+      <div class="match-list" id="matchList"></div>
+      <div class="dialog-actions"><button class="button button-quiet" value="cancel">取消</button><button class="button button-primary" id="applyMatchesButton" value="default">套用已選配對</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="transformDialog" class="dialog transform-dialog">
+    <form method="dialog" class="dialog-card" id="transformForm">
+      <div class="dialog-heading"><div><span class="eyebrow">TRANSFORM RULE</span><h2>映射設定</h2></div><button class="icon-button close-dialog" value="cancel" aria-label="關閉">×</button></div>
+      <div class="transform-context" id="transformContext"></div>
+      <label class="form-label" for="presetSelect">常用轉換樣板</label>
+      <select id="presetSelect"><option value="">不使用樣板</option><option value="TRIM">移除前後空白 · TRIM</option><option value="UPPER">轉為大寫 · UPPER</option><option value="LOWER">轉為小寫 · LOWER</option><option value="COALESCE">空值補齊 · COALESCE</option><option value="NVL">Oracle 空值補齊 · NVL</option><option value="CAST_NUMERIC">轉為數值 · CAST</option><option value="CAST_DATE">轉為日期 · CAST</option><option value="TO_CHAR">格式化時間 · TO_CHAR</option><option value="CASE">條件判斷 · CASE WHEN</option><option value="CONCAT">串接多欄位 · CONCAT</option></select>
+      <label class="form-label" for="transformTemplate">SQL 表達式 <small>使用 {{src}} 或 {{src1}}、{{src2}} 指定來源欄位</small></label>
+      <textarea id="transformTemplate" rows="4" spellcheck="false"></textarea>
+      <div class="transform-presets"><label>預設值<input id="presetValue" value="''" placeholder="例如 'unknown'"></label><label>CASE 比對值<input id="caseValue" value="'A'"></label><label>CASE 輸出值<input id="caseResult" value="1"></label></div>
+      <div class="dialog-error" id="transformError" role="alert"></div>
+      <div class="dialog-actions dialog-actions-split"><button class="button button-danger" id="removeMappingButton" type="button">移除映射</button><div><button class="button button-quiet" value="cancel">取消</button><button class="button button-primary" id="saveTransformButton" value="default">儲存規則</button></div></div>
+    </form>
+  </dialog>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <script>
+/* Schema Studio — all processing stays in this browser. */
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'schema-studio-state-v1';
+  const VERSION = 2;
+  const EXAMPLE = {
+    sourceTableName: 'source_users', targetTableName: 'dim_user_profile', targetDialect: 'oracle',
+    sourceColumns: [
+      { id: 'src_user_id', name: 'user_id', type: 'BIGINT', isPrimaryKey: true, isNullable: false },
+      { id: 'src_first', name: 'first_name', type: 'VARCHAR(80)', isNullable: true },
+      { id: 'src_last', name: 'last_name', type: 'VARCHAR(80)', isNullable: true },
+      { id: 'src_status', name: 'raw_status', type: 'INT', isNullable: true, comment: '0:停用 1:啟用' },
+      { id: 'src_register', name: 'register_time', type: 'DATETIME', isNullable: false }
+    ],
+    targetColumns: [
+      { id: 'tgt_id', name: 'id', type: 'BIGINT', isPrimaryKey: true, isNullable: false },
+      { id: 'tgt_full', name: 'full_name', type: 'VARCHAR(170)', isNullable: true },
+      { id: 'tgt_status', name: 'status_code', type: 'SMALLINT', isNullable: true },
+      { id: 'tgt_created', name: 'created_at', type: 'TIMESTAMP', isNullable: false },
+      { id: 'tgt_updated', name: 'updated_at', type: 'TIMESTAMP', isNullable: true }
+    ],
+    mappings: [
+      { id: 'map-id', sourceColumnIds: ['src_user_id'], targetColumnId: 'tgt_id', transform: { type: 'DIRECT', template: '{{src}}' } },
+      { id: 'map-name', sourceColumnIds: ['src_first', 'src_last'], targetColumnId: 'tgt_full', transform: { type: 'PRESET', template: "TRIM({{src1}} || ' ' || {{src2}})" } },
+      { id: 'map-status', sourceColumnIds: ['src_status'], targetColumnId: 'tgt_status', transform: { type: 'DIRECT', template: '{{src}}' } }
+    ],
+    options: { quoteIdentifiers: true, includeAuditFields: false, autoUppercaseKeywords: true }
+  };
+
+  const state = {
+    sourceTableName: 'source_table', targetTableName: 'target_table',
+    sourceColumns: [], targetColumns: [], mappings: [], targetDialect: 'oracle',
+    options: { quoteIdentifiers: true, includeAuditFields: false, autoUppercaseKeywords: true },
+    activeTab: 'sql', selectedSourceId: null, editingMappingId: null,
+    sourceInput: '', targetInput: '', lastSaved: 0
+  };
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const makeId = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  const quoteLiteral = value => `'${String(value).replace(/'/g, "''")}'`;
+
+  // ---------- Schema parsing ----------
+  function stripSqlComments(sql) {
+    let out = '', quote = '', lineComment = false, blockComment = false;
+    for (let i = 0; i < sql.length; i++) {
+      const c = sql[i], n = sql[i + 1];
+      if (lineComment) { if (c === '\n') { lineComment = false; out += c; } else out += ' '; continue; }
+      if (blockComment) { if (c === '*' && n === '/') { blockComment = false; out += '  '; i++; } else out += c === '\n' ? '\n' : ' '; continue; }
+      if (quote) {
+        out += c;
+        if (c === quote) { if (n === quote && quote !== ']') { out += n; i++; } else quote = ''; }
+        else if (quote === ']' && c === ']') quote = '';
+        continue;
+      }
+      if (c === "'" || c === '"' || c === '`') { quote = c; out += c; continue; }
+      if (c === '[') { quote = ']'; out += c; continue; }
+      if (c === '-' && n === '-') { lineComment = true; out += '  '; i++; continue; }
+      if (c === '/' && n === '*') { blockComment = true; out += '  '; i++; continue; }
+      out += c;
+    }
+    return out;
+  }
+
+  function splitTopLevel(text, delimiter = ',') {
+    const parts = []; let start = 0, depth = 0, quote = '';
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i], n = text[i + 1];
+      if (quote) {
+        if (c === quote) { if (n === quote && quote !== ']') i++; else quote = ''; }
+        else if (quote === ']' && c === ']') quote = '';
+        continue;
+      }
+      if (c === "'" || c === '"' || c === '`') { quote = c; continue; }
+      if (c === '[') { quote = ']'; continue; }
+      if (c === '(') depth++;
+      else if (c === ')') depth = Math.max(0, depth - 1);
+      else if (c === delimiter && depth === 0) { parts.push(text.slice(start, i).trim()); start = i + 1; }
+    }
+    const tail = text.slice(start).trim(); if (tail) parts.push(tail);
+    return parts;
+  }
+
+  function readIdentifier(source) {
+    const text = source.trimStart();
+    if (!text) return null;
+    const first = text[0];
+    if (first === '"' || first === '`' || first === '[') {
+      const endChar = first === '[' ? ']' : first;
+      let end = 1;
+      while (end < text.length && text[end] !== endChar) end++;
+      if (end >= text.length) return null;
+      return { name: text.slice(1, end).replace(new RegExp(endChar + endChar, 'g'), endChar), rest: text.slice(end + 1).trimStart() };
+    }
+    const match = text.match(/^([\w$]+)/);
+    return match ? { name: match[1], rest: text.slice(match[0].length).trimStart() } : null;
+  }
+
+  function extractCreateBody(sql) {
+    const clean = stripSqlComments(sql);
+    const match = /\bCREATE\s+(?:TEMP(?:ORARY)?\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?/i.exec(clean);
+    if (!match) return null;
+    let open = clean.indexOf('(', match.index + match[0].length);
+    if (open < 0) return null;
+    let depth = 0, quote = '';
+    for (let i = open; i < clean.length; i++) {
+      const c = clean[i], n = clean[i + 1];
+      if (quote) { if (c === quote) { if (n === quote && quote !== ']') i++; else quote = ''; } else if (quote === ']' && c === ']') quote = ''; continue; }
+      if (c === "'" || c === '"' || c === '`') { quote = c; continue; }
+      if (c === '[') { quote = ']'; continue; }
+      if (c === '(') depth++;
+      if (c === ')' && --depth === 0) return { body: clean.slice(open + 1, i), prefix: clean.slice(match.index + match[0].length, open).trim() };
+    }
+    return null;
+  }
+
+  function parseDDL(text) {
+    const extracted = extractCreateBody(text);
+    if (!extracted) throw new Error('找不到完整的 CREATE TABLE 區塊，請確認括號與欄位定義。');
+    const primaryNames = new Set();
+    const definitions = splitTopLevel(extracted.body);
+    for (const part of definitions) {
+      const pk = part.match(/^\s*(?:CONSTRAINT\s+[\w"`\[\].]+\s+)?PRIMARY\s+KEY\s*\(([^)]+)\)/i);
+      if (pk) pk[1].split(',').forEach(name => primaryNames.add(name.trim().replace(/^["`\[]|["`\]]$/g, '').toLowerCase()));
+    }
+    const columns = [];
+    for (const part of definitions) {
+      if (/^\s*(?:CONSTRAINT|PRIMARY\s+KEY|FOREIGN\s+KEY|UNIQUE|CHECK|KEY\s|INDEX\s)/i.test(part)) continue;
+      const identifier = readIdentifier(part); if (!identifier) continue;
+      const typeMatch = identifier.rest.match(/^([A-Za-z][\w$]*(?:\s+(?:VARYING|PRECISION|WITHOUT|WITH|TIME|CHARACTER|DOUBLE))?(?:\s*\([^)]*\))?(?:\[\])?)/i);
+      if (!typeMatch) continue;
+      const type = typeMatch[1].replace(/\s+/g, ' ').trim().toUpperCase();
+      const attrs = identifier.rest.slice(typeMatch[0].length);
+      const inlinePk = /\bPRIMARY\s+KEY\b/i.test(attrs);
+      const notNull = /\bNOT\s+NULL\b/i.test(attrs) || inlinePk;
+      const comment = attrs.match(/\bCOMMENT\s+'((?:''|[^'])*)'/i);
+      columns.push({ id: makeId('col'), name: identifier.name, type, isPrimaryKey: inlinePk || primaryNames.has(identifier.name.toLowerCase()), isNullable: !notNull, ...(comment ? { comment: comment[1].replace(/''/g, "'") } : {}) });
+    }
+    if (!columns.length) throw new Error('CREATE TABLE 中沒有可辨識的欄位定義。');
+    return columns;
+  }
+
+  function inferJsonType(value) {
+    if (value === null) return 'NULL';
+    if (Array.isArray(value)) return 'JSON';
+    if (typeof value === 'string') return 'VARCHAR(255)';
+    if (typeof value === 'boolean') return 'BOOLEAN';
+    if (typeof value === 'number') return Number.isInteger(value) ? 'BIGINT' : 'DECIMAL';
+    return typeof value === 'object' ? 'JSON' : 'TEXT';
+  }
+
+  function parseJson(text) {
+    let json;
+    try { json = JSON.parse(text); } catch (error) { throw new Error(`JSON 格式錯誤：${error.message}`); }
+    if (!json || typeof json !== 'object') throw new Error('JSON 頂層必須是物件或物件陣列。');
+    if (json.properties && typeof json.properties === 'object') {
+      const required = new Set(Array.isArray(json.required) ? json.required : []);
+      return Object.entries(json.properties).map(([name, definition]) => {
+        const def = definition && typeof definition === 'object' ? definition : {};
+        const rawTypes = Array.isArray(def.type) ? def.type : [def.type || (def.properties ? 'object' : 'string')];
+        const nullable = rawTypes.includes('null') || !required.has(name);
+        const base = rawTypes.find(type => type && type !== 'null') || 'string';
+        const type = ({ string: def.format === 'date-time' ? 'TIMESTAMP' : def.format === 'date' ? 'DATE' : 'VARCHAR(255)', integer: 'BIGINT', number: 'DECIMAL', boolean: 'BOOLEAN', object: 'JSON', array: 'JSON' })[base] || String(base).toUpperCase();
+        return { id: makeId('col'), name, type, isNullable: nullable, ...(def.description ? { comment: String(def.description) } : {}) };
+      });
+    }
+    const sample = Array.isArray(json) ? json.find(item => item && typeof item === 'object' && !Array.isArray(item)) : json;
+    if (!sample || typeof sample !== 'object' || Array.isArray(sample)) throw new Error('找不到可推斷欄位的 JSON 物件。');
+    return Object.entries(sample).map(([name, value]) => ({ id: makeId('col'), name, type: inferJsonType(value), isNullable: value === null }));
+  }
+
+  function parsePlain(text) {
+    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (!lines.length) throw new Error('請先輸入欄位名稱或結構。');
+    const csv = lines.length === 1 && lines[0].includes(',');
+    const entries = csv ? splitTopLevel(lines[0]) : lines;
+    return entries.map(entry => {
+      const clean = entry.replace(/^[-*]\s*/, '').trim();
+      const parsed = readIdentifier(clean);
+      if (!parsed) return null;
+      const typeMatch = parsed.rest.match(/^([A-Za-z][\w$]*(?:\s+(?:VARYING|PRECISION|DOUBLE))?(?:\s*\([^)]*\))?)/i);
+      const attrs = typeMatch ? parsed.rest.slice(typeMatch[0].length) : '';
+      return { id: makeId('col'), name: parsed.name, type: typeMatch ? typeMatch[1].replace(/\s+/g, ' ').toUpperCase() : 'VARCHAR(255)', isNullable: !/\bNOT\s+NULL\b/i.test(attrs), isPrimaryKey: /\bPRIMARY\s+KEY\b/i.test(attrs) };
+    }).filter(Boolean);
+  }
+
+  function parseSchema(text) {
+    const value = text.trim(); if (!value) throw new Error('請輸入結構內容。');
+    if (/\bCREATE\s+(?:TEMP(?:ORARY)?\s+)?TABLE\b/i.test(value)) return parseDDL(value);
+    if (value.startsWith('{') || value.startsWith('[')) return parseJson(value);
+    return parsePlain(value);
+  }
+
+  // ---------- Matching and SQL/code generation ----------
+  const ABBREVIATIONS = { desc: 'description', description: 'description', amt: 'amount', amount: 'amount', dt: 'date', date: 'date', tm: 'time', time: 'time', qty: 'quantity', quantity: 'quantity' };
+  function normalizeName(name) { return String(name).replace(/_/g, '').toLowerCase(); }
+  function aliasName(name) { return String(name).split(/[_\s]+/).map(part => ABBREVIATIONS[part.toLowerCase()] || part.toLowerCase()).join(''); }
+  function suggestMatches() {
+    const mappedSources = new Set(state.mappings.flatMap(mapping => mapping.sourceColumnIds));
+    const mappedTargets = new Set(state.mappings.map(mapping => mapping.targetColumnId));
+    const availableSources = state.sourceColumns.filter(column => !mappedSources.has(column.id));
+    const candidates = [];
+    state.targetColumns.filter(column => !mappedTargets.has(column.id)).forEach(target => {
+      const source = availableSources.find(item => item.name.toLowerCase() === target.name.toLowerCase());
+      if (source) { candidates.push({ source, target, level: 1, label: '完全相符' }); return; }
+      const normalized = availableSources.filter(item => normalizeName(item.name) === normalizeName(target.name));
+      if (normalized.length === 1) { candidates.push({ source: normalized[0], target, level: 2, label: '命名相符' }); return; }
+      if (normalized.length > 1) return;
+      const aliases = availableSources.filter(item => aliasName(item.name) === aliasName(target.name));
+      if (aliases.length === 1) candidates.push({ source: aliases[0], target, level: 3, label: '縮寫相符' });
+    });
+    return candidates.sort((a, b) => a.level - b.level || a.target.name.localeCompare(b.target.name));
+  }
+
+  function dialectQuote(name, dialect = state.targetDialect) {
+    if (!state.options.quoteIdentifiers) return String(name);
+    const safe = String(name);
+    if (dialect === 'mysql') return `\`${safe.replace(/`/g, '``')}\``;
+    if (dialect === 'tsql') return `[${safe.replace(/]/g, ']]')}]`;
+    return `"${safe.replace(/"/g, '""')}"`;
+  }
+  function kw(word) { return state.options.autoUppercaseKeywords ? word.toUpperCase() : word.toLowerCase(); }
+  function sourceForMapping(mapping) { return mapping.sourceColumnIds.map(id => state.sourceColumns.find(column => column.id === id)).filter(Boolean); }
+  function targetForMapping(mapping) { return state.targetColumns.find(column => column.id === mapping.targetColumnId); }
+  function expressionFor(mapping) {
+    const columns = sourceForMapping(mapping);
+    const template = mapping.transform?.template || '{{src}}';
+    return template.replace(/\{\{src(\d*)\}\}/g, (token, index) => {
+      const column = index ? columns[Number(index) - 1] : columns[0];
+      return column ? dialectQuote(column.name) : 'NULL';
+    });
+  }
+  function selectSql() {
+    const expressions = state.targetColumns.map(target => {
+      const mapping = state.mappings.find(item => item.targetColumnId === target.id);
+      return mapping ? `    ${expressionFor(mapping)} ${kw('AS')} ${dialectQuote(target.name)}` : `    NULL ${kw('AS')} ${dialectQuote(target.name)} /* TODO: Unmapped */`;
+    });
+    if (!expressions.length) expressions.push('    1');
+    return `${kw('SELECT')}\n${expressions.join(',\n')}\n${kw('FROM')} ${dialectQuote(state.sourceTableName || 'source_table')};`;
+  }
+  function sqlMigration() {
+    const targets = state.targetColumns.map(column => dialectQuote(column.name));
+    return `${kw('INSERT INTO')} ${dialectQuote(state.targetTableName || 'target_table')} (${targets.join(', ')})\n${selectSql()}`;
+  }
+  function ddlType(type) {
+    const normalized = String(type || 'VARCHAR(255)').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (state.targetDialect !== 'oracle') return normalized;
+    if (/^(?:VARCHAR|VARCHAR2|CHARACTER VARYING)(\s*\([^)]*\))?$/.test(normalized)) return `VARCHAR2${normalized.match(/\([^)]*\)/)?.[0] || '(255)'}`;
+    if (/^(?:NVARCHAR|NVARCHAR2)(\s*\([^)]*\))?$/.test(normalized)) return `NVARCHAR2${normalized.match(/\([^)]*\)/)?.[0] || '(255)'}`;
+    if (/^(?:CHARACTER|CHAR)(\s*\([^)]*\))?$/.test(normalized)) return `CHAR${normalized.match(/\([^)]*\)/)?.[0] || '(1)'}`;
+    if (/^(?:TINYINT|SMALLINT)$/.test(normalized)) return 'NUMBER(5,0)';
+    if (/^(?:INT|INTEGER|MEDIUMINT)$/.test(normalized)) return 'NUMBER(10,0)';
+    if (/^BIGINT$/.test(normalized)) return 'NUMBER(19,0)';
+    if (/^(?:DECIMAL|NUMERIC)(\s*\([^)]*\))?$/.test(normalized)) return `NUMBER${normalized.match(/\([^)]*\)/)?.[0] || ''}`;
+    if (/^(?:FLOAT|REAL)$/.test(normalized)) return 'BINARY_FLOAT';
+    if (/^(?:DOUBLE|DOUBLE PRECISION)$/.test(normalized)) return 'BINARY_DOUBLE';
+    if (/^(?:DATETIME|TIMESTAMP WITHOUT TIME ZONE)$/.test(normalized)) return 'TIMESTAMP';
+    if (/^(?:TEXT|TINYTEXT|MEDIUMTEXT|LONGTEXT)$/.test(normalized)) return 'CLOB';
+    if (/^(?:BOOL|BOOLEAN)$/.test(normalized)) return 'NUMBER(1)';
+    return normalized;
+  }
+  function targetDDL() {
+    const columns = state.targetColumns.map(column => {
+      const type = ddlType(column.type);
+      const flags = `${column.isNullable === false ? ` ${kw('NOT NULL')}` : ''}${column.isPrimaryKey ? ` ${kw('PRIMARY KEY')}` : ''}`;
+      return `    ${dialectQuote(column.name)} ${type}${flags}`;
+    });
+    return `${kw('CREATE TABLE')} ${dialectQuote(state.targetTableName || 'target_table')} (\n${columns.join(',\n')}\n);`;
+  }
+
+  function pythonString(value) { return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`; }
+  function pandasExpression(mapping, targetName) {
+    const cols = sourceForMapping(mapping), template = mapping.transform?.template || '{{src}}';
+    const one = cols[0]; if (!one) return null;
+    let match;
+    const trimWrap = template.match(/^TRIM\((.*)\)$/is);
+    if (trimWrap) { const inner = pandasExpression({ ...mapping, transform: { ...mapping.transform, template: trimWrap[1] } }, targetName); if (inner) return `${inner}.str.strip()`; }
+    if (/^\{\{src\}\}$/i.test(template.trim())) return `df[${pythonString(targetName)}] = df[${pythonString(one.name)}]`;
+    if ((match = template.match(/^TRIM\(\s*\{\{src\}\}\s*\)$/i))) return `df[${pythonString(targetName)}] = df[${pythonString(one.name)}].apply(lambda v: v.strip() if isinstance(v, str) else v)`;
+    if ((match = template.match(/^UPPER\(\s*\{\{src\}\}\s*\)$/i))) return `df[${pythonString(targetName)}] = df[${pythonString(one.name)}].str.upper()`;
+    if ((match = template.match(/^LOWER\(\s*\{\{src\}\}\s*\)$/i))) return `df[${pythonString(targetName)}] = df[${pythonString(one.name)}].str.lower()`;
+    if ((match = template.match(/^(?:COALESCE|NVL)\(\s*\{\{src\}\}\s*,\s*(['"].*?['"]|-?\d+(?:\.\d+)?)\s*\)$/i))) return `df[${pythonString(targetName)}] = df[${pythonString(one.name)}].fillna(${match[1]})`;
+    if (/^CAST\(\s*\{\{src\}\}\s+AS\s+(?:NUMERIC|DECIMAL|INT|INTEGER|BIGINT|FLOAT|REAL)\s*\)$/i.test(template)) return `df[${pythonString(targetName)}] = pd.to_numeric(df[${pythonString(one.name)}], errors='coerce')`;
+    if (/^CAST\(\s*\{\{src\}\}\s+AS\s+DATE\s*\)$/i.test(template) || /^\{\{src\}\}::DATE$/i.test(template)) return `df[${pythonString(targetName)}] = pd.to_datetime(df[${pythonString(one.name)}], errors='coerce').dt.date`;
+    const trimmedConcat = template.match(/^TRIM\((CONCAT\(.*\))\)$/is);
+    if (trimmedConcat) { const inner = pandasExpression({ ...mapping, transform: { ...mapping.transform, template: trimmedConcat[1] } }, targetName); if (inner) return `${inner}.str.strip()`; }
+    const concat = template.match(/^CONCAT\((.*)\)$/is);
+    if (concat) {
+      const pieces = splitTopLevel(concat[1]);
+      const resolved = pieces.map(piece => {
+        const src = piece.match(/^\{\{src(\d*)\}\}$/);
+        if (src) { const col = src[1] ? cols[Number(src[1]) - 1] : cols[0]; return col ? `row[${pythonString(col.name)}]` : null; }
+        const literal = piece.match(/^'(.*)'$/s); return literal ? pythonString(literal[1].replace(/''/g, "'")) : null;
+      });
+      if (resolved.length && resolved.every(Boolean)) return `df[${pythonString(targetName)}] = df.apply(lambda row: ''.join('' if pd.isna(v) else str(v) for v in [${resolved.join(', ')}]), axis=1)`;
+    }
+    if (template.includes('||')) {
+      const pieces = template.split(/\s*\|\|\s*/);
+      const resolved = pieces.map(piece => {
+        const src = piece.match(/^\{\{src(\d*)\}\}$/);
+        if (src) { const col = src[1] ? cols[Number(src[1]) - 1] : cols[0]; return col ? `row[${pythonString(col.name)}]` : null; }
+        const literal = piece.match(/^'(.*)'$/s); return literal ? pythonString(literal[1].replace(/''/g, "'")) : null;
+      });
+      if (resolved.length && resolved.every(Boolean)) return `df[${pythonString(targetName)}] = df.apply(lambda row: ''.join('' if pd.isna(v) else str(v) for v in [${resolved.join(', ')}]), axis=1)`;
+    }
+    return null;
+  }
+  function pandasCode() {
+    const direct = {}, transformed = [], todos = [];
+    state.targetColumns.forEach(target => {
+      const mapping = state.mappings.find(item => item.targetColumnId === target.id);
+      if (!mapping) { todos.push(`# TODO: map ${target.name}; target is currently unmapped`); return; }
+      const expr = pandasExpression(mapping, target.name);
+      if (expr) {
+        const isDirect = /^\{\{src\}\}$/.test((mapping.transform?.template || '{{src}}').trim());
+        if (isDirect) direct[sourceForMapping(mapping)[0]?.name] = target.name;
+        else transformed.push(expr);
+      } else todos.push(`# TODO: translate SQL expression for ${target.name}: ${mapping.transform?.template || '{{src}}'}`);
+    });
+    const lines = ['import pandas as pd', '', '# df is the source DataFrame'];
+    if (Object.keys(direct).length) lines.push(`df = df.rename(columns={${Object.entries(direct).map(([from, to]) => `${pythonString(from)}: ${pythonString(to)}`).join(', ')}})`);
+    if (transformed.length) lines.push(...transformed);
+    if (todos.length) lines.push('', ...todos);
+    return lines.join('\n');
+  }
+  function dbtCode() {
+    const src = String(state.sourceTableName || 'source_table').replace(/'/g, "''");
+    const select = state.targetColumns.map(target => {
+      const mapping = state.mappings.find(item => item.targetColumnId === target.id);
+      return mapping ? `    ${expressionFor(mapping)} ${kw('AS')} ${dialectQuote(target.name)}` : `    NULL ${kw('AS')} ${dialectQuote(target.name)} /* TODO: Unmapped */`;
+    });
+    return `${kw('WITH')} source_data ${kw('AS')} (\n    ${kw('SELECT')} * ${kw('FROM')} {{ source('source', '${src}') }}\n)\n${kw('SELECT')}\n${select.length ? select.join(',\n') : '    *'}\n${kw('FROM')} source_data;`;
+  }
+  function xmlEscape(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function mybatisCode() {
+    const id = `select${String(state.targetTableName || 'Target').replace(/[^A-Za-z0-9_$]/g, '_')}`;
+    const body = selectSql().replace(/;\s*$/, '');
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<mapper namespace="GeneratedMapper">\n  <select id="${escapeHtml(id)}" resultType="map">\n${xmlEscape(body).split('\n').map(line => `    ${line}`).join('\n')}\n  </select>\n</mapper>`;
+  }
+  const OUTPUTS = {
+    sql: { language: 'SQL', filename: 'migration.sql', make: sqlMigration },
+    ddl: { language: 'SQL DDL', filename: 'target_schema.sql', make: targetDDL },
+    pandas: { language: 'PYTHON', filename: 'transform.py', make: pandasCode },
+    dbt: { language: 'DBT SQL', filename: 'model.sql', make: dbtCode },
+    mybatis: { language: 'XML', filename: 'Mapper.xml', make: mybatisCode }
+  };
+
+  // ---------- Persistence and rendering ----------
+  function persist() {
+    try {
+      const saved = { version: VERSION, sourceTableName: state.sourceTableName, targetTableName: state.targetTableName, sourceColumns: state.sourceColumns, targetColumns: state.targetColumns, mappings: state.mappings, targetDialect: state.targetDialect, options: state.options, activeTab: state.activeTab };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    } catch (error) { toast('無法儲存至瀏覽器本機空間。', true); }
+  }
+  function restore() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!saved || ![1, VERSION].includes(saved.version)) return false;
+      Object.assign(state, saved);
+      if (saved.version === 1) {
+        if (state.targetDialect === 'postgresql') state.targetDialect = 'oracle';
+        persist();
+      }
+      return true;
+    } catch (_) { return false; }
+  }
+  function effectiveState(input) {
+    const copy = clone(input);
+    if (copy.options.includeAuditFields) {
+      for (const name of ['created_at', 'updated_at']) {
+        if (!copy.targetColumns.some(column => column.name.toLowerCase() === name)) copy.targetColumns.push({ id: `audit_${name}`, name, type: 'TIMESTAMP', isNullable: true, isAuditField: true });
+      }
+    }
+    return copy;
+  }
+  function syncControls() {
+    $('#sourceTable').value = state.sourceTableName; $('#targetTable').value = state.targetTableName;
+    $('#dialect').value = state.targetDialect; $('#quoteIdentifiers').checked = !!state.options.quoteIdentifiers;
+    $('#uppercaseKeywords').checked = !!state.options.autoUppercaseKeywords; $('#auditFields').checked = !!state.options.includeAuditFields;
+  }
+  function typeMark(type) {
+    const value = String(type).toUpperCase();
+    if (/INT|NUM|DEC|FLOAT|DOUBLE|REAL/.test(value)) return '#';
+    if (/DATE|TIME/.test(value)) return '◷';
+    if (/BOOL|BIT/.test(value)) return '◐';
+    if (/JSON|ARRAY/.test(value)) return '{}';
+    return 'A';
+  }
+  function fieldRow(column, side) {
+    const source = side === 'source';
+    const mapped = source ? state.mappings.some(mapping => mapping.sourceColumnIds.includes(column.id)) : state.mappings.some(mapping => mapping.targetColumnId === column.id);
+    const selected = source && state.selectedSourceId === column.id;
+    const pending = !source && state.selectedSourceId && !mapped;
+    const tags = `${column.isPrimaryKey ? '<span class="field-tag pk">PK</span>' : ''}${column.isNullable === false ? '<span class="field-tag nn">NN</span>' : ''}${column.isAuditField ? '<span class="field-tag">AUTO</span>' : ''}`;
+    return `<div class="field-row ${mapped ? 'mapped' : ''} ${selected ? 'selected' : ''} ${pending ? 'pending-target' : ''}" data-side="${side}" data-id="${escapeHtml(column.id)}" tabindex="0" role="button" aria-label="${escapeHtml(column.name)} ${source ? '來源' : '目標'}欄位${mapped ? '，已映射' : ''}">
+      ${source ? '' : '<span class="endpoint" data-endpoint="target" aria-hidden="true"></span>'}
+      <span class="field-main"><span class="field-kind">${typeMark(column.type)}</span><span class="field-label" title="${escapeHtml(column.name)}">${escapeHtml(column.name)}</span><span class="field-type">${escapeHtml(column.type || 'VARCHAR(255)')}</span><span class="field-flags">${tags}</span></span>
+      <span class="row-actions"><button class="mini-button edit-field" title="編輯欄位" aria-label="編輯 ${escapeHtml(column.name)}">⋯</button><button class="mini-button delete-field" title="刪除欄位" aria-label="刪除 ${escapeHtml(column.name)}">×</button></span>
+      ${source ? '<span class="endpoint" data-endpoint="source" aria-hidden="true"></span>' : ''}
+    </div>`;
+  }
+  function renderLists() {
+    const targets = effectiveState(state).targetColumns;
+    $('#sourceFields').innerHTML = state.sourceColumns.map(column => fieldRow(column, 'source')).join('') || '<div class="list-empty">尚無欄位，貼上 DDL 或手動新增。</div>';
+    $('#targetFields').innerHTML = targets.map(column => fieldRow(column, 'target')).join('') || '<div class="list-empty">尚無欄位，貼上 DDL 或手動新增。</div>';
+    $('#sourceCount').textContent = state.sourceColumns.length; $('#targetCount').textContent = targets.length;
+    $('#sourceStatus').textContent = state.sourceColumns.length ? `${state.sourceColumns.length} 個欄位已就緒` : '等待輸入來源欄位';
+    $('#targetStatus').textContent = targets.length ? `${targets.length} 個欄位已就緒` : '等待輸入目標欄位';
+    $('.source-panel .status-dot').classList.toggle('ready', state.sourceColumns.length > 0);
+    $('.target-panel .status-dot').classList.toggle('ready', targets.length > 0);
+    $('#mappingSummary').textContent = `${state.mappings.length} 個目標欄位已映射`;
+    $('#canvasEmpty').hidden = state.mappings.length > 0;
+    scheduleConnectors();
+  }
+  function renderCode() {
+    const output = OUTPUTS[state.activeTab] || OUTPUTS.sql;
+    const code = output.make(); $('#codeOutput').innerHTML = highlightCode(code, state.activeTab); $('#codeLanguage').textContent = output.language; $('#codeFilename').textContent = output.filename;
+    const lines = code.split('\n').length; $('#codeLineCount').textContent = `${lines} 行`;
+    $$('#codeTabs [role="tab"]').forEach(tab => tab.setAttribute('aria-selected', String(tab.dataset.tab === state.activeTab)));
+  }
+  function highlightCode(source, format) {
+    const pattern = /(<\/?[A-Za-z][^>]*>|\{\{\s*source\([^}]+\)\s*\}\}|--[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*|'(?:''|[^'])*'|"(?:""|[^"])*"|\b(?:SELECT|INSERT|INTO|CREATE|TABLE|WITH|AS|FROM|NULL|NOT|PRIMARY|KEY|UNIQUE|CONSTRAINT|CASE|WHEN|THEN|ELSE|END|CAST|TRIM|CONCAT|COALESCE|NVL|UPPER|LOWER|TO_CHAR|AND|OR|DATE|NUMERIC|VARCHAR|TIMESTAMP|BIGINT|SMALLINT|INT|BOOLEAN|TRUE|FALSE|RETURN|IMPORT|PD|DF)\b)/gi;
+    let html = '', last = 0, match;
+    while ((match = pattern.exec(source))) {
+      html += escapeHtml(source.slice(last, match.index));
+      const token = match[0];
+      const kind = token.startsWith('<') ? 'tok-tag' : token.startsWith('{{') ? 'tok-macro' : token.startsWith('--') || token.startsWith('/*') || token.startsWith('#') ? 'tok-comment' : token.startsWith("'") || token.startsWith('"') ? 'tok-string' : 'tok-keyword';
+      html += `<span class="${kind}">${escapeHtml(token)}</span>`; last = pattern.lastIndex;
+    }
+    return html + escapeHtml(source.slice(last));
+  }
+  function render() { syncControls(); renderLists(); renderCode(); }
+  let connectorFrame = 0;
+  function scheduleConnectors() { if (connectorFrame) return; connectorFrame = requestAnimationFrame(() => { connectorFrame = 0; drawConnectors(); }); }
+  function relativePoint(element, rootRect) {
+    const rect = element.getBoundingClientRect(); return { x: rect.left + rect.width / 2 - rootRect.left, y: rect.top + rect.height / 2 - rootRect.top };
+  }
+  function drawConnectors() {
+    const svg = $('#connectorSvg'), layout = $('#mappingLayout'); if (!svg || !layout) return;
+    const rect = layout.getBoundingClientRect(); svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`); svg.setAttribute('width', rect.width); svg.setAttribute('height', rect.height);
+    const markup = state.mappings.map(mapping => {
+      const target = $(`.target-panel .field-row[data-id="${CSS.escape(mapping.targetColumnId)}"] .endpoint`);
+      const targetColumn = targetForMapping(mapping); if (!target || !targetColumn) return '';
+      const to = relativePoint(target, rect);
+      return sourceForMapping(mapping).map(source => {
+        const fromEl = $(`.source-panel .field-row[data-id="${CSS.escape(source.id)}"] .endpoint`); if (!fromEl) return '';
+        const from = relativePoint(fromEl, rect), dx = Math.max(45, Math.abs(to.x - from.x) * .42);
+        const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
+        const label = mapping.transform?.type !== 'DIRECT' ? mapping.transform?.template?.split('(')[0] || 'SQL' : '';
+        return `<path class="connector ${mapping.transform?.type !== 'DIRECT' ? 'active' : ''}" data-mapping="${escapeHtml(mapping.id)}" d="M ${from.x} ${from.y} C ${from.x + dx} ${from.y}, ${to.x - dx} ${to.y}, ${to.x} ${to.y}"/>${label ? `<rect class="connector-label-bg" x="${midX - 22}" y="${midY - 10}" width="44" height="17" rx="5"/><text class="connector-label" x="${midX}" y="${midY + 2}" text-anchor="middle">${escapeHtml(label.slice(0, 9))}</text>` : ''}`;
+      }).join('');
+    }).join('');
+    svg.innerHTML = markup;
+  }
+
+  // ---------- UI actions ----------
+  let toastTimer;
+  function toast(message, error = false) {
+    const node = document.createElement('div'); node.className = `toast${error ? ' error' : ''}`; node.textContent = message; $('#toastRegion').append(node);
+    setTimeout(() => node.remove(), 3100);
+  }
+  function saveAndRender() { persist(); render(); }
+  function openSchemaDialog(side) {
+    state.editingSide = side;
+    $('#dialogTitle').textContent = side === 'source' ? '輸入來源結構' : '輸入目標結構';
+    $('#schemaText').value = state[side === 'source' ? 'sourceInput' : 'targetInput'] || '';
+    $('#schemaError').textContent = ''; $('#schemaDialog').showModal(); setTimeout(() => $('#schemaText').focus(), 0);
+  }
+  function parseDialogSchema(event) {
+    if (event.submitter?.id !== 'parseSchemaButton') return;
+    event.preventDefault(); const side = state.editingSide;
+    try {
+      const text = $('#schemaText').value, columns = parseSchema(text);
+      state[side === 'source' ? 'sourceColumns' : 'targetColumns'] = columns;
+      state[side === 'source' ? 'sourceInput' : 'targetInput'] = text;
+      if (/\bCREATE\s+(?:TEMP(?:ORARY)?\s+)?TABLE\b/i.test(text)) {
+        const extracted = extractCreateBody(text), lastPart = extracted?.prefix.split('.').pop(), table = lastPart && readIdentifier(lastPart);
+        if (table?.name) state[side === 'source' ? 'sourceTableName' : 'targetTableName'] = table.name;
+      }
+      state.mappings = state.mappings.filter(mapping => mapping.sourceColumnIds.every(id => state.sourceColumns.some(column => column.id === id)) && state.targetColumns.some(column => column.id === mapping.targetColumnId));
+      state.selectedSourceId = null; $('#schemaDialog').close(); saveAndRender(); toast(`已解析 ${columns.length} 個欄位。`);
+    } catch (error) { $('#schemaError').textContent = error.message; }
+  }
+  function beginMapping(sourceId) {
+    state.selectedSourceId = sourceId; renderLists(); $('#dragHint').hidden = false;
+  }
+  function completeMapping(targetId) {
+    const sourceId = state.selectedSourceId; if (!sourceId) return;
+    const existing = state.mappings.find(mapping => mapping.targetColumnId === targetId);
+    if (existing) {
+      if (!existing.sourceColumnIds.includes(sourceId)) { existing.sourceColumnIds.push(sourceId); existing.transform = { type: 'CUSTOM', template: `CONCAT(${existing.sourceColumnIds.map((_, i) => `{{src${i + 1}}}`).join(', ')})` }; }
+    } else state.mappings.push({ id: makeId('map'), sourceColumnIds: [sourceId], targetColumnId: targetId, transform: { type: 'DIRECT', template: '{{src}}' } });
+    state.selectedSourceId = null; $('#dragHint').hidden = true; saveAndRender();
+    const mapping = state.mappings.find(item => item.targetColumnId === targetId); if (mapping && mapping.sourceColumnIds.length > 1) openTransform(mapping.id);
+  }
+  function removeMapping(mappingId) { state.mappings = state.mappings.filter(mapping => mapping.id !== mappingId); saveAndRender(); toast('已移除映射。'); }
+  function openTransform(mappingId) {
+    const mapping = state.mappings.find(item => item.id === mappingId); if (!mapping) return;
+    state.editingMappingId = mappingId;
+    const sources = sourceForMapping(mapping), target = targetForMapping(mapping);
+    $('#transformContext').textContent = `${sources.map(column => column.name).join(' + ') || '來源欄位'}  →  ${target?.name || '目標欄位'}`;
+    $('#transformTemplate').value = mapping.transform?.template || '{{src}}'; $('#transformError').textContent = '';
+    $('#presetSelect').value = ''; $('#transformDialog').showModal();
+  }
+  function applyTransformPreset() {
+    const choice = $('#presetSelect').value, mapping = state.mappings.find(item => item.id === state.editingMappingId); if (!choice || !mapping) return;
+    const src = mapping.sourceColumnIds.length > 1 ? mapping.sourceColumnIds.map((_, i) => `{{src${i + 1}}}`) : ['{{src}}'];
+    const value = $('#presetValue').value || "''", caseValue = $('#caseValue').value || "'A'", caseResult = $('#caseResult').value || '1';
+    const templates = {
+      TRIM: `TRIM(${src[0]})`, UPPER: `UPPER(${src[0]})`, LOWER: `LOWER(${src[0]})`,
+      COALESCE: `COALESCE(${src[0]}, ${value})`, NVL: `NVL(${src[0]}, ${value})`,
+      CAST_NUMERIC: `CAST(${src[0]} AS NUMERIC)`, CAST_DATE: `CAST(${src[0]} AS DATE)`,
+      TO_CHAR: `TO_CHAR(${src[0]}, 'YYYY-MM-DD HH24:MI:SS')`, CASE: `CASE ${src[0]} WHEN ${caseValue} THEN ${caseResult} ELSE 0 END`,
+      CONCAT: state.targetDialect === 'oracle' ? src.join(" || ' ' || ") : `CONCAT(${src.join(", ' ', ")})`
+    };
+    $('#transformTemplate').value = templates[choice] || '';
+  }
+  function saveTransform(event) {
+    if (event.submitter?.id !== 'saveTransformButton') return;
+    event.preventDefault(); const mapping = state.mappings.find(item => item.id === state.editingMappingId); if (!mapping) return;
+    const template = $('#transformTemplate').value.trim();
+    if (!template) { $('#transformError').textContent = '請輸入 SQL 表達式，或移除此映射。'; return; }
+    const maxSource = mapping.sourceColumnIds.length;
+    const indexes = [...template.matchAll(/\{\{src(\d*)\}\}/g)].map(match => match[1] ? Number(match[1]) : 1);
+    if (indexes.some(index => index < 1 || index > maxSource)) { $('#transformError').textContent = `此映射有 ${maxSource} 個來源欄位，請使用 {{src1}} 到 {{src${maxSource}}}。`; return; }
+    mapping.transform = { type: template === '{{src}}' ? 'DIRECT' : 'CUSTOM', template }; $('#transformDialog').close(); saveAndRender(); toast('轉換規則已更新。');
+  }
+  function showMatchPreview() {
+    if (!state.sourceColumns.length || !effectiveState(state).targetColumns.length) { toast('請先輸入來源與目標結構。', true); return; }
+    const suggestions = suggestMatches(), list = $('#matchList');
+    if (!suggestions.length) list.innerHTML = '<div class="match-empty">沒有新的候選配對。<br>欄位可能已映射，或名稱未符合配對規則。</div>';
+    else list.innerHTML = suggestions.map((item, index) => `<label class="match-item"><input type="checkbox" data-match-index="${index}" checked><span class="match-column" title="${escapeHtml(item.source.name)}">${escapeHtml(item.source.name)}</span><span class="match-arrow">→</span><span class="match-column" title="${escapeHtml(item.target.name)}">${escapeHtml(item.target.name)}</span><span class="match-level">${item.label}</span></label>`).join('');
+    state.pendingMatches = suggestions; $('#matchDialog').showModal();
+  }
+  function applyMatches(event) {
+    event.preventDefault(); const selected = $$('[data-match-index]:checked', $('#matchList')).map(box => state.pendingMatches[Number(box.dataset.matchIndex)]).filter(Boolean);
+    selected.forEach(item => { if (!state.mappings.some(mapping => mapping.targetColumnId === item.target.id || mapping.sourceColumnIds.includes(item.source.id))) state.mappings.push({ id: makeId('map'), sourceColumnIds: [item.source.id], targetColumnId: item.target.id, transform: { type: 'DIRECT', template: '{{src}}' } }); });
+    $('#matchDialog').close(); saveAndRender(); toast(`已建立 ${selected.length} 個欄位映射。`);
+  }
+  function addColumn(side, column) {
+    const name = column?.name ?? prompt(`輸入${side === 'source' ? '來源' : '目標'}欄位名稱`); if (name === null || !String(name).trim()) return;
+    const type = column?.type ?? prompt('輸入資料型態', 'VARCHAR(255)'); if (type === null) return;
+    const item = { id: makeId(side), name: String(name).trim(), type: String(type).trim() || 'VARCHAR(255)', isNullable: true };
+    (side === 'source' ? state.sourceColumns : state.targetColumns).push(item); saveAndRender();
+  }
+  function editColumn(side, id) {
+    if (side === 'target' && id.startsWith('audit_')) { toast('稽核欄位由選項管理，請停用「補齊稽核欄位」後再調整。', true); return; }
+    const column = (side === 'source' ? state.sourceColumns : state.targetColumns).find(item => item.id === id); if (!column) return;
+    const name = prompt('欄位名稱', column.name); if (name === null || !name.trim()) return;
+    const type = prompt('資料型態', column.type); if (type === null) return;
+    column.name = name.trim(); column.type = type.trim() || 'VARCHAR(255)';
+    saveAndRender();
+  }
+  function deleteColumn(side, id) {
+    if (side === 'target' && id.startsWith('audit_')) { toast('請透過「補齊稽核欄位」選項管理此欄位。', true); return; }
+    if (side === 'source') { state.sourceColumns = state.sourceColumns.filter(item => item.id !== id); state.mappings = state.mappings.filter(mapping => !mapping.sourceColumnIds.includes(id)); }
+    else { state.targetColumns = state.targetColumns.filter(item => item.id !== id); state.mappings = state.mappings.filter(mapping => mapping.targetColumnId !== id); }
+    saveAndRender();
+  }
+  function loadExample() { Object.assign(state, clone(EXAMPLE)); state.selectedSourceId = null; saveAndRender(); toast('範例已載入。'); }
+  function clearAll() {
+    if (!confirm('清除來源、目標欄位與所有映射？')) return;
+    state.sourceColumns = []; state.targetColumns = []; state.mappings = []; state.sourceInput = ''; state.targetInput = ''; state.selectedSourceId = null;
+    state.sourceTableName = 'source_table'; state.targetTableName = 'target_table'; saveAndRender(); toast('工作區已清除。');
+  }
+  function swapSides() {
+    [state.sourceTableName, state.targetTableName] = [state.targetTableName, state.sourceTableName];
+    [state.sourceColumns, state.targetColumns] = [state.targetColumns, state.sourceColumns];
+    [state.sourceInput, state.targetInput] = [state.targetInput, state.sourceInput];
+    state.mappings = state.mappings.flatMap(mapping => mapping.sourceColumnIds.map(sourceId => ({ id: makeId('map'), sourceColumnIds: [mapping.targetColumnId], targetColumnId: sourceId, transform: { type: 'DIRECT', template: '{{src}}' } })));
+    state.options.includeAuditFields = false;
+    state.selectedSourceId = null; saveAndRender(); toast('來源與目標已交換；轉換規則已重設為直接映射。');
+  }
+  function download(filename, contents, type = 'text/plain;charset=utf-8') {
+    const blob = new Blob([contents], { type }), url = URL.createObjectURL(blob), anchor = document.createElement('a');
+    anchor.href = url; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function exportState() {
+    const snapshot = { version: VERSION, exportedAt: new Date().toISOString(), sourceTableName: state.sourceTableName, targetTableName: state.targetTableName, sourceColumns: state.sourceColumns, targetColumns: state.targetColumns, mappings: state.mappings, targetDialect: state.targetDialect, options: state.options };
+    download('schema-studio-mapping.json', JSON.stringify(snapshot, null, 2), 'application/json;charset=utf-8'); toast('映射設定 JSON 已匯出。');
+  }
+  function importState(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const incoming = JSON.parse(String(reader.result));
+        if (!incoming || !Array.isArray(incoming.sourceColumns) || !Array.isArray(incoming.targetColumns) || !Array.isArray(incoming.mappings)) throw new Error('缺少必要的欄位或映射資料。');
+        const validColumn = column => column && typeof column.id === 'string' && typeof column.name === 'string' && column.name.trim();
+        if (![...incoming.sourceColumns, ...incoming.targetColumns].every(validColumn)) throw new Error('欄位資料必須包含非空的 ID 與名稱。');
+        const validSources = new Set(incoming.sourceColumns.map(item => item.id)), validTargets = new Set(incoming.targetColumns.map(item => item.id));
+        if (incoming.mappings.some(mapping => !validTargets.has(mapping.targetColumnId) || !Array.isArray(mapping.sourceColumnIds) || mapping.sourceColumnIds.some(id => !validSources.has(id)))) throw new Error('映射資料參照了不存在的欄位。');
+        state.sourceTableName = String(incoming.sourceTableName || 'source_table'); state.targetTableName = String(incoming.targetTableName || 'target_table');
+        state.sourceColumns = incoming.sourceColumns; state.targetColumns = incoming.targetColumns; state.mappings = incoming.mappings;
+        state.targetDialect = ['mysql', 'postgresql', 'oracle', 'tsql', 'sqlite'].includes(incoming.targetDialect) ? incoming.targetDialect : 'oracle';
+        state.options = { ...state.options, ...(incoming.options || {}) };
+        if (state.options.includeAuditFields) for (const name of ['created_at', 'updated_at']) if (!state.targetColumns.some(column => column.name.toLowerCase() === name)) state.targetColumns.push({ id: `audit_${name}`, name, type: 'TIMESTAMP', isNullable: true, isAuditField: true });
+        saveAndRender(); toast('映射設定已匯入。');
+      } catch (error) { toast(`匯入失敗：${error.message}`, true); }
+      $('#importFile').value = '';
+    };
+    reader.onerror = () => toast('無法讀取選取的設定檔。', true); reader.readAsText(file);
+  }
+  async function copyCode() {
+    const text = $('#codeOutput').textContent;
+    try { await navigator.clipboard.writeText(text); toast('程式碼已複製到剪貼簿。'); }
+    catch (_) {
+      const temp = document.createElement('textarea'); temp.value = text; document.body.append(temp); temp.select();
+      const ok = document.execCommand('copy'); temp.remove(); toast(ok ? '程式碼已複製到剪貼簿。' : '複製失敗，請手動選取程式碼。', !ok);
+    }
+  }
+  function updateOption(key, value) {
+    state.options[key] = value;
+    if (key === 'includeAuditFields' && value) {
+      for (const name of ['created_at', 'updated_at']) if (!state.targetColumns.some(column => column.name.toLowerCase() === name)) state.targetColumns.push({ id: `audit_${name}`, name, type: 'TIMESTAMP', isNullable: true, isAuditField: true });
+    }
+    if (key === 'includeAuditFields' && !value) state.targetColumns = state.targetColumns.filter(column => !column.isAuditField);
+    saveAndRender();
+  }
+
+  function attachEvents() {
+    $('#sourceInputButton').addEventListener('click', () => openSchemaDialog('source')); $('#sourcePasteButton').addEventListener('click', () => openSchemaDialog('source'));
+    $('#targetInputButton').addEventListener('click', () => openSchemaDialog('target')); $('#targetPasteButton').addEventListener('click', () => openSchemaDialog('target'));
+    $('#schemaForm').addEventListener('submit', parseDialogSchema); $('#autoMatchButton').addEventListener('click', showMatchPreview); $('#applyMatchesButton').addEventListener('click', applyMatches);
+    $('#exampleButton').addEventListener('click', loadExample); $('#clearButton').addEventListener('click', clearAll); $('#swapButton').addEventListener('click', swapSides);
+    $('#addSourceButton').addEventListener('click', () => addColumn('source')); $('#addTargetButton').addEventListener('click', () => addColumn('target'));
+    $('#newMappingButton').addEventListener('click', () => { if (!state.sourceColumns.length || !state.targetColumns.length) { toast('請先輸入來源與目標欄位。', true); return; } const source = state.sourceColumns.find(column => !state.mappings.some(mapping => mapping.sourceColumnIds.includes(column.id))); if (source) { beginMapping(source.id); $('#sourceFields').scrollIntoView({ block: 'nearest' }); } else toast('來源欄位都已映射；仍可直接點選欄位建立多對一映射。'); });
+    $('#sourceTable').addEventListener('input', event => { state.sourceTableName = event.target.value; persist(); renderCode(); });
+    $('#targetTable').addEventListener('input', event => { state.targetTableName = event.target.value; persist(); renderCode(); });
+    $('#dialect').addEventListener('change', event => { state.targetDialect = event.target.value; saveAndRender(); });
+    $('#quoteIdentifiers').addEventListener('change', event => updateOption('quoteIdentifiers', event.target.checked));
+    $('#uppercaseKeywords').addEventListener('change', event => updateOption('autoUppercaseKeywords', event.target.checked));
+    $('#auditFields').addEventListener('change', event => updateOption('includeAuditFields', event.target.checked));
+    $('#cancelMapping').addEventListener('click', () => { state.selectedSourceId = null; $('#dragHint').hidden = true; renderLists(); });
+    $('#codeTabs').addEventListener('click', event => { const tab = event.target.closest('[data-tab]'); if (tab) { state.activeTab = tab.dataset.tab; persist(); renderCode(); } });
+    $('#copyButton').addEventListener('click', copyCode); $('#downloadButton').addEventListener('click', () => download(OUTPUTS[state.activeTab].filename, $('#codeOutput').textContent, state.activeTab === 'mybatis' ? 'application/xml;charset=utf-8' : 'text/plain;charset=utf-8'));
+    $('#exportButton').addEventListener('click', exportState); $('#importButton').addEventListener('click', () => $('#importFile').click());
+    $('#importFile').addEventListener('change', event => { if (event.target.files?.[0]) importState(event.target.files[0]); });
+    $('#presetSelect').addEventListener('change', applyTransformPreset); $('#transformForm').addEventListener('submit', saveTransform);
+    $('#removeMappingButton').addEventListener('click', () => { const id = state.editingMappingId; $('#transformDialog').close(); removeMapping(id); });
+    $('#matchDialog').addEventListener('submit', event => { if (event.submitter?.id !== 'applyMatchesButton') return; });
+    $('#mappingLayout').addEventListener('click', event => {
+      const connector = event.target.closest('.connector'); if (connector) { openTransform(connector.dataset.mapping); return; }
+      const action = event.target.closest('.mini-button'), row = event.target.closest('.field-row'); if (!row) return;
+      const side = row.dataset.side, id = row.dataset.id;
+      if (action?.classList.contains('delete-field')) { event.stopPropagation(); deleteColumn(side, id); return; }
+      if (action?.classList.contains('edit-field')) { event.stopPropagation(); editColumn(side, id); return; }
+      if (side === 'source') {
+        if (state.selectedSourceId === id) { state.selectedSourceId = null; $('#dragHint').hidden = true; renderLists(); }
+        else beginMapping(id);
+      } else if (state.selectedSourceId) completeMapping(id);
+      else { const mapping = state.mappings.find(item => item.targetColumnId === id); if (mapping) openTransform(mapping.id); }
+    });
+    $('#sourceFields').addEventListener('scroll', scheduleConnectors, { passive: true }); $('#targetFields').addEventListener('scroll', scheduleConnectors, { passive: true });
+    $('#canvasViewport').addEventListener('scroll', scheduleConnectors, { passive: true }); window.addEventListener('resize', scheduleConnectors, { passive: true });
+    const svg = $('#connectorSvg'); let drag = null;
+    $('#mappingLayout').addEventListener('pointerdown', event => {
+      const endpoint = event.target.closest('.endpoint[data-endpoint="source"]'); if (!endpoint) return;
+      const row = endpoint.closest('.field-row'); if (!row) return;
+      drag = { sourceId: row.dataset.id }; state.selectedSourceId = row.dataset.id; $('#dragHint').hidden = false;
+      const layoutRect = $('#mappingLayout').getBoundingClientRect(), point = relativePoint(endpoint, layoutRect);
+      svg.querySelector('.pending-line')?.remove(); const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.setAttribute('class', 'connector pending-line'); svg.append(path); drag.path = path; drag.start = point;
+      try { endpoint.setPointerCapture(event.pointerId); } catch (_) {}
+    });
+    document.addEventListener('pointermove', event => {
+      if (!drag) return; const rect = $('#mappingLayout').getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top, dx = Math.max(45, Math.abs(x - drag.start.x) * .4);
+      drag.path.setAttribute('d', `M ${drag.start.x} ${drag.start.y} C ${drag.start.x + dx} ${drag.start.y}, ${x - dx} ${y}, ${x} ${y}`);
+    });
+    document.addEventListener('pointerup', event => {
+      if (!drag) return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.target-panel .field-row');
+      drag.path.remove(); const source = drag.sourceId; drag = null;
+      if (target) { state.selectedSourceId = source; completeMapping(target.dataset.id); } else { state.selectedSourceId = source; renderLists(); }
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.selectedSourceId) { state.selectedSourceId = null; $('#dragHint').hidden = true; renderLists(); } });
+  }
+
+  function init() {
+    restore(); attachEvents(); render();
+    $('#mappingLayout').classList.add('ready');
+  }
+  init();
+}());
+
+  </script>
+</body>
+</html>

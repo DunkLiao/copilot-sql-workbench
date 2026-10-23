@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; worker-src blob:; img-src data:">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<title>SQL SPA Tools｜SQL 個資清除器</title>
+<style>
+/* 舊元件相容別名；實際顏色由 theme.css 統一提供。 */
+:root{
+  --head:#7d7d7d;      /* 頁首 */
+  --pri:#6d6d6d;       /* 主要按鈕 */
+  --pri-h:#5f5f5f;     /* 主要按鈕 hover */
+  --danger:#7b7b7b;    /* 危險按鈕 */
+  --danger-h:#6a6a6a;
+  --page:#f6f6f6;      /* 頁面背景 暖灰白 */
+  --panel:#fefefe;     /* 面板背景 */
+  --bg:#e8e8e8;        /* 表頭／區塊底色 */
+  --bd:#d5d5d5;        /* 邊框 */
+  --line:#e3e3e3;      /* 表格分隔線 */
+  --sel:#f1f1f1;       /* 勾選／選取列 */
+  --hover:#f0f0f0;
+  --text:#3c3c3c;
+  --muted:#797979;
+  --warn:#686868; --warn-bg:#e8e8e8;
+  --err:#626262;  --err-bg:#e1e1e1;
+  --ok:#646464;   --ok-bg:#e8e8e8;
+  --m-id:#dadada; --m-acct:#cbcbcb; --m-seq:#d1d1d1; --m-sub:#d3d3d3; --m-ban:#cfcfcf;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--theme-font-sans);font-size:14px;color:var(--text);background:var(--page)}
+header{background:var(--head);color:#fafafa;padding:10px 18px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.5px}
+header small{opacity:.85}
+main{padding:14px 18px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+button{border:1px solid var(--bd);background:var(--panel);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font:inherit;transition:background .15s}
+button:hover:not(:disabled){background:var(--bg)}
+button.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+button.pri:hover:not(:disabled){background:var(--pri-h)}
+button.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+button.danger:hover:not(:disabled){background:var(--danger-h)}
+button:disabled{opacity:.45;cursor:not-allowed}
+fieldset{border:1px solid var(--bd);border-radius:6px;padding:6px 12px;margin:0 0 10px;background:var(--panel)}
+legend{font-weight:bold;padding:0 4px;color:var(--pri)}
+label{margin-right:14px;white-space:nowrap}
+input[type=checkbox]{accent-color:var(--pri)}
+#status{margin:6px 0;color:var(--muted)}
+progress{width:260px;vertical-align:middle;accent-color:var(--pri)}
+.sum span{display:inline-block;margin-right:18px;color:var(--muted)}
+.sum b{font-size:16px;color:var(--text)}
+.layout{display:grid;grid-template-columns:minmax(560px,1.3fr) 1fr;gap:12px}
+.panel{border:1px solid var(--bd);border-radius:6px;overflow:auto;max-height:calc(100vh - 310px);background:var(--panel)}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:var(--bg);cursor:pointer;user-select:none;z-index:1;font-weight:600}
+tr:hover{background:var(--hover)}
+tr.sel{background:var(--sel)}
+td.path{word-break:break-all;font-family:var(--theme-font-mono);font-size:12px}
+td.num{text-align:right}
+.tag{display:inline-block;padding:0 6px;border-radius:10px;font-size:12px;margin-right:4px;background:var(--bg);color:var(--muted)}
+.t-warn{background:var(--warn-bg);color:var(--warn)}
+.t-err{background:var(--err-bg);color:var(--err)}
+.t-ok{background:var(--ok-bg);color:var(--ok)}
+#detail{padding:8px 10px;font-size:13px}
+#detail pre{white-space:pre-wrap;word-break:break-all;background:var(--hover);border:1px solid var(--line);padding:6px 8px;border-radius:4px;margin:4px 0 10px;font-family:var(--theme-font-mono);font-size:12px}
+mark{padding:0 2px;border-radius:2px;color:var(--text);background:var(--m-id)}
+mark.id{background:var(--m-id)}
+mark.acct{background:var(--m-acct)}
+mark.seq{background:var(--m-seq)}
+mark.sub{background:var(--m-sub)}
+mark.ban{background:var(--m-ban)}
+.legend mark{font-size:12px;margin-right:6px}
+select{font:inherit;font-size:12px;border:1px solid var(--bd);border-radius:4px;background:var(--panel);color:var(--text)}
+input[type=text]{font:inherit;padding:4px 6px;border:1px solid var(--bd);border-radius:4px;background:#fff;color:var(--text)}
+input[type=text]:focus,select:focus{outline:2px solid var(--sel);border-color:var(--pri)}
+.hint{color:var(--muted);font-size:12px}
+#log{max-height:120px;overflow:auto;font-family:var(--theme-font-mono);font-size:12px;background:var(--bg);border-radius:4px;padding:4px 8px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>SQL SPA Tools｜SQL 個資清除器</h1>
+  <small>掃描 .sql／.txt 檔（含子資料夾）・身分證字號／存款帳號（12–14 碼）／擔保品估價彙整序號・子號／統一編號・位元組層級取代，保留原始編碼</small>
+</header>
+<main>
+  <div class="bar">
+    <button class="pri" id="btnPick">① 選擇資料夾（可寫回）</button>
+    <button id="btnPickRO">選擇資料夾（唯讀相容模式）</button>
+    <input type="file" id="dirInput" webkitdirectory multiple hidden>
+    <button id="btnRescan" disabled>重新掃描</button>
+    <button class="danger" id="btnReplace" disabled>② 整批取代為空字串</button>
+    <button id="btnZip" disabled>下載清除後檔案（ZIP）</button>
+    <button id="btnReport" disabled>匯出報告（CSV）</button>
+  </div>
+  <fieldset>
+    <legend>偵測規則</legend>
+    <label><input type="checkbox" id="optId" checked> 身分證字號</label>
+    <label><input type="checkbox" id="optChk" checked> 驗證檢查碼</label>
+    <label><input type="checkbox" id="optArc" checked> 含新式居留證（第2碼 8/9）</label>
+    <label><input type="checkbox" id="optCase"> 英文字母不分大小寫</label>
+    <label><input type="checkbox" id="optAcct" checked> 存款帳號（12–14 碼數字）</label>
+    <label><input type="checkbox" id="optTs" checked> 排除 14 碼時間戳記 yyyyMMddHHmmss</label>
+    <br><label><input type="checkbox" id="optSeq" checked> 擔保品估價彙整序號（61/62＋13 碼數字）</label>
+    <label><input type="checkbox" id="optSub" checked> 擔保品估價彙整子號（6＋1 碼大寫英文＋13 碼數字）</label>
+    <br><label><input type="checkbox" id="optBan" checked> 統一編號（8 碼數字）</label>
+    <label><input type="checkbox" id="optBanChk" checked> 統編驗證檢查碼</label>
+    <label><input type="checkbox" id="optDate8" checked> 排除 8 碼日期 yyyyMMdd</label>
+    <br><label><input type="checkbox" id="optBackup" checked> 取代前備份至 _backup_時間 資料夾</label>
+    <label>排除資料夾（逗號分隔）：<input type="text" id="optExclude" value="" placeholder="例：_backup_*,.git" size="34"></label>
+    <span class="hint">修改規則後請按「重新掃描」</span>
+    <div class="legend hint" style="margin-top:4px">標示色：<mark class="id">身分證</mark><mark class="acct">帳號</mark><mark class="seq">彙整序號</mark><mark class="sub">彙整子號</mark><mark class="ban">統編</mark></div>
+  </fieldset>
+  <div id="status">尚未選擇資料夾。建議使用 Edge／Chrome 86 以上版本。</div>
+  <div class="sum" id="sum"></div>
+  <div id="log"></div>
+  <div class="layout" style="margin-top:8px">
+    <div class="panel">
+      <table id="tbl">
+        <thead><tr>
+          <th style="width:28px"><input type="checkbox" id="chkAll" title="全選有命中的檔案"></th>
+          <th data-k="path">路徑（類型）</th>
+          <th data-k="enc">編碼</th>
+          <th data-k="nId">身分證</th>
+          <th data-k="nAcct">帳號</th>
+          <th data-k="nSeq">彙整序號</th>
+          <th data-k="nSub">彙整子號</th>
+          <th data-k="nBan">統編</th>
+          <th data-k="flag">狀態</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="panel" id="detail"><span class="hint">點選左側檔案以檢視命中明細（內容已遮罩）。</span></div>
+  </div>
+</main>
+
+<!-- ===================== Worker：編碼偵測 + 骨架比對 ===================== -->
+<script type="text/js-worker" id="workerSrc">
+'use strict';
+function tryDecode(enc, bytes){
+  try { new TextDecoder(enc,{fatal:true}).decode(bytes); return true; } catch(e){ return false; }
+}
+function detectEncoding(b){
+  if (b.length>=3 && b[0]===0xEF && b[1]===0xBB && b[2]===0xBF) return {enc:'utf-8',bom:3,sure:true};
+  if (b.length>=2 && b[0]===0xFF && b[1]===0xFE) return {enc:'utf-16le',bom:2,sure:true};
+  if (b.length>=2 && b[0]===0xFE && b[1]===0xFF) return {enc:'utf-16be',bom:2,sure:true};
+  // 無 BOM 的 UTF-16：奇/偶位大量 0x00
+  const n = Math.min(b.length, 4096);
+  if (n >= 4){
+    let ze=0, zo=0;
+    for (let i=0;i<n;i++) if (b[i]===0) (i&1 ? zo++ : ze++);
+    const half = n/2;
+    if (zo/half > 0.3 && ze/half < 0.05) return {enc:'utf-16le',bom:0,sure:true};
+    if (ze/half > 0.3 && zo/half < 0.05) return {enc:'utf-16be',bom:0,sure:true};
+  }
+  let ascii = true;
+  for (let i=0;i<b.length;i++) if (b[i]>=0x80){ ascii=false; break; }
+  if (ascii) return {enc:'utf-8',bom:0,sure:true,ascii:true};
+  if (tryDecode('utf-8', b)) return {enc:'utf-8',bom:0,sure:true};
+  if (tryDecode('big5', b)) return {enc:'big5',bom:0,sure:true};
+  if (tryDecode('gb18030', b)) return {enc:'gb18030',bom:0,sure:false};
+  return {enc:'big5',bom:0,sure:false}; // 含無法對應之造字，仍以 Big5 結構切字
+}
+/* 建立與原始位元組「位置一一對應」的 ASCII 骨架字串；多位元組字元的每個 byte 以 \x80 佔位 */
+function buildSkeleton(b, enc, bom){
+  let unit = 1, codes;
+  if (enc === 'utf-16le' || enc === 'utf-16be'){
+    unit = 2;
+    const len = (b.length - bom) >> 1;
+    codes = new Uint8Array(len);
+    for (let k=0;k<len;k++){
+      const i = bom + k*2;
+      const cu = enc==='utf-16le' ? (b[i] | (b[i+1]<<8)) : ((b[i]<<8) | b[i+1]);
+      codes[k] = cu < 0x80 ? cu : 0x80;
+    }
+    return {skel: bytesToStr(codes), unit, offset: bom};
+  }
+  codes = new Uint8Array(b.length);
+  if (enc === 'big5' || enc === 'gb18030'){
+    for (let i=0;i<b.length;){
+      const c = b[i];
+      if (c>=0x81 && c<=0xFE && i+1<b.length){
+        // GB18030 四位元組：lead, 0x30-0x39, lead, 0x30-0x39
+        if (enc==='gb18030' && b[i+1]>=0x30 && b[i+1]<=0x39 && i+3<b.length){
+          codes[i]=codes[i+1]=codes[i+2]=codes[i+3]=0x80; i+=4;
+        } else { codes[i]=codes[i+1]=0x80; i+=2; }
+      } else { codes[i] = c<0x80 ? c : 0x80; i++; }
+    }
+  } else { // utf-8：所有 >=0x80 的 byte 本來就不會是 ASCII
+    for (let i=0;i<b.length;i++) codes[i] = b[i]<0x80 ? b[i] : 0x80;
+  }
+  return {skel: bytesToStr(codes), unit, offset: 0};
+}
+function bytesToStr(u8){
+  let s = '';
+  for (let i=0;i<u8.length;i+=0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i+0x8000));
+  return s;
+}
+const LETTER = 'ABCDEFGHJKLMNPQRSTUVXYWZIO'; // 身分證字母對應 10~35
+function idChecksumOk(id){
+  id = id.toUpperCase();
+  const v = LETTER.indexOf(id[0]) + 10;
+  if (v < 10) return false;
+  let sum = Math.floor(v/10) + (v%10)*9;
+  const w = [8,7,6,5,4,3,2,1];
+  for (let i=1;i<=8;i++) sum += (+id[i]) * w[i-1];
+  sum += +id[9];
+  return sum % 10 === 0;
+}
+/* 統一編號檢查碼：權數 1,2,1,2,1,2,4,1，乘積各位數相加；
+   可被 5 整除即合法（相容舊制被 10 整除）；第 7 碼為 7 時，總和 +1 亦可 */
+function banChecksumOk(s){
+  const w = [1,2,1,2,1,2,4,1];
+  let sum = 0;
+  for (let i=0;i<8;i++){ const p = (+s[i])*w[i]; sum += Math.floor(p/10) + p%10; }
+  return sum % 5 === 0 || (s[6]==='7' && (sum+1) % 5 === 0);
+}
+function isDate8(s){
+  const y=+s.slice(0,4), M=+s.slice(4,6), d=+s.slice(6,8);
+  return y>=1900 && y<=2100 && M>=1 && M<=12 && d>=1 && d<=31;
+}
+function isTimestamp14(s){
+  if (s.length !== 14) return false;
+  const y=+s.slice(0,4), M=+s.slice(4,6), d=+s.slice(6,8), h=+s.slice(8,10), m=+s.slice(10,12), sec=+s.slice(12,14);
+  return y>=1900 && y<=2100 && M>=1 && M<=12 && d>=1 && d<=31 && h<=23 && m<=59 && sec<=59;
+}
+function scan(bytes, opt, forcedEnc){
+  const b = new Uint8Array(bytes);
+  let det = detectEncoding(b);
+  if (forcedEnc){
+    let bom = 0;
+    if (forcedEnc==='utf-8' && b[0]===0xEF && b[1]===0xBB && b[2]===0xBF) bom=3;
+    if (forcedEnc==='utf-16le' && b[0]===0xFF && b[1]===0xFE) bom=2;
+    if (forcedEnc==='utf-16be' && b[0]===0xFE && b[1]===0xFF) bom=2;
+    det = {enc:forcedEnc, bom, sure:true, forced:true};
+  }
+  const {skel, unit, offset} = buildSkeleton(b, det.enc, det.bom);
+  const hits = [];
+  const L = opt.caseInsensitive ? '[A-Za-z]' : '[A-Z]';
+  const second = opt.arc ? '[1289]' : '[12]';
+  let m;
+  if (opt.id){
+    const re = new RegExp('(?<![A-Za-z0-9])' + L + second + '\\d{8}(?![A-Za-z0-9])', 'g');
+    while ((m = re.exec(skel))){
+      const v = m[0];
+      if (opt.checksum && !idChecksumOk(v)) continue;
+      hits.push({type:'id', s:m.index, e:m.index+v.length, v});
+    }
+  }
+  if (opt.acct){
+    const re = /(?<!\d)\d{12,14}(?!\d)/g;
+    while ((m = re.exec(skel))){
+      const v = m[0];
+      if (opt.excludeTs && isTimestamp14(v)) continue;
+      hits.push({type:'acct', s:m.index, e:m.index+v.length, v});
+    }
+  }
+  if (opt.seq){
+    const re = /(?<![A-Za-z0-9])6[12]\d{13}(?![A-Za-z0-9])/g;
+    while ((m = re.exec(skel))) hits.push({type:'seq', s:m.index, e:m.index+m[0].length, v:m[0]});
+  }
+  if (opt.sub){
+    const re = /(?<![A-Za-z0-9])6[A-Z]\d{13}(?![A-Za-z0-9])/g;
+    while ((m = re.exec(skel))) hits.push({type:'sub', s:m.index, e:m.index+m[0].length, v:m[0]});
+  }
+  if (opt.ban){
+    const re = /(?<![A-Za-z0-9])\d{8}(?![A-Za-z0-9])/g;
+    while ((m = re.exec(skel))){
+      const v = m[0];
+      if (opt.excludeDate8 && isDate8(v)) continue;
+      if (opt.banChecksum && !banChecksumOk(v)) continue;
+      hits.push({type:'ban', s:m.index, e:m.index+v.length, v});
+    }
+  }
+  hits.sort((x,y)=>x.s-y.s);
+  // 帳號若落在彙整序號／子號範圍內（如子號 6B 後的 13 碼數字），以序號／子號為準，避免重複計算與重疊取代
+  const big = hits.filter(h=>h.type==='seq'||h.type==='sub');
+  for (let i=hits.length-1;i>=0;i--){
+    const h = hits[i];
+    if (h.type==='acct' && big.some(g=>h.s<g.e && h.e>g.s)) hits.splice(i,1);
+  }
+  // 行號、是否加引號、遮罩後前後文
+  const lineStarts = [0];
+  for (let i=0;i<skel.length;i++) if (skel.charCodeAt(i)===10) lineStarts.push(i+1);
+  const dec = new TextDecoder(det.enc);
+  const lineOf = (pos)=>{ let lo=0, hi=lineStarts.length-1; while(lo<hi){ const mid=(lo+hi+1)>>1; if(lineStarts[mid]<=pos) lo=mid; else hi=mid-1; } return lo; };
+  const out = [];
+  const byLine = new Map();
+  for (const h of hits){
+    const ln = lineOf(h.s);
+    const prev = skel[h.s-1], next = skel[h.e];
+    const quoted = (prev==="'" && next==="'") || (prev==='"' && next==='"');
+    out.push({type:h.type, line:ln+1, quoted, masked:mask(h.v, h.type),
+              bs: offset + h.s*unit, be: offset + h.e*unit});
+    if (!byLine.has(ln)) byLine.set(ln, []);
+    byLine.get(ln).push(h);
+  }
+  // 每行前後文（遮罩），最多 200 行
+  const contexts = [];
+  let cnt = 0;
+  for (const [ln, hs] of byLine){
+    if (cnt++ >= 200) break;
+    const ls = lineStarts[ln], le = (ln+1<lineStarts.length ? lineStarts[ln+1] : skel.length);
+    let segs = [], cur = ls;
+    for (const h of hs){
+      if (h.s > cur) segs.push({t:'txt', v: dec.decode(b.subarray(offset+cur*unit, offset+h.s*unit))});
+      segs.push({t:h.type, v: mask(h.v, h.type)});
+      cur = h.e;
+    }
+    if (le > cur) segs.push({t:'txt', v: dec.decode(b.subarray(offset+cur*unit, offset+le*unit))});
+    segs = segs.map(s=> s.t==='txt' ? {t:'txt', v: s.v.replace(/\r?\n$/,'').slice(0,400)} : s);
+    contexts.push({line: ln+1, segs});
+  }
+  const cntType = (t)=> out.filter(h=>h.type===t).length;
+  return {enc:det.enc, bom:det.bom, sure:det.sure, forced:!!det.forced, hits:out, contexts,
+          nId: cntType('id'), nAcct: cntType('acct'), nSeq: cntType('seq'), nSub: cntType('sub'), nBan: cntType('ban'),
+          nAll: out.length, nUnquoted: out.filter(h=>!h.quoted).length};
+}
+function mask(v, type){
+  if (type==='id') return v.slice(0,3) + '****' + v.slice(-3);
+  if (type==='ban') return v.slice(0,2) + '****' + v.slice(-2);
+  return v.slice(0,4) + '*'.repeat(v.length-8) + v.slice(-4);
+}
+if (typeof self !== 'undefined' && typeof self.postMessage === 'function' && typeof window === 'undefined'){
+  self.onmessage = (ev)=>{
+    const {id, bytes, opt, forcedEnc} = ev.data;
+    try { self.postMessage({id, ok:true, res: scan(bytes, opt, forcedEnc)}); }
+    catch(e){ self.postMessage({id, ok:false, err: String(e && e.message || e)}); }
+  };
+}
+if (typeof module !== 'undefined') module.exports = {scan, detectEncoding, idChecksumOk, banChecksumOk, buildSkeleton};
+</script>
+
+<!-- ===================== 主程式 ===================== -->
+<script>
+'use strict';
+const $ = (s)=>document.querySelector(s);
+const TARGET_EXT = /\.(sql|txt)$/i; // 掃描的副檔名
+const state = {root:null, writable:false, files:[], sel:null, sortK:'path', sortAsc:true, busy:false};
+
+/* ---------- Worker Pool ---------- */
+const workerUrl = URL.createObjectURL(new Blob([$('#workerSrc').textContent], {type:'text/javascript'}));
+const POOL = Math.max(2, Math.min(navigator.hardwareConcurrency||4, 8));
+const workers = [], pending = new Map();
+let reqId = 0, rr = 0;
+try {
+  for (let i=0;i<POOL;i++){
+    const w = new Worker(workerUrl);
+    w.onmessage = (ev)=>{ const p = pending.get(ev.data.id); if (!p) return; pending.delete(ev.data.id);
+      ev.data.ok ? p.resolve(ev.data.res) : p.reject(new Error(ev.data.err)); };
+    w.onerror = (ev)=>{ ev.preventDefault?.(); const p = pending.get(w._reqId); if (p) { pending.delete(w._reqId); p.reject(new Error('背景 Worker 執行失敗：' + (ev.message || '未知錯誤'))); }
+      try { w.terminate(); } catch (_) {}
+      const i = workers.indexOf(w); if (i >= 0) workers.splice(i, 1); };
+    w.onmessageerror = ()=>{ const p = pending.get(w._reqId); if (p) { pending.delete(w._reqId); p.reject(new Error('背景 Worker 回傳格式錯誤')); } };
+    workers.push(w);
+  }
+} catch (e) {
+  // 無法建立 Worker 時不要讓整個頁面失效；掃描時會回報明確錯誤。
+}
+function runScan(bytes, forcedEnc){
+  if (!workers.length) return Promise.reject(new Error('此瀏覽器無法啟動背景 Worker，請改用 Chrome／Edge 開啟。'));
+  return new Promise((resolve,reject)=>{
+    const id = ++reqId; pending.set(id,{resolve,reject});
+    const copy = bytes.slice(0); // 保留原 buffer 供寫回
+    const w = workers[(rr++) % workers.length];
+    w._reqId = id;
+    try { w.postMessage({id, bytes:copy, opt:getOpt(), forcedEnc}, [copy]); }
+    catch (e) { pending.delete(id); reject(e); }
+  });
+}
+function getOpt(){
+  return {id:$('#optId').checked, checksum:$('#optChk').checked, arc:$('#optArc').checked,
+          caseInsensitive:$('#optCase').checked, acct:$('#optAcct').checked, excludeTs:$('#optTs').checked,
+          seq:$('#optSeq').checked, sub:$('#optSub').checked,
+          ban:$('#optBan').checked, banChecksum:$('#optBanChk').checked, excludeDate8:$('#optDate8').checked};
+}
+
+/* ---------- 讀取資料夾 ---------- */
+function excludeMatchers(){
+  return $('#optExclude').value.split(',').map(s=>s.trim()).filter(Boolean)
+    .map(p=> new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*') + '$','i'));
+}
+async function walk(dirHandle, prefix, out, ex){
+  for await (const [name, h] of dirHandle.entries()){
+    if (h.kind === 'directory'){
+      if (ex.some(r=>r.test(name))) continue;
+      await walk(h, prefix + name + '/', out, ex);
+    } else if (TARGET_EXT.test(name)){
+      out.push({path: prefix + name, handle: h, dirHandle});
+    }
+  }
+}
+$('#btnPick').onclick = async ()=>{
+  if (!window.showDirectoryPicker){ alert('此瀏覽器不支援直接寫回，請改用 Edge/Chrome，或使用「唯讀相容模式」。'); return; }
+  try{
+    const root = await window.showDirectoryPicker({mode:'readwrite'});
+    state.root = root; state.writable = true;
+    const list = []; setStatus('列舉檔案中…');
+    await walk(root, '', list, excludeMatchers());
+    await loadAndScan(list.map(f=>({path:f.path, handle:f.handle})));
+  }catch(e){ if (e.name!=='AbortError') { setStatus('錯誤：'+e.message); console.error(e); } }
+};
+$('#btnPickRO').onclick = ()=> $('#dirInput').click();
+$('#dirInput').onchange = async (ev)=>{
+  const ex = excludeMatchers();
+  const files = [...ev.target.files].filter(f=>TARGET_EXT.test(f.name))
+    .filter(f=> !f.webkitRelativePath.split('/').slice(1,-1).some(seg=>ex.some(r=>r.test(seg))));
+  state.root = null; state.writable = false;
+  await loadAndScan(files.map(f=>({path: f.webkitRelativePath.split('/').slice(1).join('/'), file:f})));
+  ev.target.value = '';
+};
+$('#btnRescan').onclick = ()=> loadAndScan(state.files.map(f=>({path:f.path, handle:f.handle, file:f.file})), true);
+
+async function loadAndScan(list, keepEnc){
+  if (state.busy) return; state.busy = true; toggle();
+  const old = new Map(state.files.map(f=>[f.path, f]));
+  state.files = []; state.sel = null; $('#detail').innerHTML = '<span class="hint">掃描中…</span>';
+  let done = 0; const total = list.length;
+  setStatus(`掃描中 0 / ${total}`, 0, total);
+  const conc = POOL * 2; let idx = 0;
+  async function next(){
+    while (idx < list.length){
+      const it = list[idx++];
+      const rec = {path:it.path, handle:it.handle, file:it.file, checked:false};
+      try{
+        const f = it.handle ? await it.handle.getFile() : it.file;
+        rec.size = f.size;
+        rec.bytes = await f.arrayBuffer();
+        const forced = keepEnc && old.get(it.path)?.forcedEnc;
+        rec.forcedEnc = forced || null;
+        rec.res = await runScan(rec.bytes, rec.forcedEnc);
+        rec.checked = rec.res.nAll > 0;
+      }catch(e){ rec.error = e.message; }
+      state.files.push(rec);
+      done++; if (done % 20 === 0 || done === total) setStatus(`掃描中 ${done} / ${total}`, done, total);
+    }
+  }
+  await Promise.all(Array.from({length:conc}, next));
+  state.busy = false; render(); toggle();
+  const hitFiles = state.files.filter(f=>f.res && f.res.nAll>0).length;
+  setStatus(`掃描完成：共 ${total} 個檔案（SQL／TXT），${hitFiles} 個檔案含個資。` + (state.writable ? '' : '（唯讀模式：清除後請下載 ZIP）'));
+}
+
+/* ---------- 顯示 ---------- */
+function setStatus(msg, v, max){
+  $('#status').innerHTML = esc(msg) + (max ? ` <progress value="${v}" max="${max}"></progress>` : '');
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const TYPE_LABEL = {id:'身分證', acct:'帳號', seq:'彙整序號', sub:'彙整子號', ban:'統編'};
+const ENC_LABEL = {'utf-8':'UTF-8','big5':'Big5','gb18030':'GB18030','utf-16le':'UTF-16LE','utf-16be':'UTF-16BE'};
+function flagOf(f){
+  if (f.error) return 3;
+  if (!f.res) return 0;
+  if (f.done) return -1;
+  if (!f.res.sure) return 2;
+  if (f.res.nUnquoted) return 1;
+  return 0;
+}
+function render(){
+  const k = state.sortK, a = state.sortAsc ? 1 : -1;
+  const val = (f)=> k==='path'? f.path : k==='enc'? (f.res?.enc||'') : k==='flag'? flagOf(f) : (f.res?.[k]||0);
+  state.files.sort((x,y)=>{ const p=val(x), q=val(y); return (p<q?-1:p>q?1:0)*a; });
+  const tb = $('#tbl tbody'); const rows = [];
+  for (let i=0;i<state.files.length;i++){
+    const f = state.files[i], r = f.res;
+    const tags = [];
+    if (f.error) tags.push(`<span class="tag t-err">讀取失敗</span>`);
+    if (f.done) tags.push(`<span class="tag t-ok">已清除</span>`);
+    if (r && !r.sure) tags.push(`<span class="tag t-warn">⚠ 編碼待確認</span>`);
+    if (r && r.nUnquoted && !f.done) tags.push(`<span class="tag t-warn" title="未被引號包住，清空後若為 SQL 可能造成語法錯誤">⚠ 未加引號 ${r.nUnquoted}</span>`);
+    if (r && r.bom) tags.push(`<span class="tag">BOM</span>`);
+    const encSel = r ? `<select data-i="${i}" class="encSel">${Object.keys(ENC_LABEL).map(e=>`<option value="${e}"${e===r.enc?' selected':''}>${ENC_LABEL[e]}${e===r.enc && !f.forcedEnc?' (自動)':''}</option>`).join('')}</select>` : '-';
+    const n = (key)=> `<td class="num">${r? r[key] : '-'}</td>`;
+    rows.push(`<tr data-i="${i}" class="${state.sel===f?'sel':''}">
+      <td><input type="checkbox" class="rowChk" data-i="${i}" ${f.checked?'checked':''} ${r && r.nAll>0?'':'disabled'}></td>
+      <td class="path">${esc(f.path)} <span class="tag">${esc(f.path.split('.').pop().toUpperCase())}</span></td><td>${encSel}</td>
+      ${n('nId')}${n('nAcct')}${n('nSeq')}${n('nSub')}${n('nBan')}<td>${tags.join('')}</td></tr>`);
+  }
+  tb.innerHTML = rows.join('');
+  const hit = state.files.filter(f=>f.res && f.res.nAll>0);
+  const tot = (key)=> hit.reduce((s,f)=>s+f.res[key],0);
+  $('#sum').innerHTML = `<span>檔案 <b>${state.files.length}</b></span><span>含個資檔案 <b>${hit.length}</b></span>
+    <span>身分證 <b>${tot('nId')}</b></span><span>帳號 <b>${tot('nAcct')}</b></span>
+    <span>彙整序號 <b>${tot('nSeq')}</b></span><span>彙整子號 <b>${tot('nSub')}</b></span><span>統編 <b>${tot('nBan')}</b></span>
+    <span>已勾選 <b>${state.files.filter(f=>f.checked).length}</b></span>`;
+}
+function toggle(){
+  const has = state.files.length>0, anyChk = state.files.some(f=>f.checked);
+  $('#btnRescan').disabled = !has || state.busy;
+  $('#btnReplace').disabled = !anyChk || state.busy || !state.writable;
+  $('#btnZip').disabled = !anyChk || state.busy;
+  $('#btnReport').disabled = !has || state.busy;
+  $('#btnPick').disabled = $('#btnPickRO').disabled = state.busy;
+}
+$('#tbl tbody').addEventListener('click', (ev)=>{
+  if (ev.target.matches('input,select,option')) return;
+  const tr = ev.target.closest('tr'); if (!tr) return;
+  state.sel = state.files[+tr.dataset.i]; render(); showDetail(state.sel);
+});
+$('#tbl tbody').addEventListener('change', async (ev)=>{
+  const i = +ev.target.dataset.i, f = state.files[i];
+  if (ev.target.classList.contains('rowChk')){ f.checked = ev.target.checked; render(); toggle(); }
+  if (ev.target.classList.contains('encSel')){
+    f.forcedEnc = ev.target.value;
+    f.res = await runScan(f.bytes, f.forcedEnc);
+    f.checked = f.res.nAll > 0;
+    state.sel = f; render(); showDetail(f); toggle();
+  }
+});
+$('#chkAll').onchange = (ev)=>{ state.files.forEach(f=>{ if (f.res && f.res.nAll>0) f.checked = ev.target.checked; }); render(); toggle(); };
+document.querySelectorAll('#tbl th[data-k]').forEach(th=> th.onclick = ()=>{
+  const k = th.dataset.k; state.sortAsc = state.sortK===k ? !state.sortAsc : true; state.sortK = k; render();
+});
+function showDetail(f){
+  const d = $('#detail');
+  if (!f || !f.res){ d.innerHTML = `<b>${esc(f?.path||'')}</b><p>${esc(f?.error||'無資料')}</p>`; return; }
+  const r = f.res;
+  let h = `<div><b>${esc(f.path)}</b></div><div class="hint">編碼：${ENC_LABEL[r.enc]}${r.bom?'（含 BOM）':''}${r.sure?'':' ⚠ 待確認'}・大小：${f.size.toLocaleString()} bytes・身分證 ${r.nId}・帳號 ${r.nAcct}・彙整序號 ${r.nSeq}・彙整子號 ${r.nSub}・統編 ${r.nBan}</div>`;
+  if (!r.hits.length){ d.innerHTML = h + '<p>未偵測到個資。</p>'; return; }
+  const uq = new Set(r.hits.filter(x=>!x.quoted).map(x=>x.line));
+  for (const c of r.contexts){
+    h += `<div>第 ${c.line} 行${uq.has(c.line)?' <span class="tag t-warn">⚠ 未加引號</span>':''}</div><pre>` +
+      c.segs.map(s=> s.t==='txt' ? esc(s.v) : `<mark class="${s.t}" title="${TYPE_LABEL[s.t]}">${esc(s.v)}</mark>`).join('') + '</pre>';
+  }
+  if (r.contexts.length < new Set(r.hits.map(x=>x.line)).size) h += '<p class="hint">（僅顯示前 200 行）</p>';
+  d.innerHTML = h;
+}
+
+/* ---------- 取代 ---------- */
+function stripRanges(buf, hits){
+  const b = new Uint8Array(buf);
+  const rs = hits.map(x=>[x.bs,x.be]).sort((p,q)=>p[0]-q[0]);
+  let removed = 0; for (const [s,e] of rs) removed += e-s;
+  const out = new Uint8Array(b.length - removed);
+  let o = 0, cur = 0;
+  for (const [s,e] of rs){ out.set(b.subarray(cur,s), o); o += s-cur; cur = e; }
+  out.set(b.subarray(cur), o);
+  return out;
+}
+function tsStr(){ const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+async function getFileHandleByPath(root, path, create){
+  const parts = path.split('/'); let dir = root;
+  for (let i=0;i<parts.length-1;i++) dir = await dir.getDirectoryHandle(parts[i], {create});
+  return dir.getFileHandle(parts[parts.length-1], {create});
+}
+$('#btnReplace').onclick = async ()=>{
+  const targets = state.files.filter(f=>f.checked && f.res && f.res.hits.length);
+  const nUq = targets.reduce((s,f)=>s+f.res.nUnquoted,0);
+  const nUnsure = targets.filter(f=>!f.res.sure).length;
+  let msg = `即將清除 ${targets.length} 個檔案中的 ${targets.reduce((s,f)=>s+f.res.hits.length,0)} 筆個資（取代為空字串）。`;
+  if (nUq) msg += `\n⚠ 其中 ${nUq} 筆未被引號包住，清空後若為 SQL 檔可能造成語法錯誤。`;
+  if (nUnsure) msg += `\n⚠ 有 ${nUnsure} 個檔案編碼待確認。`;
+  msg += $('#optBackup').checked ? '\n原檔將先備份。確定執行？' : '\n未啟用備份，無法復原！確定執行？';
+  if (!confirm(msg)) return;
+  state.busy = true; toggle();
+  const backupDir = '_backup_' + tsStr();
+  const log = $('#log'); log.style.display='block'; log.innerHTML='';
+  let ok=0, fail=0, i=0;
+  for (const f of targets){
+    i++; setStatus(`寫回中 ${i} / ${targets.length}`, i, targets.length);
+    try{
+      // 寫回前確認檔案未被外部修改
+      const cur = await (await f.handle.getFile()).arrayBuffer();
+      if (cur.byteLength !== f.bytes.byteLength || !equalBuf(cur, f.bytes)) throw new Error('檔案於掃描後已被修改，請重新掃描');
+      if ($('#optBackup').checked){
+        const bh = await getFileHandleByPath(state.root, backupDir + '/' + f.path, true);
+        const w = await bh.createWritable(); await w.write(f.bytes); await w.close();
+      }
+      const out = stripRanges(f.bytes, f.res.hits);
+      const w = await f.handle.createWritable(); await w.write(out); await w.close();
+      // 驗證
+      f.bytes = await (await f.handle.getFile()).arrayBuffer();
+      f.res = await runScan(f.bytes, f.forcedEnc);
+      const left = f.res.nAll;
+      f.done = left === 0; f.checked = left > 0;
+      log.innerHTML += esc(`${left? '⚠':'✔'} ${f.path}${left? '（仍有 '+left+' 筆：取代後新組成之字串，請再檢查）':''}`) + '<br>';
+      ok++;
+    }catch(e){ fail++; log.innerHTML += esc(`✖ ${f.path}：${e.message}`) + '<br>'; }
+  }
+  state.busy = false; render(); toggle(); if (state.sel) showDetail(state.sel);
+  setStatus(`完成：成功 ${ok}、失敗 ${fail}。` + ($('#optBackup').checked ? `備份位置：${backupDir}/` : ''));
+};
+function equalBuf(a,b){ const x=new Uint8Array(a), y=new Uint8Array(b); for(let i=0;i<x.length;i++) if(x[i]!==y[i]) return false; return true; }
+
+/* ---------- ZIP（store，不壓縮） ---------- */
+const CRC_T = (()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c = CRC_T[(c^u8[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function makeZip(entries){
+  const enc = new TextEncoder(), parts=[], central=[]; let off=0;
+  const d=new Date(), dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(), tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  for (const e of entries){
+    const name = enc.encode(e.name), crc = crc32(e.data), sz = e.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,tm,true); lh.setUint16(12,dt,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(lh.buffer, name, e.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,tm,true); ch.setUint16(14,dt,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true);
+    ch.setUint16(28,name.length,true); ch.setUint32(42,off,true);
+    central.push(ch.buffer, name);
+    off += 30 + name.length + sz;
+  }
+  const csz = central.reduce((s,p)=>s+(p.byteLength||p.length),0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,entries.length,true); end.setUint16(10,entries.length,true);
+  end.setUint32(12,csz,true); end.setUint32(16,off,true);
+  return new Blob([...parts, ...central, end.buffer], {type:'application/zip'});
+}
+function download(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000); }
+$('#btnZip').onclick = ()=>{
+  const t = state.files.filter(f=>f.checked && f.res && f.res.hits.length);
+  download(makeZip(t.map(f=>({name:f.path, data:stripRanges(f.bytes, f.res.hits)}))), `sql_cleaned_${tsStr()}.zip`);
+  setStatus(`已打包 ${t.length} 個清除後檔案（保留原編碼與目錄結構）。`);
+};
+
+/* ---------- 報告（遮罩） ---------- */
+$('#btnReport').onclick = ()=>{
+  const rows = [['路徑','類型','編碼','BOM','編碼確定','身分證筆數','帳號筆數','彙整序號筆數','彙整子號筆數','統編筆數','未加引號筆數','狀態','明細(行號:類型:遮罩值)']];
+  for (const f of state.files){
+    const r = f.res;
+    rows.push([f.path, f.path.split('.').pop().toUpperCase(), r?ENC_LABEL[r.enc]:'', r&&r.bom?'Y':'', r?(r.sure?'Y':'N'):'',
+      r?r.nId:'', r?r.nAcct:'', r?r.nSeq:'', r?r.nSub:'', r?r.nBan:'', r?r.nUnquoted:'',
+      f.error?('錯誤:'+f.error):f.done?'已清除':(r&&r.hits.length?'含個資':'無'),
+      r? r.hits.map(h=>`${h.line}:${TYPE_LABEL[h.type]}:${h.masked}`).join(' | ') : '']);
+  }
+  const csv = '\uFEFF' + rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  download(new Blob([csv],{type:'text/csv'}), `sql_pii_report_${tsStr()}.csv`);
+};
+</script>
+<a class="home-link" href="index.html">⌂ 工具入口</a>
+<button id="themeToggle" class="theme-toggle" type="button">☀️ 淺色模式</button>
+</body>
+</html>

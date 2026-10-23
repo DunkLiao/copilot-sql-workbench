@@ -1,0 +1,76 @@
+name: 回歸測試
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    name: Node 22 JavaScript 測試
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 取得程式碼
+        uses: actions/checkout@v7
+
+      - name: 設定 Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: test-theme.js
+        run: node ./tests/test-theme.js
+
+      - name: test-excel-csv-sql.js
+        run: node ./tests/test-excel-csv-sql.js
+
+      - name: test-excel-csv-sql-cte.js
+        run: node ./tests/test-excel-csv-sql-cte.js
+
+      - name: test-sqlscriptmanage.js
+        run: node ./tests/test-sqlscriptmanage.js
+
+      - name: test-schema-studio.js
+        run: node ./tests/test-schema-studio.js
+
+      - name: test-copilot-export.js
+        run: node ./tests/test-copilot-export.js
+
+      - name: test-copilot-impact-demo.js
+        run: node ./tests/test-copilot-impact-demo.js
+
+      - name: test-data-quality-audit-center.js
+        run: node ./tests/test-data-quality-audit-center.js
+
+      - name: test-pii-cleaner.js
+        run: node ./tests/test-pii-cleaner.js
+
+      - name: test-sql-lab.js
+        run: node ./tests/test-sql-lab.js
+
+      - name: theme.js 語法檢查
+        run: node --check ./theme.js
+
+  powershell-validation:
+    name: Windows PowerShell 驗證
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: 取得程式碼
+        uses: actions/checkout@v7
+
+      - name: validate-theme.ps1
+        shell: pwsh
+        run: ./tests/validate-theme.ps1
+
+      - name: validate-index.ps1
+        shell: pwsh
+        run: ./tests/validate-index.ps1
+
+      - name: validate-home-links.ps1
+        shell: pwsh
+        run: ./tests/validate-home-links.ps1

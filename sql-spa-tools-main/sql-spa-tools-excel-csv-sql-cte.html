@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL SPA Tools｜Excel／CSV 轉 SQL CTE</title>
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; font-family: var(--theme-font-sans); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .cte-app { width: min(1540px, calc(100% - 32px)); margin: auto; padding: 24px 0 86px; }
+    .cte-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+    .cte-header h1 { margin: 0; color: var(--theme-text); font-size: clamp(23px, 4vw, 34px); }
+    .cte-header p { flex: 1; min-width: 250px; margin: 0; color: var(--theme-surface); line-height: 1.6; }
+    .cte-grid { display: grid; grid-template-columns: minmax(340px, .9fr) minmax(420px, 1.1fr); gap: 18px; align-items: start; }
+    .cte-panel { min-width: 0; overflow: hidden; border: 1px solid var(--theme-border); border-radius: 15px; background: var(--theme-surface); box-shadow: var(--theme-shadow); }
+    .cte-panel > h2 { margin: 0; padding: 14px 17px; border-bottom: 1px solid var(--theme-border); background: var(--theme-surface-alt); color: var(--theme-text); font-size: 17px; }
+    .cte-section { padding: 15px 17px; border-bottom: 1px solid var(--theme-border-soft); }
+    .cte-section:last-child { border-bottom: 0; }
+    .cte-section h3 { margin: 0 0 10px; color: var(--theme-text); font-size: 14px; }
+    .cte-drop { display: grid; gap: 8px; justify-items: center; padding: 15px; border: 1px dashed var(--theme-secondary); border-radius: 10px; background: var(--theme-surface-soft); color: var(--theme-muted); text-align: center; }
+    .cte-drop.dragging { border-color: var(--theme-primary); background: var(--theme-info-soft); }
+    .cte-drop input { max-width: 100%; }
+    .cte-text { width: 100%; min-height: 125px; resize: vertical; border: 1px solid var(--theme-border); border-radius: 8px; padding: 10px; background: var(--theme-surface); color: var(--theme-text); font: 12px/1.5 var(--theme-font-mono); }
+    .cte-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .cte-field { display: grid; gap: 5px; color: var(--theme-muted); font-size: 13px; }
+    .cte-field.full { grid-column: 1 / -1; }
+    .cte-field input, .cte-field select { min-width: 0; width: 100%; border: 1px solid var(--theme-border); border-radius: 7px; padding: 7px 8px; background: var(--theme-surface); color: var(--theme-text); }
+    .cte-check { display: flex; align-items: center; gap: 7px; min-height: 34px; color: var(--theme-text); font-size: 13px; }
+    .cte-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+    .cte-btn { border: 1px solid var(--theme-border); border-radius: 7px; padding: 8px 11px; background: var(--theme-surface); color: var(--theme-text); }
+    .cte-btn:hover { border-color: var(--theme-primary); background: var(--theme-surface-soft); }
+    .cte-btn.primary { border-color: var(--theme-primary-hover); background: var(--theme-primary); color: var(--theme-surface); }
+    .cte-btn:disabled { cursor: not-allowed; opacity: .55; }
+    .cte-btn:focus-visible, .cte-field input:focus-visible, .cte-field select:focus-visible, .cte-text:focus-visible, .cte-columns input:focus-visible, .cte-columns select:focus-visible { outline: 3px solid var(--theme-secondary); outline-offset: 2px; }
+    .cte-message { margin-top: 9px; padding: 8px 10px; border-radius: 7px; color: var(--theme-info); background: var(--theme-info-soft); font-size: 13px; line-height: 1.5; }
+    .cte-message.warning { color: var(--theme-warning); background: var(--theme-warning-soft); }
+    .cte-message.error { color: var(--theme-danger); background: var(--theme-danger-soft); }
+    .cte-stats { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+    .cte-stat { padding: 7px 9px; border: 1px solid var(--theme-border); border-radius: 7px; background: var(--theme-surface-alt); color: var(--theme-text); font-size: 12px; }
+    .cte-code { min-height: 360px; max-height: 67vh; overflow: auto; margin: 0; padding: 13px; border: 1px solid var(--theme-border); border-radius: 8px; background: var(--theme-surface-soft); color: var(--theme-text); font: 12px/1.55 var(--theme-font-mono); white-space: pre; }
+    .cte-columns-wrap { max-height: 300px; overflow: auto; border: 1px solid var(--theme-border); border-radius: 8px; }
+    .cte-columns { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cte-columns th, .cte-columns td { padding: 7px; border-bottom: 1px solid var(--theme-border-soft); text-align: left; white-space: nowrap; }
+    .cte-columns th { position: sticky; top: 0; background: var(--theme-surface-alt); color: var(--theme-muted); }
+    .cte-columns input, .cte-columns select { width: 130px; border: 1px solid var(--theme-border); border-radius: 5px; padding: 5px; background: var(--theme-surface); color: var(--theme-text); }
+    .cte-columns input.duplicate { border-color: var(--theme-danger); background: var(--theme-danger-soft); }
+    .cte-empty { padding: 22px 10px; color: var(--theme-muted); text-align: center; }
+    @media (max-width: 900px) { .cte-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) { .cte-app { width: calc(100% - 20px); padding-top: 15px; } .cte-form { grid-template-columns: 1fr; } .cte-field.full { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <main class="cte-app">
+    <header class="cte-header">
+      <div><h1>SQL SPA Tools｜Excel／CSV 轉 SQL CTE</h1><p>將試算表資料轉成可直接查詢的 WITH CTE 虛擬資料表。</p></div>
+    </header>
+    <div class="cte-grid">
+      <section class="cte-panel" aria-labelledby="input-title">
+        <h2 id="input-title">資料與欄位設定</h2>
+        <div class="cte-section">
+          <h3>匯入 CSV／TSV 或貼上資料</h3>
+          <div class="cte-drop" id="dropZone"><span>拖放 CSV、TSV、TXT 檔案，或選擇檔案</span><input id="fileInput" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"></div>
+          <label class="cte-field" style="margin-top:10px">資料內容<textarea id="rawInput" class="cte-text" placeholder="也可直接貼上 Excel 試算表資料"></textarea></label>
+          <div class="cte-actions"><button class="cte-btn primary" id="parseBtn" type="button">解析資料</button><button class="cte-btn" id="sampleBtn" type="button">載入範例</button><button class="cte-btn" id="clearBtn" type="button">清除</button></div>
+          <div id="message" class="cte-message" role="status" hidden></div>
+        </div>
+        <div class="cte-section">
+          <h3>匯入與 SQL 參數</h3>
+          <div class="cte-form">
+            <label class="cte-field">檔案編碼<select id="fileEncoding"><option value="auto">自動偵測</option><option value="utf-8">UTF-8</option><option value="big5">Big5／CP950</option><option value="big5-hkscs">Big5-HKSCS</option><option value="utf-16le">UTF-16LE</option><option value="utf-16be">UTF-16BE</option></select></label>
+            <label class="cte-field">欄位分隔符<select id="delimiter"><option value="auto">自動偵測</option><option value=",">逗號 CSV</option><option value="\t">定位點 TSV</option><option value=";">分號</option><option value="|">直線</option></select></label>
+            <label class="cte-check"><input id="hasHeader" type="checkbox" checked> 首列為欄位標題</label>
+            <label class="cte-check"><input id="customEnabled" type="checkbox"> 啟用自訂欄位名稱</label>
+            <label class="cte-field">資料庫方言<select id="dialect"><option value="postgresql">PostgreSQL</option><option value="mssql">Microsoft SQL Server</option><option value="mysql">MySQL 8.0.19+</option><option value="oracle">Oracle 12c+</option><option value="sqlite">SQLite</option><option value="duckdb">DuckDB</option><option value="snowflake">Snowflake</option><option value="bigquery">BigQuery</option></select></label>
+            <label class="cte-field">CTE 名稱<input id="cteName" value="cte_data" maxlength="80"></label>
+            <label class="cte-field">每個分塊列數<select id="chunkSize"><option value="1000">1,000</option><option value="2000">2,000</option><option value="5000">5,000</option></select></label>
+            <label class="cte-check"><input id="singleValues" type="checkbox"> 單一大型 VALUES（支援方言）</label>
+          </div>
+          <div class="cte-actions"><button class="cte-btn" id="applyBtn" type="button">套用設定</button></div>
+        </div>
+        <div class="cte-section"><h3>欄位名稱與型態</h3><div id="columns"><div class="cte-empty">解析資料後會顯示欄位設定。</div></div></div>
+      </section>
+      <section class="cte-panel" aria-labelledby="preview-title">
+        <h2 id="preview-title">CTE SQL 預覽與匯出</h2>
+        <div class="cte-section"><div class="cte-stats" id="stats"><span class="cte-stat">尚未解析資料</span></div><pre class="cte-code" id="sqlPreview">請貼上資料或載入檔案，然後按「解析資料」。</pre><div class="cte-actions"><button class="cte-btn primary" id="copyBtn" type="button" disabled>複製完整 SQL</button><button class="cte-btn" id="downloadBtn" type="button" disabled>下載 .sql</button></div></div>
+      </section>
+    </div>
+  </main>
+  <a class="home-link" href="index.html">⌂ 工具入口</a>
+  <button id="themeToggle" class="theme-toggle" type="button">🌙 深色模式</button>
+  <script>
+    (() => {
+      const DIALECTS = {
+        postgresql: { name: 'PostgreSQL', quote: '"', close: '"', style: 'values', max: 5000 },
+        mssql: { name: 'Microsoft SQL Server', quote: '[', close: ']', style: 'mssql', max: 1000 },
+        mysql: { name: 'MySQL 8.0.19+', quote: '`', close: '`', style: 'mysql', max: 2000 },
+        oracle: { name: 'Oracle 12c+', quote: '"', close: '"', style: 'oracle', max: 1000 },
+        sqlite: { name: 'SQLite', quote: '"', close: '"', style: 'values', max: 1000 },
+        duckdb: { name: 'DuckDB', quote: '"', close: '"', style: 'values', max: 50000 },
+        snowflake: { name: 'Snowflake', quote: '"', close: '"', style: 'values', max: 50000 },
+        bigquery: { name: 'BigQuery', quote: '`', close: '`', style: 'select', max: 1000 },
+      };
+      const TYPES = ['INTEGER', 'BIGINT', 'DECIMAL(18, 4)', 'FLOAT', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'VARCHAR(255)', 'TEXT'];
+      function decodeBytes(input, encoding = 'auto') {
+        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+        if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return new TextDecoder('utf-8').decode(bytes.slice(3));
+        if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes.slice(2));
+        if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes.slice(2));
+        if (encoding !== 'auto') {
+          try { return new TextDecoder(encoding).decode(bytes); }
+          catch (error) { if (encoding === 'big5-hkscs') return new TextDecoder('big5').decode(bytes); throw error; }
+        }
+        try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+        catch { return new TextDecoder('big5').decode(bytes); }
+      }
+      function decodeFile(input, encoding = 'auto') {
+        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+        if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return { text: decodeBytes(bytes, encoding), encoding: 'UTF-8 BOM' };
+        if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) return { text: decodeBytes(bytes, encoding), encoding: 'UTF-16LE BOM' };
+        if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) return { text: decodeBytes(bytes, encoding), encoding: 'UTF-16BE BOM' };
+        if (encoding !== 'auto') return { text: decodeBytes(bytes, encoding), encoding: encoding === 'big5' ? 'Big5／CP950' : encoding === 'big5-hkscs' ? 'Big5-HKSCS' : encoding.toUpperCase() };
+        try { new TextDecoder('utf-8', { fatal: true }).decode(bytes); return { text: decodeBytes(bytes, 'utf-8'), encoding: 'UTF-8' }; }
+        catch { return { text: decodeBytes(bytes, 'big5'), encoding: 'Big5／CP950（自動偵測）' }; }
+      }
+      function detectDelimiter(text) {
+        const line = String(text).split(/\r?\n/, 1)[0];
+        const candidates = ['\t', ',', ';', '|'];
+        return candidates.sort((a, b) => line.split(b).length - line.split(a).length)[0];
+      }
+      function parseDelimited(text, delimiter) {
+        const input = String(text ?? '').replace(/^\uFEFF/, '');
+        const sep = delimiter && delimiter !== 'auto' ? (delimiter === '\\t' ? '\t' : delimiter) : detectDelimiter(input);
+        const rows = []; let row = []; let field = ''; let quoted = false;
+        for (let i = 0; i < input.length; i++) {
+          const char = input[i];
+          if (quoted) {
+            if (char === '"' && input[i + 1] === '"') { field += '"'; i++; }
+            else if (char === '"') quoted = false;
+            else field += char;
+          } else if (char === '"' && field === '') quoted = true;
+          else if (char === sep) { row.push(field); field = ''; }
+          else if (char === '\n' || char === '\r') {
+            if (char === '\r' && input[i + 1] === '\n') i++;
+            row.push(field); rows.push(row); row = []; field = '';
+          } else field += char;
+        }
+        if (field !== '' || row.length || (input && !/[\r\n]$/.test(input))) { row.push(field); rows.push(row); }
+        const width = Math.max(0, ...rows.map(item => item.length));
+        return rows.filter(item => item.some(value => value !== '')).map(item => Array.from({ length: width }, (_, index) => item[index] ?? ''));
+      }
+      function inferColumnType(values) {
+        const sample = values.filter(value => value !== null && String(value).trim() !== '' && !/^(null|n\/a|na|nil)$/i.test(String(value).trim())).map(value => String(value).trim());
+        if (!sample.length) return 'TEXT';
+        if (sample.every(value => /^(true|false|1|0|yes|no|y|n)$/i.test(value))) return 'BOOLEAN';
+        if (sample.every(value => /^-?\d+$/.test(value) && !/^[-+]?0\d+/.test(value))) {
+          return sample.some(value => Number(value) > 2147483647 || Number(value) < -2147483648) ? 'BIGINT' : 'INTEGER';
+        }
+        if (sample.every(value => /^-?\d+\.\d+$/.test(value))) {
+          const parts = sample.map(value => value.replace('-', '').split('.'));
+          const scale = Math.max(...parts.map(part => part[1].length));
+          const precision = Math.min(38, Math.max(...parts.map(part => part[0].length)) + scale);
+          return `DECIMAL(${precision}, ${Math.min(scale, precision)})`;
+        }
+        if (sample.every(value => /^\d{4}-\d{2}-\d{2}$/.test(value))) return 'DATE';
+        if (sample.every(value => /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(value))) return 'TIMESTAMP';
+        return 'TEXT';
+      }
+      function resolveColumnNames(columns, enableCustom = false) {
+        const seen = new Set();
+        return columns.map((column, index) => {
+          const provided = enableCustom ? String(column.customName ?? '').trim() : '';
+          const original = String(column.originalName ?? '').trim();
+          const safe = normalizeColumnName(provided || original || `col_${index + 1}`, index);
+          let name = safe; let suffix = 1;
+          while (seen.has(name.toLowerCase())) name = `${safe}_${suffix++}`;
+          seen.add(name.toLowerCase()); return name;
+        });
+      }
+      function normalizeColumnName(baseName, index = 0) {
+        let safe = String(baseName).replace(/[\s.\-]+/g, '_').replace(/[^a-zA-Z0-9_\u4e00-\u9fff]/g, '') || `col_${index + 1}`;
+        if (/^\d/.test(safe)) safe = `col_${safe}`;
+        return safe;
+      }
+      function findDuplicateCustomNames(columns) {
+        const indexesByName = new Map();
+        columns.forEach((column, index) => {
+          const raw = String(column.customName ?? '').trim();
+          if (!raw) return;
+          const normalized = normalizeColumnName(raw, index).toLowerCase();
+          if (!indexesByName.has(normalized)) indexesByName.set(normalized, []);
+          indexesByName.get(normalized).push(index);
+        });
+        return [...indexesByName.values()].filter(indexes => indexes.length > 1).flat();
+      }
+      function quoteIdentifier(name, dialect) {
+        const spec = DIALECTS[dialect] || DIALECTS.postgresql;
+        return `${spec.quote}${String(name).replaceAll(spec.close, spec.close + spec.close)}${spec.close}`;
+      }
+      function dialectType(type, dialect) {
+        const normalized = String(type || 'TEXT').toUpperCase();
+        const decimal = normalized.match(/^DECIMAL\((\d+)\s*,\s*(\d+)\)$/);
+        if (dialect === 'sqlite') {
+          if (/^(INTEGER|BIGINT|BOOLEAN)$/.test(normalized)) return 'INTEGER';
+          if (/^(FLOAT|REAL|DOUBLE)/.test(normalized)) return 'REAL';
+          if (decimal || normalized === 'NUMERIC') return 'NUMERIC';
+          return 'TEXT';
+        }
+        if (dialect === 'bigquery') {
+          if (/^(INTEGER|BIGINT)$/.test(normalized)) return 'INT64';
+          if (normalized === 'BOOLEAN') return 'BOOL';
+          if (normalized === 'FLOAT') return 'FLOAT64';
+          if (decimal) return `NUMERIC(${decimal[1]}, ${decimal[2]})`;
+          if (normalized === 'DATE' || normalized === 'TIMESTAMP') return normalized;
+          return 'STRING';
+        }
+        if (dialect === 'oracle') {
+          if (normalized === 'INTEGER') return 'NUMBER(10)';
+          if (normalized === 'BIGINT') return 'NUMBER(19)';
+          if (normalized === 'BOOLEAN') return 'NUMBER(1)';
+          if (normalized === 'FLOAT') return 'BINARY_DOUBLE';
+          if (decimal) return `NUMBER(${decimal[1]}, ${decimal[2]})`;
+          if (normalized === 'TEXT' || normalized.startsWith('VARCHAR')) return 'VARCHAR2(4000)';
+        }
+        if (dialect === 'mysql') {
+          if (/^(INTEGER|BIGINT|BOOLEAN)$/.test(normalized)) return 'SIGNED';
+          if (normalized === 'FLOAT') return 'DOUBLE';
+          if (normalized === 'TIMESTAMP') return 'DATETIME';
+          if (normalized === 'TEXT' || normalized.startsWith('VARCHAR')) return 'CHAR';
+        }
+        if (dialect === 'mssql') {
+          if (normalized === 'TIMESTAMP') return 'DATETIME2';
+          if (normalized === 'BOOLEAN') return 'BIT';
+          if (normalized === 'TEXT') return 'NVARCHAR(MAX)';
+          if (normalized.startsWith('VARCHAR')) return 'NVARCHAR(255)';
+        }
+        if (dialect === 'postgresql' && normalized === 'BOOLEAN') return 'BOOLEAN';
+        return normalized;
+      }
+      function sqlLiteral(value, type, dialect) {
+        if (value === null || value === undefined || String(value).trim() === '' || /^(null|n\/a|na|nil)$/i.test(String(value).trim())) return 'NULL';
+        const text = String(value).trim();
+        if (dialect === 'oracle' && /^DATE$/i.test(type) && /^\d{4}-\d{2}-\d{2}$/.test(text)) return `TO_DATE('${text}', 'YYYY-MM-DD')`;
+        if (dialect === 'oracle' && /^TIMESTAMP$/i.test(type)) {
+          const timestamp = text.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::(\d{2})(?:\.(\d+))?)?$/);
+          if (timestamp) {
+            const normalized = `${timestamp[1]} ${timestamp[2]}${timestamp[3] ? `:${timestamp[3]}${timestamp[4] ? `.${timestamp[4]}` : ''}` : ''}`;
+            const format = `YYYY-MM-DD HH24:MI${timestamp[3] ? `:SS${timestamp[4] ? '.FF' : ''}` : ''}`;
+            return `TO_TIMESTAMP('${normalized}', '${format}')`;
+          }
+        }
+        if (/^(INTEGER|BIGINT|DECIMAL|FLOAT)/i.test(type)) return /^[-+]?\d+(\.\d+)?([eE][-+]?\d+)?$/.test(text) ? text : 'NULL';
+        if (/^BOOLEAN$/i.test(type)) {
+          const truthy = /^(true|1|yes|y)$/i.test(text);
+          if (dialect === 'oracle' || dialect === 'sqlite' || dialect === 'mssql' || dialect === 'mysql') return truthy ? '1' : '0';
+          return truthy ? 'TRUE' : 'FALSE';
+        }
+        const escaped = String(value).replaceAll("'", "''");
+        return dialect === 'mssql' ? `N'${escaped}'` : `'${escaped}'`;
+      }
+      function normalizeChunkSize(dialect, requested) {
+        const spec = DIALECTS[dialect] || DIALECTS.postgresql;
+        const size = Math.max(1, Math.floor(Number(requested) || 1000));
+        return Math.min(size, spec.max);
+      }
+      function generateCteSql({ rows, columns, cteName = 'cte_data', chunkSize = 1000, dialect = 'postgresql', enableCustomColumnNames = false, singleValues = false }) {
+        if (!Array.isArray(columns) || !columns.length) throw new Error('至少需要一個欄位');
+        if (!Array.isArray(rows) || !rows.length) throw new Error('至少需要一筆資料');
+        const spec = DIALECTS[dialect];
+        if (!spec) throw new Error('不支援的 SQL 方言');
+        const safeCte = String(cteName).trim().replace(/[^a-zA-Z0-9_\u4e00-\u9fff]/g, '_').replace(/^\d/, '_$&') || 'cte_data';
+        const names = resolveColumnNames(columns, enableCustomColumnNames);
+        const quotedColumns = names.map(name => quoteIdentifier(name, dialect));
+        const types = columns.map(column => dialectType(column.overrideType || column.inferredType || 'TEXT', dialect));
+        const size = singleValues && ['postgresql', 'duckdb', 'snowflake'].includes(dialect) ? rows.length : normalizeChunkSize(dialect, chunkSize);
+        const chunks = Math.ceil(rows.length / size);
+        const parts = [];
+        const renderRow = (row, index) => `(${columns.map((column, colIndex) => {
+          const literal = sqlLiteral(row[colIndex] ?? '', column.overrideType || column.inferredType || 'TEXT', dialect);
+          return index === 0 ? `CAST(${literal} AS ${types[colIndex]})` : literal;
+        }).join(', ')})`;
+        for (let chunk = 0; chunk < chunks; chunk++) {
+          const partName = `${safeCte}_part_${chunk + 1}`;
+          const chunkRows = rows.slice(chunk * size, Math.min(rows.length, (chunk + 1) * size));
+          let body;
+          if (spec.style === 'oracle') {
+            body = chunkRows.map((row, index) => `    SELECT ${columns.map((_, colIndex) => `${index === 0 ? `CAST(${sqlLiteral(row[colIndex] ?? '', columns[colIndex].overrideType || columns[colIndex].inferredType, dialect)} AS ${types[colIndex]})` : sqlLiteral(row[colIndex] ?? '', columns[colIndex].overrideType || columns[colIndex].inferredType, dialect)} AS ${quotedColumns[colIndex]}`).join(', ')} FROM dual`).join('\n    UNION ALL\n');
+          } else if (spec.style === 'select') {
+            body = chunkRows.map((row, index) => `    SELECT ${columns.map((_, colIndex) => `${index === 0 ? `CAST(${sqlLiteral(row[colIndex] ?? '', columns[colIndex].overrideType || columns[colIndex].inferredType, dialect)} AS ${types[colIndex]})` : sqlLiteral(row[colIndex] ?? '', columns[colIndex].overrideType || columns[colIndex].inferredType, dialect)} AS ${quotedColumns[colIndex]}`).join(', ')}`).join('\n    UNION ALL\n');
+          } else if (spec.style === 'mssql') {
+            body = `    SELECT ${quotedColumns.join(', ')}\n    FROM (VALUES\n${chunkRows.map((row, index) => `      ${renderRow(row, index)}`).join(',\n')}\n    ) AS [cte_values] (${quotedColumns.join(', ')})`;
+          } else if (spec.style === 'mysql') {
+            body = `    VALUES ${chunkRows.map((row, index) => `ROW${renderRow(row, index)}`).join(',\n          ')}`;
+          } else {
+            body = `    VALUES\n${chunkRows.map((row, index) => `      ${renderRow(row, index)}`).join(',\n')}`;
+          }
+          parts.push(`  ${partName} (${quotedColumns.join(', ')}) AS (\n${body}\n  )`);
+        }
+        const finalName = safeCte;
+        const union = Array.from({ length: chunks }, (_, index) => `    SELECT * FROM ${safeCte}_part_${index + 1}`).join('\n    UNION ALL\n');
+        parts.push(`  ${finalName} AS (\n${union}\n  )`);
+        return `WITH\n${parts.join(',\n')}\nSELECT * FROM ${finalName};`;
+      }
+      const Core = { DIALECTS, decodeBytes, decodeFile, detectDelimiter, parseDelimited, inferColumnType, normalizeColumnName, findDuplicateCustomNames, resolveColumnNames, quoteIdentifier, dialectType, normalizeChunkSize, generateCteSql };
+      globalThis.ExcelCsvSqlCteCore = Core;
+      if (typeof document === 'undefined' || !document.getElementById('rawInput')) return;
+      const $ = id => document.getElementById(id);
+      const state = { model: null, sql: '', sourceBytes: null, fileName: 'cte-data.sql', sourceEncoding: '尚未載入檔案' };
+      function showMessage(text, type = '') { $('message').textContent = text; $('message').className = `cte-message ${type}`; $('message').hidden = !text; }
+      function settings() { return { dialect: $('dialect').value, cteName: $('cteName').value.trim() || 'cte_data', chunkSize: Number($('chunkSize').value), hasHeader: $('hasHeader').checked, enableCustomColumnNames: $('customEnabled').checked, singleValues: $('singleValues').checked }; }
+      function updateDialectOptions() {
+        const dialect = $('dialect').value;
+        const max = DIALECTS[dialect].max;
+        const options = [1000, 2000, 5000, 50000].filter(size => size <= max);
+        $('chunkSize').innerHTML = options.map(size => `<option value="${size}">${size.toLocaleString()}</option>`).join('');
+        $('chunkSize').value = '1000';
+        const supportsSingle = ['postgresql', 'duckdb', 'snowflake'].includes(dialect);
+        $('singleValues').disabled = !supportsSingle;
+        if (!supportsSingle) $('singleValues').checked = false;
+      }
+      function buildModel(data) {
+        if (!data.length || !data[0].length) throw new Error('找不到可用資料');
+        const options = settings();
+        const headers = options.hasHeader ? data[0] : data[0].map((_, index) => `col_${index + 1}`);
+        const body = options.hasHeader ? data.slice(1) : data;
+        if (!body.length) throw new Error('資料中沒有資料列');
+        const width = Math.max(...data.map(row => row.length));
+        const sourceHeaders = Array.from({ length: width }, (_, index) => headers[index] || `col_${index + 1}`);
+        const sampleIndexes = new Set();
+        for (let i = 0; i < Math.min(2000, body.length); i++) sampleIndexes.add(i);
+        for (let i = 0; i < 1000; i++) sampleIndexes.add(Math.floor((i * (body.length - 1)) / 999));
+        const columns = sourceHeaders.map((originalName, index) => {
+          const sample = [...sampleIndexes].map(rowIndex => body[rowIndex]?.[index] ?? '').filter(value => value !== '');
+          return { originalName, customName: '', inferredType: inferColumnType(sample), overrideType: '' };
+        });
+        return { columns, rows: body.map(row => Array.from({ length: width }, (_, index) => row[index] ?? '')) };
+      }
+      function renderColumns() {
+        if (!state.model) return;
+        const enabled = $('customEnabled').checked;
+        const duplicates = new Set(findDuplicateCustomNames(state.model.columns));
+        $('columns').innerHTML = `<div class="cte-columns-wrap"><table class="cte-columns"><thead><tr><th>#</th><th>原始名稱</th><th>自訂名稱</th><th>推論型態</th><th>覆寫型態</th></tr></thead><tbody>${state.model.columns.map((column, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(column.originalName)}</td><td><input data-index="${index}" data-key="customName" aria-label="第 ${index + 1} 欄自訂名稱" aria-invalid="${duplicates.has(index)}" class="${duplicates.has(index) ? 'duplicate' : ''}" title="${duplicates.has(index) ? '欄名重複，輸出時會自動加上序號' : ''}" value="${escapeHtml(column.customName)}" ${enabled ? '' : 'disabled'}></td><td>${column.inferredType}</td><td><select data-index="${index}" data-key="overrideType"><option value="">使用推論</option>${TYPES.map(type => `<option value="${type}" ${column.overrideType === type ? 'selected' : ''}>${type}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>`;
+      }
+      function updateDuplicateIndicators() {
+        const duplicates = new Set(findDuplicateCustomNames(state.model?.columns || []));
+        $('columns').querySelectorAll('[data-key="customName"]').forEach(control => {
+          const duplicate = duplicates.has(Number(control.dataset.index));
+          control.classList.toggle('duplicate', duplicate);
+          control.setAttribute('aria-invalid', String(duplicate));
+          control.title = duplicate ? '欄名重複，輸出時會自動加上序號' : '';
+        });
+      }
+      function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
+      function renderPreview() {
+        const lines = state.sql.split('\n');
+        const preview = lines.length <= 260 ? state.sql : `${lines.slice(0, 200).join('\n')}\n\n/* ... 中間省略 ${lines.length - 250} 行，請複製或下載完整 SQL ... */\n\n${lines.slice(-50).join('\n')}`;
+        $('sqlPreview').textContent = preview;
+      }
+      function refresh() {
+        if (!state.model) return;
+        try {
+          const options = settings();
+          state.sql = generateCteSql({ ...state.model, ...options });
+          const effectiveChunk = options.singleValues && ['postgresql', 'duckdb', 'snowflake'].includes(options.dialect) ? state.model.rows.length : normalizeChunkSize(options.dialect, options.chunkSize);
+          const chunkCount = Math.ceil(state.model.rows.length / effectiveChunk);
+          $('stats').innerHTML = [`資料列：${state.model.rows.length.toLocaleString()}`, `欄位：${state.model.columns.length}`, `分塊：${chunkCount}`, `編碼：${state.sourceEncoding}`, `自訂欄名：${options.enableCustomColumnNames ? '啟用' : '未啟用'}`, `SQL：約 ${(new Blob([state.sql]).size / 1024 / 1024).toFixed(2)} MB`].map(value => `<span class="cte-stat">${escapeHtml(value)}</span>`).join('');
+          $('copyBtn').disabled = false; $('downloadBtn').disabled = false; renderPreview();
+        } catch (error) { state.sql = ''; $('copyBtn').disabled = true; $('downloadBtn').disabled = true; showMessage(error.message, 'error'); }
+      }
+      function parseInput() {
+        try {
+          const text = $('rawInput').value;
+          if (!text.trim()) throw new Error('請先輸入或載入資料');
+          if (text.length > 200 * 1024 * 1024) throw new Error('資料超過 200 MB 上限，請拆分檔案後再匯入');
+          const rows = parseDelimited(text, $('delimiter').value);
+          state.model = buildModel(rows); renderColumns(); refresh();
+          showMessage(`解析完成：${state.model.rows.length.toLocaleString()} 筆、${state.model.columns.length} 欄。`, '');
+        } catch (error) { state.model = null; $('columns').innerHTML = '<div class="cte-empty">解析失敗，請修正資料後重試。</div>'; $('sqlPreview').textContent = '請先修正輸入資料。'; $('stats').innerHTML = '<span class="cte-stat">尚未解析資料</span>'; showMessage(error.message, 'error'); }
+      }
+      async function loadFile(file) {
+        if (!file) return;
+        if (file.size > 200 * 1024 * 1024) { showMessage('檔案超過 200 MB 上限。', 'error'); return; }
+        state.sourceBytes = new Uint8Array(await file.arrayBuffer()); state.fileName = `${file.name.replace(/\.[^.]+$/, '') || 'cte-data'}.sql`;
+        const decoded = decodeFile(state.sourceBytes, $('fileEncoding').value);
+        state.sourceEncoding = decoded.encoding; $('rawInput').value = decoded.text; parseInput();
+      }
+      $('parseBtn').addEventListener('click', parseInput);
+      $('sampleBtn').addEventListener('click', () => { $('rawInput').value = 'User ID,Name,Amount,Order Date\n1,"王小明",120.50,2026-01-01\n2,"O\'Brien",80.00,2026-01-02'; state.sourceEncoding = '貼上文字'; parseInput(); });
+      $('clearBtn').addEventListener('click', () => { $('rawInput').value = ''; state.model = null; state.sql = ''; state.sourceBytes = null; $('columns').innerHTML = '<div class="cte-empty">解析資料後會顯示欄位設定。</div>'; $('stats').innerHTML = '<span class="cte-stat">尚未解析資料</span>'; $('sqlPreview').textContent = '請貼上資料或載入檔案，然後按「解析資料」。'; $('copyBtn').disabled = true; $('downloadBtn').disabled = true; showMessage(''); });
+      $('fileInput').addEventListener('change', async event => { try { await loadFile(event.target.files[0]); } catch (error) { showMessage(`檔案讀取失敗：${error.message}`, 'error'); } finally { event.target.value = ''; } });
+      $('dropZone').addEventListener('dragover', event => { event.preventDefault(); $('dropZone').classList.add('dragging'); });
+      $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('dragging'));
+      $('dropZone').addEventListener('drop', async event => { event.preventDefault(); $('dropZone').classList.remove('dragging'); try { await loadFile(event.dataTransfer.files[0]); } catch (error) { showMessage(`檔案讀取失敗：${error.message}`, 'error'); } });
+      $('fileEncoding').addEventListener('change', () => { if (!state.sourceBytes) return; try { const decoded = decodeFile(state.sourceBytes, $('fileEncoding').value); state.sourceEncoding = decoded.encoding; $('rawInput').value = decoded.text; parseInput(); } catch (error) { showMessage(`編碼解碼失敗：${error.message}`, 'error'); } });
+      ['dialect', 'cteName', 'chunkSize', 'singleValues', 'hasHeader', 'customEnabled', 'delimiter'].forEach(id => $(id).addEventListener('change', () => { if (id === 'dialect') updateDialectOptions(); if (id === 'customEnabled') renderColumns(); if (id === 'hasHeader' || id === 'delimiter') { if ($('rawInput').value.trim()) parseInput(); } else refresh(); }));
+      $('applyBtn').addEventListener('click', () => { renderColumns(); refresh(); });
+      $('columns').addEventListener('input', event => { const control = event.target.closest('[data-index]'); if (!control || !state.model) return; state.model.columns[Number(control.dataset.index)][control.dataset.key] = control.value; updateDuplicateIndicators(); refresh(); });
+      $('columns').addEventListener('change', event => { const control = event.target.closest('[data-index]'); if (!control || !state.model) return; state.model.columns[Number(control.dataset.index)][control.dataset.key] = control.value; refresh(); });
+      $('copyBtn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(state.sql); showMessage('完整 SQL 已複製。'); } catch { showMessage('瀏覽器無法寫入剪貼簿，請改用下載功能。', 'error'); } });
+      $('downloadBtn').addEventListener('click', () => { const url = URL.createObjectURL(new Blob([state.sql], { type: 'text/sql;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = state.fileName; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); showMessage('完整 SQL 已下載。'); });
+      updateDialectOptions();
+    })();
+  </script>
+</body>
+</html>

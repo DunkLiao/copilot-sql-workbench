@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL SPA Tools｜資料品質稽核中心</title>
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-size:14px;background:var(--theme-page);color:var(--theme-text)}
+header{background:var(--theme-primary);color:var(--theme-surface);padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:18px;margin:0 16px 0 0}
+header select,header button{font-size:13px}
+.wrap{display:flex;min-height:calc(100vh - 52px)}
+nav{width:150px;background:var(--theme-surface);border-right:1px solid var(--theme-border);padding-top:8px}
+nav a{display:block;padding:10px 16px;cursor:pointer;color:var(--theme-text);text-decoration:none}
+nav a:hover{background:var(--theme-surface-soft)}
+nav a.on{background:var(--theme-secondary-soft);color:var(--theme-primary);font-weight:bold;border-left:4px solid var(--theme-primary)}
+main{flex:1;padding:16px;overflow:auto}
+.card{background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:6px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:15px}
+button{background:var(--theme-primary);color:var(--theme-surface);border:1px solid var(--theme-primary);border-radius:4px;padding:6px 12px;cursor:pointer}
+button.sec{background:var(--theme-surface);color:var(--theme-text);border-color:var(--theme-border)}
+button.del{background:var(--theme-danger-soft)!important;color:var(--theme-danger)!important;border-color:var(--theme-danger)!important}
+button:disabled{opacity:.65;cursor:not-allowed}
+input,select,textarea{font-size:13px;padding:4px 6px;border:1px solid var(--theme-border);border-radius:4px;background:var(--theme-surface);color:var(--theme-text)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,nav a:focus-visible{outline:2px solid var(--theme-primary);outline-offset:2px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--theme-border-soft);padding:4px 6px;text-align:left;vertical-align:top}
+th{background:var(--theme-surface-alt);position:sticky;top:0}
+.tw{overflow:auto;max-height:480px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.kpis{display:flex;gap:10px;flex-wrap:wrap}
+.kpi{flex:1;min-width:120px;background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:6px;padding:10px;text-align:center}
+.kpi b{display:block;font-size:24px;color:var(--theme-primary)}
+.drop{border:2px dashed var(--theme-primary);border-radius:8px;padding:30px;text-align:center;background:var(--theme-surface-alt);cursor:pointer}
+.sev-高{color:var(--theme-danger);font-weight:bold}.sev-中{color:var(--theme-warning);font-weight:bold}.sev-低{color:var(--theme-muted)}
+.grade{display:inline-block;width:46px;height:46px;line-height:46px;border-radius:50%;color:var(--theme-surface);font-size:24px;font-weight:bold;text-align:center}
+.gA,.gB{background:var(--theme-success)}.gC{background:var(--theme-info)}.gD{background:var(--theme-warning)}.gE{background:var(--theme-danger)}
+.muted{color:var(--theme-muted);font-size:12px}
+.prog{height:8px;background:var(--theme-surface-alt);border-radius:4px;overflow:hidden;margin-top:6px}
+.prog div{height:100%;background:var(--theme-primary);width:0}
+.modal{position:fixed;inset:0;background:color-mix(in srgb,var(--theme-text) 45%,transparent);display:flex;align-items:center;justify-content:center;z-index:9}
+.modal>div{background:var(--theme-surface);color:var(--theme-text);border:1px solid var(--theme-border);border-radius:8px;padding:18px;width:min(720px,94vw);max-height:90vh;overflow:auto}
+.hl{background:var(--theme-danger-soft)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;background:var(--theme-surface-alt);font-size:12px;margin-right:4px}
+#toast{position:fixed;right:16px;bottom:70px;background:var(--theme-text);color:var(--theme-surface);padding:10px 16px;border-radius:6px;display:none;z-index:210}
+.up{color:var(--theme-success)}.down{color:var(--theme-danger)}
+.pb{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;color:var(--theme-surface)}.pok{background:var(--theme-success)}.png{background:var(--theme-danger)}.pn{background:var(--theme-muted)}
+button.mini{padding:2px 6px;font-size:12px}
+#hdMode{font-size:12px;opacity:.85;margin-left:auto}
+@media(max-width:700px){.wrap{display:block}nav{width:auto;border-right:0;border-bottom:1px solid var(--theme-border);display:flex;overflow:auto}nav a{white-space:nowrap;padding:8px 12px}main{padding:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>SQL SPA Tools｜資料品質稽核中心</h1>
+  資料集 <select id="hdDs"></select>
+  範本 <select id="hdTpl"></select>
+  <button id="hdRun">▶ 執行稽核</button>
+  <span id="hdProg" style="font-size:12px"></span>
+  <button id="hdCancel" class="del" style="display:none">✖ 取消</button>
+  <span id="hdMode"></span>
+</header>
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast"></div>
+<a class="home-link" href="index.html">⌂ 工具入口</a>
+<button id="themeToggle" class="theme-toggle" type="button">切換主題</button>
+<script id="core">
+/* ===== 共用核心（主執行緒與 Worker 共用） ===== */
+const CFG={nullTokens:['NULL','N/A','NA','null','-','無'],outMethod:'z',outThr:3,iqrK:1.5,pageSize:200,defMinScore:'',defBuiltinThr:{}};
+const DIMS=['完整性','唯一性','有效性','一致性','正確性','異常值'];
+const SEVW={'高':3,'中':2,'低':1};
+const TYPE_NAME={int:'整數',dec:'小數',num:'數值',date:'日期',bool:'布林',text:'文字'};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const sleep=()=>new Promise(r=>setTimeout(r,0));
+const fmt=n=>n==null||isNaN(n)?'':(Math.round(n*1000)/1000).toLocaleString();
+
+/* ---- 型態 / 日期 ---- */
+const isNull=v=>v==null||String(v).trim()==='';
+const isFake=v=>CFG.nullTokens.includes(String(v).trim());
+function validYMD(y,m,d){if(m<1||m>12||d<1)return null;const dt=new Date(Date.UTC(y,m-1,d));if(dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d||y<1800||y>2200)return null;return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function parseDate(s,roc7){s=String(s).trim();let m;
+ if(m=s.match(/^(\d{4})(\d{2})(\d{2})$/))return validYMD(+m[1],+m[2],+m[3]);
+ if(m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T].*)?$/))return validYMD(+m[1],+m[2],+m[3]);
+ if(m=s.match(/^(\d{2,3})[-\/.](\d{1,2})[-\/.](\d{1,2})$/))return validYMD(+m[1]+1911,+m[2],+m[3]);
+ if(roc7&&(m=s.match(/^(\d{3})(\d{2})(\d{2})$/)))return validYMD(+m[1]+1911,+m[2],+m[3]);
+ return null}
+function dateFmt(s){s=String(s).trim();if(/^\d{8}$/.test(s))return 'YYYYMMDD';if(/^\d{4}-/.test(s))return 'YYYY-MM-DD';if(/^\d{4}\//.test(s))return 'YYYY/MM/DD';if(/^\d{2,3}[\/.-]/.test(s))return '民國年';if(/^\d{7}$/.test(s))return '民國YYYMMDD';return '其他'}
+const toNum=v=>{const t=String(v).trim().replace(/,/g,'');if(!/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t))return NaN;return +t};
+function classify(v){const t=String(v).trim();
+ if(/^\d{8}$/.test(t)&&parseDate(t))return 'date';
+ if(/[-\/.]/.test(t)&&parseDate(t))return 'date';
+ if(/^[-+]?\d+$/.test(t.replace(/,/g,''))&&!(t.length>1&&t[0]==='0'))return 'int';
+ if(/^[-+]?(\d{1,3}(,\d{3})+|\d+)?\.\d+$/.test(t)||/^[-+]?\d{1,3}(,\d{3})+$/.test(t))return 'dec';
+ if(/^(true|false|y|n|是|否)$/i.test(t))return 'bool';return 'text'}
+function matchType(v,t){const c=classify(v);if(t==='text')return true;if(t==='num'||t==='dec')return c==='int'||c==='dec';if(t==='date')return !!parseDate(v,true);return c===t}
+const hasWidthMix=s=>/[\uFF01-\uFF5E\u3000]/.test(s)&&/[!-~]/.test(s);
+const toHalf=s=>s.replace(/[\uFF01-\uFF5E]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/\u3000/g,' ');
+
+/* ---- 檢查碼 ---- */
+function chkBAN(s){s=String(s).trim();if(!/^\d{8}$/.test(s))return false;const w=[1,2,1,2,1,2,4,1];let sum=0;
+ for(let i=0;i<8;i++){const p=+s[i]*w[i];sum+=Math.floor(p/10)+p%10}
+ return sum%5===0||(s[6]==='7'&&(sum+1)%5===0)}
+const IDL={A:10,B:11,C:12,D:13,E:14,F:15,G:16,H:17,I:34,J:18,K:19,L:20,M:21,N:22,O:35,P:23,Q:24,R:25,S:26,T:27,U:28,V:29,W:32,X:30,Y:31,Z:33};
+function chkTWID(s){s=String(s).trim().toUpperCase();if(!/^[A-Z][1289]\d{8}$/.test(s))return false;const n=IDL[s[0]];
+ let sum=Math.floor(n/10)+(n%10)*9;const w=[8,7,6,5,4,3,2,1,1];for(let i=1;i<10;i++)sum+=+s[i]*w[i-1];return sum%10===0}
+
+/* ---- 編碼 / CSV（串流） ---- */
+function detectEnc(buf){const b=new Uint8Array(buf.slice(0,4));
+ if(b[0]===0xEF&&b[1]===0xBB&&b[2]===0xBF)return 'utf-8';
+ if(b[0]===0xFF&&b[1]===0xFE)return 'utf-16le';if(b[0]===0xFE&&b[1]===0xFF)return 'utf-16be';
+ try{new TextDecoder('utf-8',{fatal:true}).decode(buf,{stream:true});return 'utf-8'}catch(e){}
+ const t=new TextDecoder('big5').decode(buf.slice(0,200000),{stream:true});const bad=(t.match(/\uFFFD/g)||[]).length;
+ if(bad/Math.max(1,t.length)<0.01)return 'big5';return 'gb18030'}
+function detectDelim(text){const lines=text.split(/\r?\n/).filter(l=>l.trim()).slice(0,10);let best=',',bs=-1;
+ for(const d of [',','\t','|',';']){const c=lines.map(l=>l.split(d).length-1);const mn=Math.min(...c);if(mn>0){const same=c.filter(x=>x===c[0]).length;const sc=mn*10+same;if(sc>bs){bs=sc;best=d}}}return best}
+function CsvParser(d){this.d=d;this.row=[];this.f='';this.st=0;this.skipLF=false}
+CsvParser.prototype.feed=function(t,out){const d=this.d,n=t.length;let i=0,st=this.st,f=this.f,row=this.row;
+ if(this.skipLF&&n){this.skipLF=false;if(t[0]==='\n')i=1}
+ while(i<n){
+  if(st===1){const j=t.indexOf('"',i);if(j<0){f+=t.slice(i);i=n;break}f+=t.slice(i,j);i=j+1;st=2;continue}
+  if(st===2){if(t[i]==='"'){f+='"';i++;st=1;continue}st=0}
+  if(t[i]==='"'&&f===''){st=1;i++;continue}
+  let j=i;while(j<n){const x=t[j];if(x===d||x==='\n'||x==='\r')break;j++}
+  f+=t.slice(i,j);if(j>=n){i=n;break}
+  const x=t[j];i=j+1;row.push(f);f='';
+  if(x!==d){out.push(row);row=[];if(x==='\r'){if(i<n){if(t[i]==='\n')i++}else this.skipLF=true}}}
+ this.st=st;this.f=f;this.row=row};
+CsvParser.prototype.end=function(out){if(this.f!==''||this.row.length){this.row.push(this.f);out.push(this.row)}this.row=[];this.f='';this.st=0};
+function parseCSV(text,d,limit){const p=new CsvParser(d),o=[];p.feed(text,o);p.end(o);const r=o.filter(x=>!x.every(c=>c===''));return limit?r.slice(0,limit):r}
+
+/* ---- XLSX（內建解壓縮，不依賴外部函式庫） ---- */
+async function inflateRaw(d){if(typeof DecompressionStream==='undefined')throw Error('瀏覽器不支援解壓縮，請使用新版 Edge / Chrome');
+ const s=new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return new Uint8Array(await new Response(s).arrayBuffer())}
+async function unzip(buf,want){const v=new DataView(buf),u8=new Uint8Array(buf);let e=-1;
+ for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--)if(v.getUint32(i,true)===0x06054b50){e=i;break}
+ if(e<0)throw Error('不是有效的 xlsx 檔（舊版 .xls 請先另存為 .xlsx 或 CSV）');
+ const cnt=v.getUint16(e+10,true);let p=v.getUint32(e+16,true);const out={};const td=new TextDecoder();
+ for(let k=0;k<cnt;k++){if(v.getUint32(p,true)!==0x02014b50)break;
+  const m=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lo=v.getUint32(p+42,true);
+  const name=td.decode(u8.subarray(p+46,p+46+nl)).replace(/^\//,'');p+=46+nl+xl+cl;if(!want(name))continue;
+  const lnl=v.getUint16(lo+26,true),lxl=v.getUint16(lo+28,true);const st=lo+30+lnl+lxl;const data=u8.subarray(st,st+cs);
+  if(m===0)out[name]=data;else if(m===8)out[name]=await inflateRaw(data);else throw Error('不支援的壓縮方式：'+m)}
+ return out}
+function xmlDec(s){return s.replace(/&(lt|gt|amp|quot|apos|#x[0-9a-fA-F]+|#\d+);/g,(m,e)=>e==='lt'?'<':e==='gt'?'>':e==='amp'?'&':e==='quot'?'"':e==='apos'?"'":e[1]==='x'?String.fromCodePoint(parseInt(e.slice(2),16)):String.fromCodePoint(+e.slice(1)))}
+function attr(tag,name){const m=tag.match(new RegExp('(?:^|\\s)'+name+'="([^"]*)"'));return m?xmlDec(m[1]):null}
+function isDateFmt(c){c=c.replace(/"[^"]*"|\[[^\]]*\]|\\./g,'');return /[yd]/i.test(c)||/(^|[^A-Za-z])e(?![A-Za-z])/.test(c)}
+function serialDate(n,d1904){const ms=Math.round((n+(d1904?1462:0))*86400000)+Date.UTC(1899,11,30);const d=new Date(ms);const p=x=>String(x).padStart(2,'0');
+ let s=`${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}`;if(n%1)s+=` ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;return s}
+async function xlsxOpen(buf){const z=await unzip(buf,n=>/^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|styles\.xml)$/i.test(n));
+ const td=new TextDecoder();const g=n=>{const k=Object.keys(z).find(x=>x.toLowerCase()===n.toLowerCase());return k?td.decode(z[k]):''};
+ const wb=g('xl/workbook.xml'),rels=g('xl/_rels/workbook.xml.rels');if(!wb)throw Error('找不到 workbook.xml');
+ const rmap={};for(const m of rels.matchAll(/<Relationship\b[^>]*>/g)){let t=attr(m[0],'Target')||'';t=t.replace(/^\//,'');if(!t.startsWith('xl/'))t='xl/'+t;rmap[attr(m[0],'Id')]=t}
+ const sheets=[];for(const m of wb.matchAll(/<sheet\b[^>]*>/g))sheets.push({name:attr(m[0],'name'),path:rmap[attr(m[0],'r:id')]});
+ const ss=[];for(const m of g('xl/sharedStrings.xml').matchAll(/<si>([\s\S]*?)<\/si>|<si\/>/g)){const x=(m[1]||'').replace(/<rPh\b[\s\S]*?<\/rPh>/g,'');let s='';for(const t of x.matchAll(/<t\b[^>]*?(?:\/>|>([\s\S]*?)<\/t>)/g))s+=t[1]||'';ss.push(xmlDec(s))}
+ const st=g('xl/styles.xml');const fm={};for(const m of st.matchAll(/<numFmt\b[^>]*>/g))fm[attr(m[0],'numFmtId')]=attr(m[0],'formatCode')||'';
+ const xfs=[];const cx=(st.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/)||[])[1]||'';
+ for(const m of cx.matchAll(/<xf\b[^>]*>/g)){const id=+(attr(m[0],'numFmtId')||0);const c=fm[id];xfs.push((id>=14&&id<=22)||(id>=27&&id<=36)||(id>=45&&id<=47)||(id>=50&&id<=58)||(c!=null&&isDateFmt(c)))}
+ return{sheets,ss,xfs,d1904:/date1904="(1|true)"/.test(wb)}}
+async function xlsxRows(buf,info,idx,o){const sh=info.sheets[idx];if(!sh)throw Error('找不到工作表');const z=await unzip(buf,n=>n.toLowerCase()===sh.path.toLowerCase());
+ const k=Object.keys(z)[0];if(!k)throw Error('找不到工作表內容');const x=new TextDecoder().decode(z[k]);
+ const re=/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g;let m,last=0,cnt=0;
+ while(m=re.exec(x)){const rn=+(attr(m[1],'r')||0)||last+1;while(last+1<rn){last++;if(o.onRow([])===false)return}last=rn;
+  const row=[];const cre=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;let c,ci=0;const body=m[2]||'';
+  while(c=cre.exec(body)){const a=c[1];const r=attr(a,'r');let col=ci;if(r){col=0;for(const ch of r.match(/^[A-Z]+/)[0])col=col*26+ch.charCodeAt(0)-64;col--}ci=col+1;
+   const t=attr(a,'t'),s=+(attr(a,'s')||0),inner=c[2]||'';let v='';
+   if(t==='inlineStr'){let q='';for(const tt of inner.matchAll(/<t\b[^>]*?(?:\/>|>([\s\S]*?)<\/t>)/g))q+=tt[1]||'';v=xmlDec(q)}
+   else{const vm=inner.match(/<v>([\s\S]*?)<\/v>/);if(vm){v=vm[1];if(t==='s')v=info.ss[+v]??'';else if(t==='b')v=v==='1'?'TRUE':'FALSE';else if(t==='str'||t==='e')v=xmlDec(v);
+     else{const n=+v;if(!isNaN(n))v=info.xfs[s]?serialDate(n,info.d1904):String(parseFloat(n.toPrecision(15)))}}}
+   while(row.length<col)row.push('');row[col]=v}
+  if(o.onRow(row)===false)return;
+  if(++cnt%5000===0){o.progress&&o.progress(re.lastIndex/x.length);await sleep();if(o.cancelled&&o.cancelled())return}}}
+
+/* ---- 欄位剖析（增量） ---- */
+const SAMP=200000,DISTINCT_CAP=50000;
+function Profiler(cols){this.N=0;this.P=cols.map(c=>({name:c,nulls:0,fake:0,types:{},top:new Map(),cap:false,cnt:0,mean:0,m2:0,min:Infinity,max:-Infinity,neg:0,zero:0,samp:[],lens:new Map(),trim:0,width:0,fmts:{},dmin:null,dmax:null,dn:0,ban:0,twid:0}))}
+Profiler.prototype.add=function(row){this.N++;const P=this.P;
+ for(let i=0;i<P.length;i++){const p=P[i];const v=row[i];if(isNull(v)){p.nulls++;continue}if(isFake(v))p.fake++;
+  const t=classify(v);p.types[t]=(p.types[t]||0)+1;
+  const tc=p.top.get(v);if(tc!==undefined)p.top.set(v,tc+1);else if(p.top.size<DISTINCT_CAP)p.top.set(v,1);else p.cap=true;
+  const L=v.length;p.lens.set(L,(p.lens.get(L)||0)+1);if(v!==v.trim())p.trim++;if(hasWidthMix(v))p.width++;
+  if(t==='int'||t==='dec'){const n=toNum(v);if(!isNaN(n)){p.cnt++;const dl=n-p.mean;p.mean+=dl/p.cnt;p.m2+=dl*(n-p.mean);if(n<p.min)p.min=n;if(n>p.max)p.max=n;if(n<0)p.neg++;if(n===0)p.zero++;
+   if(p.samp.length<SAMP)p.samp.push(n);else{const j=Math.floor(Math.random()*p.cnt);if(j<SAMP)p.samp[j]=n}}}
+  const d=parseDate(v,true);if(d){p.dn++;if(!p.dmin||d<p.dmin)p.dmin=d;if(!p.dmax||d>p.dmax)p.dmax=d;const f=dateFmt(v);p.fmts[f]=(p.fmts[f]||0)+1}
+  if(L===8&&chkBAN(v))p.ban++;else if(L===10&&chkTWID(v))p.twid++}};
+Profiler.prototype.finish=function(){const N=this.N;return this.P.map(p=>{const ne=N-p.nulls;const tc=Object.assign({},p.types);
+ if(tc.int&&tc.dec){tc.num=tc.int+tc.dec;delete tc.int;delete tc.dec}
+ let type='text',best=0;for(const k in tc)if(tc[k]>best){best=tc[k];type=k}
+ const o={name:p.name,type,typeMatch:ne?best/ne:0,total:N,ne,nulls:p.nulls,nullRate:N?p.nulls/N:0,fake:p.fake,uniq:p.top.size,uniqRate:ne?p.top.size/ne:0,cap:p.cap,
+  trim:p.trim,width:p.width,ban:p.ban,twid:p.twid,top:[...p.top.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10)};
+ if(p.cap)o.dupSeen=[...p.top.values()].some(x=>x>1);
+ if(!p.cap&&p.top.size<=50)o.vals=[...p.top.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+ const ls=[...p.lens.keys()];if(ls.length){o.lenMin=Math.min(...ls);o.lenMax=Math.max(...ls);o.lenMode=[...p.lens.entries()].sort((a,b)=>b[1]-a[1])[0][0]}
+ if((type==='int'||type==='dec'||type==='num')&&p.cnt){const a=Float64Array.from(p.samp).sort();const q=f=>{const i=(a.length-1)*f,l=Math.floor(i);return a[l]+(a[Math.ceil(i)]-a[l])*(i-l)};
+  Object.assign(o,{min:p.min,max:p.max,mean:p.mean,std:Math.sqrt(p.m2/p.cnt),median:q(.5),q1:q(.25),q3:q(.75),neg:p.neg,zero:p.zero,sampled:p.cnt>a.length});
+  const bins=10,w=(p.max-p.min)/bins||1;const hist=Array(bins).fill(0);for(const x of a)hist[Math.min(bins-1,Math.max(0,Math.floor((x-p.min)/w)))]++;o.hist=hist.map((c,i)=>[fmt(p.min+i*w),c])}
+ if(type==='date'&&p.dn){o.dmin=p.dmin;o.dmax=p.dmax;o.badDate=ne-p.dn;o.fmts=p.fmts}
+ return o})};
+function fixCols(row){const seen={};return row.map((c,i)=>{c=String(c).trim()||('欄位'+(i+1));if(seen[c]){seen[c]++;return c+'_'+seen[c]}seen[c]=1;return c})}
+
+/* ---- 匯入工作（串流解析 + 剖析） ---- */
+async function importTask(m,post,cancelled){let cols=null,seen=0,n=0,chunk=[],chunkNo=0,prof=null;const bad=[];let badCount=0;
+ const take=row=>{if(!row.length||row.every(x=>x===''))return;if(seen<(m.skip||0)){seen++;return}seen++;
+  if(!cols){if(m.header){cols=fixCols(row);prof=new Profiler(cols);return}cols=row.map((_,i)=>'欄位'+(i+1));prof=new Profiler(cols)}
+  if(m.kind==='xlsx'&&row.length<cols.length)while(row.length<cols.length)row.push('');
+  if(row.length!==cols.length){if(bad.length<100000)bad.push(n);badCount++;row=row.slice(0,cols.length);while(row.length<cols.length)row.push('')}
+  prof.add(row);chunk.push(row);n++;if(chunk.length===5000){post({type:'chunk',n:chunkNo++,data:chunk});chunk=[]}};
+ if(m.kind==='csv'){const p=new CsvParser(m.delim);const dec=new TextDecoder(m.enc);const rd=m.file.stream().getReader();let read=0;const rows=[];
+  for(;;){const r=await rd.read();if(cancelled())return;const t=r.done?dec.decode():dec.decode(r.value,{stream:true});
+   if(t)p.feed(read===0&&t.charCodeAt(0)===0xFEFF?t.slice(1):t,rows);if(r.done)p.end(rows);for(const x of rows)take(x);rows.length=0;if(r.done)break;
+   read+=r.value.length;post({type:'progress',p:read/Math.max(1,m.file.size),stage:'讀取解析'});await sleep()}}
+ else{post({type:'progress',p:0,stage:'解壓縮'});const buf=await m.file.arrayBuffer();const info=await xlsxOpen(buf);
+  await xlsxRows(buf,info,m.sheet||0,{onRow:take,progress:p=>post({type:'progress',p,stage:'讀取工作表'}),cancelled});if(cancelled())return}
+ if(chunk.length)post({type:'chunk',n:chunkNo++,data:chunk});
+ if(!cols)throw Error('檔案沒有資料');
+ post({type:'progress',p:1,stage:'彙整剖析'});
+ post({type:'done',cols,n,badRows:bad,badCount,profile:prof.finish()})}
+
+/* ---- 安全運算式 ---- */
+function compileExpr(src,cols){const tk=[];let i=0;
+ const ops=['&&','||','==','!=','>=','<=','>','<','!','+','-','*','/','(',')',',','[',']'];
+ while(i<src.length){const c=src[i];if(/\s/.test(c)){i++;continue}
+  if(/[0-9.]/.test(c)){let j=i;while(j<src.length&&/[0-9.]/.test(src[j]))j++;tk.push({t:'n',v:+src.slice(i,j)});i=j;continue}
+  if(c==='"'||c==="'"){let j=i+1,s='';while(j<src.length&&src[j]!==c){s+=src[j];j++}tk.push({t:'s',v:s});i=j+1;continue}
+  if(c==='{'){const j=src.indexOf('}',i);if(j<0)throw Error('缺少 }');tk.push({t:'id',v:src.slice(i+1,j)});i=j+1;continue}
+  const op=ops.find(o=>src.startsWith(o,i));if(op){tk.push({t:'op',v:op});i+=op.length;continue}
+  let j=i;while(j<src.length&&/[\w\u4e00-\u9fff.]/.test(src[j]))j++;if(j===i)throw Error('無法辨識字元：'+c);
+  let w=src.slice(i,j);if(w.startsWith('row.'))w=w.slice(4);tk.push({t:'id',v:w});i=j}
+ let p=0;const pk=()=>tk[p],is=v=>tk[p]&&tk[p].t==='op'&&tk[p].v===v,eat=v=>{if(!is(v))throw Error('預期 '+v);p++};
+ const val=x=>{const n=toNum(x);return x!==''&&x!=null&&!isNaN(n)?n:x};
+ const cmp=(a,b,o)=>{a=val(a);b=val(b);if(typeof a!==typeof b){a=String(a);b=String(b)}switch(o){case'==':return a==b;case'!=':return a!=b;case'>':return a>b;case'>=':return a>=b;case'<':return a<b;case'<=':return a<=b}};
+ const FN={len:x=>String(x??'').length,num:x=>toNum(x),empty:x=>isNull(x),trim:x=>String(x??'').trim(),date:x=>parseDate(x,true)||'',upper:x=>String(x??'').toUpperCase()};
+ function prim(){const t=pk();if(!t)throw Error('運算式不完整');
+  if(t.t==='n'||t.t==='s'){p++;return()=>t.v}
+  if(is('(')){p++;const e=or();eat(')');return e}
+  if(t.t==='id'){p++;if(is('(')){const f=FN[t.v];if(!f)throw Error('未知函式 '+t.v);p++;const a=[];if(!is(')')){a.push(or());while(is(',')){p++;a.push(or())}}eat(')');return r=>f(...a.map(x=>x(r)))}
+   if(t.v==='true')return()=>true;if(t.v==='false')return()=>false;
+   const ci=cols.indexOf(t.v);if(ci<0)throw Error('找不到欄位 '+t.v);return r=>r[ci]}
+  throw Error('語法錯誤：'+t.v)}
+ function un(){if(is('-')){p++;const e=un();return r=>-val(e(r))}if(is('!')){p++;const e=un();return r=>!e(r)}return prim()}
+ function mul(){let e=un();while(is('*')||is('/')){const o=tk[p++].v,a=e,b=un();e=o==='*'?r=>val(a(r))*val(b(r)):r=>val(a(r))/val(b(r))}return e}
+ function add(){let e=mul();while(is('+')||is('-')){const o=tk[p++].v,a=e,b=mul();e=o==='+'?r=>{const x=val(a(r)),y=val(b(r));return typeof x==='number'&&typeof y==='number'?x+y:String(x)+String(y)}:r=>val(a(r))-val(b(r))}return e}
+ function rel(){const a=add();const t=pk();
+  if(t&&t.t==='op'&&['==','!=','>','>=','<','<='].includes(t.v)){p++;const b=add();return r=>cmp(a(r),b(r),t.v)}
+  if(t&&t.t==='id'&&t.v==='in'){p++;eat('[');const l=[];if(!is(']')){l.push(add());while(is(',')){p++;l.push(add())}}eat(']');return r=>{const x=String(a(r)??'').trim();return l.some(f=>String(f(r))===x)}}
+  return a}
+ function and(){let e=rel();while(is('&&')){p++;const a=e,b=rel();e=r=>a(r)&&b(r)}return e}
+ function or(){let e=and();while(is('||')){p++;const a=e,b=and();e=r=>a(r)||b(r)}return e}
+ const f=or();if(p<tk.length)throw Error('多餘的內容：'+tk[p].v);return r=>!!f(r)}
+
+/* ---- 規則定義 ---- */
+const BUILTIN=[
+ {id:'b_struct',name:'結構異常（欄位數不符）',dim:'有效性',sev:'高'},
+ {id:'b_fakenull',name:'假空值（NULL/N/A 等）',dim:'完整性',sev:'低'},
+ {id:'b_dup',name:'整列重複',dim:'唯一性',sev:'中'},
+ {id:'b_type',name:'型態不符（依推斷型態）',dim:'有效性',sev:'低'},
+ {id:'b_trim',name:'前後空白',dim:'一致性',sev:'低'},
+ {id:'b_width',name:'全形半形混用',dim:'一致性',sev:'低'},
+ {id:'b_variant',name:'類別變體（大小寫/空白/全半形）',dim:'一致性',sev:'低'},
+ {id:'b_outlier',name:'數值異常值',dim:'異常值',sev:'低'}];
+const RTYPES={
+ required:{n:'必填',dim:'完整性'},unique:{n:'唯一（可複合鍵）',dim:'唯一性'},type:{n:'型態',dim:'有效性'},
+ length:{n:'長度',dim:'有效性'},range:{n:'數值範圍',dim:'有效性'},enum:{n:'代碼清單',dim:'有效性'},
+ regex:{n:'正規表示式',dim:'有效性'},compare:{n:'跨欄比較',dim:'一致性'},conditional:{n:'條件必填',dim:'一致性'},
+ expr:{n:'進階運算式',dim:'一致性'},checksum:{n:'檢查碼驗證',dim:'正確性'},dateexist:{n:'日期有效性',dim:'正確性'},
+ dategap:{n:'日期缺口',dim:'完整性'},ref:{n:'跨資料集參照',dim:'一致性'}};
+function ruleDesc(r){const q=r.p||{};switch(r.type){
+ case'required':return `[${(q.cols||[]).join(', ')}] 必填`;case'unique':return `[${(q.cols||[]).join(' + ')}] 不可重複`;
+ case'type':return `[${q.col}] 須為${TYPE_NAME[q.dtype]}`;case'length':return `[${q.col}] 長度 ${q.min||'-'} ~ ${q.max||'-'}`;
+ case'range':return `[${q.col}] 數值 ${q.min!==''&&q.min!=null?q.min:'-'} ~ ${q.max!==''&&q.max!=null?q.max:'-'}`;case'enum':return `[${q.col}] ∈ {${q.list}}`;
+ case'regex':return `[${q.col}] 符合 /${q.pattern}/`;case'compare':return `[${q.col}] ${q.op} ${q.col2?'['+q.col2+']':'"'+q.value+'"'}`;
+ case'conditional':return `當 [${q.col}] ${q.op} "${q.value}" 時，[${q.col2}] 必填`;case'expr':return q.expr;
+ case'checksum':return `[${q.col}] ${q.ck==='ban'?'統一編號':'身分證/居留證'}檢查碼`;case'dateexist':return `[${q.col}] 須為有效日期`;
+ case'dategap':return `[${q.col}] ${q.biz?'營業日':'每日'}不可缺漏`;
+ case'ref':return `[${(q.cols||[]).join(' + ')}] 須存在於「${q.refName}」[${(q.refCols||[]).join(' + ')}]`}return ''}
+const grade=s=>s>=95?'A':s>=85?'B':s>=70?'C':s>=50?'D':'E';
+const numOrNull=x=>x===''||x==null||isNaN(+x)?null:+x;
+
+/* ---- 稽核引擎 ---- */
+async function runAudit(ds,rows,tpl,ctx){
+ ctx=ctx||{};const cols=ds.cols,N=rows.length,ci=c=>cols.indexOf(c);const prof=ctx.prof||[];
+ const B=tpl.builtin||{},BT=tpl.builtinThr||{};const rules=[];
+ for(const b of BUILTIN)if(B[b.id]!==false)rules.push(Object.assign({kind:'b',thr:numOrNull(BT[b.id])},b));
+ for(const r of tpl.rules||[])if(r.on!==false)rules.push(Object.assign({kind:'c'},r,{dim:r.dim||RTYPES[r.type].dim,thr:numOrNull(r.thr)}));
+ const exc=new Set((tpl.exceptions||[]).map(e=>e.rule+'\u0001'+e.col+'\u0001'+e.val));
+ const issues=[];const MAX=200000;let truncated=false;const hits={},excN={};rules.forEach(r=>{hits[r.id]=new Set();excN[r.id]=0});
+ const add=(rule,ri,col,v,msg)=>{const vs=v==null?'':String(v).slice(0,200);
+  if(exc.size&&(exc.has(rule.id+'\u0001'+col+'\u0001'+vs)||exc.has('*\u0001'+col+'\u0001'+vs))){excN[rule.id]++;return}
+  hits[rule.id].add(ri);if(issues.length<MAX)issues.push({r:ri+1,c:col,rule:rule.id,v:vs,sev:rule.sev,m:msg||''});else truncated=true};
+ const prep={};
+ for(const r of rules){const q=r.p||{};
+  if(r.id==='b_outlier')prep[r.id]=prof.filter(p=>p.mean!=null&&p.type!=='date'&&ci(p.name)>=0).map(p=>({i:ci(p.name),p}));
+  if(r.id==='b_type')prep[r.id]=prof.filter(p=>p.type!=='text'&&p.typeMatch>=0.8&&p.typeMatch<1&&ci(p.name)>=0).map(p=>({i:ci(p.name),t:p.type}));
+  if(r.id==='b_variant'){const m=[];for(const p of prof){if(p.type!=='text'||p.uniqRate>0.5||ci(p.name)<0)continue;const i=ci(p.name);const g=new Map();
+    for(const row of rows){const v=row[i];if(isNull(v))continue;const k=toHalf(v).trim().toUpperCase().replace(/\s+/g,' ');if(!g.has(k))g.set(k,new Map());const s=g.get(k);s.set(v,(s.get(v)||0)+1)}
+    const bad=new Map();for(const [,s] of g)if(s.size>1){const main=[...s.entries()].sort((a,b)=>b[1]-a[1])[0][0];for(const [v] of s)if(v!==main)bad.set(v,main)}
+    if(bad.size)m.push({i,bad})}prep[r.id]=m}
+  if(r.kind==='c'&&r.type!=='expr'){for(const c of [].concat(q.cols||[],q.col||[],q.col2||[]))if(c&&ci(c)<0)throw Error(`規則「${r.name}」找不到欄位 ${c}`)}
+  if(r.id==='b_dup'||r.type==='unique'){const idx=r.id==='b_dup'?null:(q.cols||[]).map(ci);const cnt=new Map();
+    for(let k=0;k<N;k++){if(idx&&idx.every(i=>isNull(rows[k][i])))continue;const key=idx?idx.map(i=>rows[k][i]??'').join('\u0001'):rows[k].join('\u0001');cnt.set(key,(cnt.get(key)||0)+1)}prep[r.id]={idx,cnt}}
+  if(r.type==='regex'){try{prep[r.id]=new RegExp(q.pattern)}catch(e){throw Error(`規則「${r.name}」正規表示式錯誤`)}}
+  if(r.type==='enum')prep[r.id]=new Set(String(q.list||'').split(/[,，\n]/).map(s=>s.trim()).filter(s=>s!==''));
+  if(r.type==='expr'){try{prep[r.id]=compileExpr(q.expr||'',cols)}catch(e){throw Error(`規則「${r.name}」運算式錯誤：${e.message}`)}}
+  if(r.type==='ref'){const ref=(ctx.refs||{})[r.id];if(!ref)throw Error(`規則「${r.name}」缺少參照資料`);prep[r.id]={idx:(q.cols||[]).map(ci),set:new Set(ref)}}}
+ const bad=new Set(ds.badRows||[]);
+ for(let k=0;k<N;k++){const row=rows[k];
+  for(const r of rules){const q=r.p||{};
+   switch(r.id){
+    case'b_struct':if(bad.has(k))add(r,k,'(整列)','','欄位數與標題不符');continue;
+    case'b_fakenull':for(let i=0;i<cols.length;i++)if(!isNull(row[i])&&isFake(row[i]))add(r,k,cols[i],row[i]);continue;
+    case'b_dup':{const n=prep[r.id].cnt.get(row.join('\u0001'));if(n>1)add(r,k,'(整列)','','重複 '+n+' 次')}continue;
+    case'b_type':for(const x of prep[r.id]){const v=row[x.i];if(!isNull(v)&&!isFake(v)&&!matchType(v,x.t))add(r,k,cols[x.i],v,'預期'+TYPE_NAME[x.t])}continue;
+    case'b_trim':for(let i=0;i<cols.length;i++){const v=row[i];if(v&&v!==v.trim())add(r,k,cols[i],v)}continue;
+    case'b_width':for(let i=0;i<cols.length;i++){const v=row[i];if(v&&hasWidthMix(v))add(r,k,cols[i],v)}continue;
+    case'b_variant':for(const x of prep[r.id]){const v=row[x.i];if(x.bad.has(v))add(r,k,cols[x.i],v,'建議統一為「'+x.bad.get(v)+'」')}continue;
+    case'b_outlier':for(const x of prep[r.id]){const n=toNum(row[x.i]);if(isNaN(n))continue;const p=x.p;
+      if(CFG.outMethod==='z'){if(p.std>0){const z=(n-p.mean)/p.std;if(Math.abs(z)>CFG.outThr)add(r,k,cols[x.i],row[x.i],'Z='+z.toFixed(2))}}
+      else{const iq=p.q3-p.q1,lo=p.q1-CFG.iqrK*iq,hi=p.q3+CFG.iqrK*iq;if(n<lo||n>hi)add(r,k,cols[x.i],row[x.i],`超出 [${fmt(lo)}, ${fmt(hi)}]`)}}continue}
+   if(r.kind!=='c')continue;const v=q.col!=null?row[ci(q.col)]:null;
+   switch(r.type){
+    case'required':for(const c of q.cols||[]){const x=row[ci(c)];if(isNull(x)||isFake(x))add(r,k,c,x,'空值')}break;
+    case'unique':{const P=prep[r.id];if(P.idx.every(i=>isNull(row[i])))break;const key=P.idx.map(i=>row[i]??'').join('\u0001');const n=P.cnt.get(key);if(n>1)add(r,k,q.cols.join('+'),P.idx.map(i=>row[i]).join(' | '),'重複 '+n+' 次')}break;
+    case'type':if(!isNull(v)&&!matchType(v,q.dtype))add(r,k,q.col,v,'預期'+TYPE_NAME[q.dtype]);break;
+    case'length':if(!isNull(v)){const L=v.length;if((numOrNull(q.min)!=null&&L<+q.min)||(numOrNull(q.max)!=null&&L>+q.max))add(r,k,q.col,v,'長度 '+L)}break;
+    case'range':if(!isNull(v)){const n=toNum(v);if(isNaN(n))add(r,k,q.col,v,'非數值');else if((numOrNull(q.min)!=null&&n<+q.min)||(numOrNull(q.max)!=null&&n>+q.max))add(r,k,q.col,v,'超出範圍')}break;
+    case'enum':if(!isNull(v)&&!prep[r.id].has(v.trim()))add(r,k,q.col,v,'不在代碼清單');break;
+    case'regex':if(!isNull(v)&&!prep[r.id].test(v))add(r,k,q.col,v,'格式不符');break;
+    case'compare':{const b=q.col2?row[ci(q.col2)]:q.value;if(isNull(v)||isNull(b))break;
+      let a1=v,b1=b;const da=parseDate(v,true),db_=parseDate(b,true);if(da&&db_){a1=da;b1=db_}else if(!isNaN(toNum(v))&&!isNaN(toNum(b))){a1=toNum(v);b1=toNum(b)}
+      const ok={'=':a1==b1,'≠':a1!=b1,'>':a1>b1,'≥':a1>=b1,'<':a1<b1,'≤':a1<=b1}[q.op];if(!ok)add(r,k,q.col,v,`${v} ${q.op} ${b} 不成立`)}break;
+    case'conditional':{const x=String(v??'').trim(),t=String(q.value??'').trim();const hit=q.op==='='?x===t:q.op==='≠'?x!==t:q.op==='包含'?x.includes(t):!isNull(v);
+      const y=row[ci(q.col2)];if(hit&&(isNull(y)||isFake(y)))add(r,k,q.col2,y,`${q.col}=${x} 時必填`)}break;
+    case'expr':{let ok=false;try{ok=prep[r.id](row)}catch(e){}if(!ok)add(r,k,'(運算式)','',ruleDesc(r))}break;
+    case'checksum':if(!isNull(v)&&!(q.ck==='ban'?chkBAN(v):chkTWID(v)))add(r,k,q.col,v,'檢查碼錯誤');break;
+    case'dateexist':if(!isNull(v)&&!parseDate(v,true))add(r,k,q.col,v,'無效日期');break;
+    case'ref':{const P=prep[r.id];if(P.idx.every(i=>isNull(row[i])))break;const key=P.idx.map(i=>String(row[i]??'').trim()).join('\u0001');
+      if(!P.set.has(key))add(r,k,q.cols.join('+'),P.idx.map(i=>row[i]).join(' | '),`不存在於「${q.refName}」`)}break}}
+  if(k%3000===0){ctx.progress&&ctx.progress(k/Math.max(1,N));await sleep();if(ctx.cancelled&&ctx.cancelled())throw Error('已取消')}}
+ const gapInfo={};const hol=new Set(ctx.holidays||[]);
+ for(const r of rules.filter(r=>r.type==='dategap')){const i=ci(r.p.col);const set=new Set();for(const row of rows){const d=parseDate(row[i],true);if(d)set.add(d)}
+  const arr=[...set].sort();gapInfo[r.id]={days:0,miss:0};if(!arr.length)continue;
+  let d=new Date(arr[0]+'T00:00:00Z');const end=new Date(arr[arr.length-1]+'T00:00:00Z');
+  while(d<=end){const s=d.toISOString().slice(0,10);const wd=d.getUTCDay();
+   if(!r.p.biz||(wd!==0&&wd!==6&&!hol.has(s))){gapInfo[r.id].days++;if(!set.has(s)){const before=excN[r.id];add(r,-1,r.p.col,s,'缺少此日期資料');if(excN[r.id]===before)gapInfo[r.id].miss++}}
+   d.setUTCDate(d.getUTCDate()+1)}}
+ const rr=rules.map(r=>{const g=gapInfo[r.id];const hitsN=g?g.miss:[...hits[r.id]].filter(x=>x>=0).length;const rate=g?(g.days?g.miss/g.days:0):(N?hitsN/N:0);
+  const o={id:r.id,name:r.name,dim:r.dim,sev:r.sev,desc:r.kind==='b'?'內建檢核':ruleDesc(r),hits:hitsN,rate:Math.min(1,rate),exc:excN[r.id],thr:r.thr};
+  o.pass=r.thr==null?null:o.rate*100<=r.thr+1e-9;return o});
+ const score=list=>{const W=list.reduce((s,r)=>s+SEVW[r.sev],0);return W?100*(1-list.reduce((s,r)=>s+SEVW[r.sev]*r.rate,0)/W):100};
+ const dims={};DIMS.forEach(d=>{const l=rr.filter(r=>r.dim===d);dims[d]=l.length?score(l):null});
+ const sc=score(rr);const issueRows=new Set();for(const id in hits)for(const x of hits[id])if(x>=0)issueRows.add(x);
+ const minScore=numOrNull(tpl.minScore);const judged=rr.filter(r=>r.pass!==null);const reasons=[];
+ if(minScore!=null&&sc<minScore)reasons.push(`總分 ${sc.toFixed(2)} 低於 ${minScore}`);
+ for(const r of judged)if(!r.pass)reasons.push(`「${r.name}」問題率 ${(r.rate*100).toFixed(3)}% 超過門檻 ${r.thr}%`);
+ const pass=(minScore!=null||judged.length)?reasons.length===0:null;
+ return{run:{id:uid(),ds:ds.id,dsName:ds.name,tpl:tpl.id,tplName:tpl.name,time:Date.now(),n:N,score:sc,grade:grade(sc),dims,rules:rr,issueCount:issues.length,issueRows:issueRows.size,truncated,
+   minScore,pass,reasons,excTotal:Object.values(excN).reduce((a,b)=>a+b,0)},issues}}
+
+</script>
+<script id="wk" type="text/plain">
+self.onmessage=async function(e){const m=e.data;const post=x=>self.postMessage(x);const cancelled=()=>!!self.cancelled;
+ try{if(m.cfg)Object.assign(CFG,m.cfg);
+  if(m.cmd==='ping'){post({type:'done',pong:typeof DecompressionStream!=='undefined'?2:1});return}
+  if(m.cmd==='xlsxPreview'){const buf=await m.file.arrayBuffer();const info=await xlsxOpen(buf);if(!info.sheets.length)throw Error('活頁簿沒有工作表');
+   const idx=Math.min(m.sheet||0,info.sheets.length-1);const rows=[];
+   await xlsxRows(buf,info,idx,{onRow:r=>{if(r.length&&!r.every(x=>x===''))rows.push(r);return rows.length<m.limit}});
+   post({type:'done',sheets:info.sheets.map(s=>s.name),rows});return}
+  if(m.cmd==='import'){await importTask(m,post,cancelled);return}
+  if(m.cmd==='audit'){const res=await runAudit(m.ds,m.rows,m.tpl,{prof:m.prof,holidays:m.holidays,refs:m.refs,cancelled,progress:p=>post({type:'progress',p,stage:'稽核'})});
+   post({type:'done',run:res.run,issues:res.issues});return}
+  throw Error('未知指令 '+m.cmd)}
+ catch(err){post({type:'error',msg:(err&&err.message)||String(err)})}};
+
+</script>
+<script>
+'use strict';
+/* ================= 介面工具 ================= */
+const $=s=>document.querySelector(s);
+const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct=n=>(n*100).toFixed(2)+'%';
+const nowStr=t=>{const d=new Date(t);const p=x=>String(x).padStart(2,'0');return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`};
+const stamp=t=>nowStr(t).replace(/[\/: ]/g,'');
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2800)}
+function download(name,content,type){const b=content instanceof Blob?content:new Blob([content],{type:type||'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+function modal(html){const m=document.createElement('div');m.className='modal';m.innerHTML='<div>'+html+'</div>';m.addEventListener('click',e=>{if(e.target===m)m.remove()});document.body.appendChild(m);return m}
+const csvq=v=>{v=String(v??'');return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const passBadge=p=>p==null?'<span class="pb pn">未判定</span>':p?'<span class="pb pok">通過</span>':'<span class="pb png">不通過</span>';
+
+/* ================= IndexedDB ================= */
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('dqa_center',1);
+ r.onupgradeneeded=()=>{const d=r.result;
+  d.createObjectStore('datasets',{keyPath:'id'});d.createObjectStore('rows',{keyPath:['ds','n']});
+  d.createObjectStore('profiles',{keyPath:'ds'});d.createObjectStore('templates',{keyPath:'id'});
+  d.createObjectStore('runs',{keyPath:'id'});d.createObjectStore('issues',{keyPath:['run','n']});
+  d.createObjectStore('holidays',{keyPath:'date'});d.createObjectStore('settings',{keyPath:'key'})};
+ r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+const req=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const st=(s,m)=>db.transaction(s,m||'readonly').objectStore(s);
+const dget=(s,k)=>req(st(s).get(k));
+const dput=(s,v)=>req(st(s,'readwrite').put(v));
+const ddel=(s,k)=>req(st(s,'readwrite').delete(k));
+const dall=(s,range)=>req(st(s).getAll(range));
+const dclear=s=>req(st(s,'readwrite').clear());
+const rng=id=>IDBKeyRange.bound([id,0],[id,Infinity]);
+const delRange=(s,id)=>req(st(s,'readwrite').delete(rng(id)));
+async function loadRows(id){const ch=await dall('rows',rng(id));ch.sort((a,b)=>a.n-b.n);const out=[];for(const c of ch)for(const r of c.data)out.push(r);return out}
+async function loadIssues(run){const ch=await dall('issues',rng(run));ch.sort((a,b)=>a.n-b.n);const out=[];for(const c of ch)for(const r of c.data)out.push(r);return out}
+async function loadCfg(){const s=await dget('settings','cfg');if(s)Object.assign(CFG,s.v)}
+const saveCfg=()=>dput('settings',{key:'cfg',v:CFG});
+
+/* ================= 背景工作（Web Worker，失敗時改用主執行緒） ================= */
+const CORE_SRC=document.getElementById('core').textContent,WK_SRC=document.getElementById('wk').textContent;
+const WK_URL=URL.createObjectURL(new Blob([CORE_SRC+'\n'+WK_SRC],{type:'text/javascript'}));
+let WORKER_OK=false;
+async function testWorker(){try{const w=new Worker(WK_URL);const ok=await new Promise(r=>{const t=setTimeout(()=>r(false),2500);
+ w.onmessage=e=>{clearTimeout(t);r(!!(e.data&&e.data.pong))};w.onerror=()=>{clearTimeout(t);r(false)};w.postMessage({cmd:'ping'})});w.terminate();return ok}catch(e){return false}}
+function startTask(msg,onMsg){let w,rejF,fake;msg.cfg=Object.assign({},CFG);
+ const promise=new Promise((res,rej)=>{rejF=rej;const handle=d=>{if(d.type==='done')res(d);else if(d.type==='error')rej(Error(d.msg));else onMsg&&onMsg(d)};
+  if(WORKER_OK){w=new Worker(WK_URL);w.onmessage=e=>handle(e.data);w.onerror=e=>rej(Error(e.message||'背景工作錯誤'));w.postMessage(msg)}
+  else{fake={cancelled:false,postMessage:handle};new Function('self',WK_SRC)(fake);setTimeout(()=>fake.onmessage({data:msg}),0)}});
+ const end=()=>{if(w)w.terminate();if(fake)fake.cancelled=true};promise.then(end,end);
+ return{promise,cancel(){end();rejF(Error('已取消'))}}}
+let CUR=null;
+function busy(text,task){CUR=task||CUR;$('#hdProg').textContent=text||'';$('#hdCancel').style.display=text&&CUR?'':'none';$('#hdRun').disabled=!!text;if(!text)CUR=null}
+const progText=d=>`${d.stage||'處理中'} ${Math.round((d.p||0)*100)}%`;
+$('#hdCancel').onclick=()=>{if(CUR&&confirm('確定取消目前工作？'))CUR.cancel()};
+
+/* ================= 狀態 / 導覽 ================= */
+const S={view:'import',ds:null,tpl:'__builtin',run:null,imp:null,page:1,flt:{rule:'',col:'',sev:''}};
+const VIEWS=[['import','📥 資料匯入'],['datasets','🗂️ 資料集'],['profile','🔎 欄位剖析'],['rules','📐 規則管理'],['results','✅ 稽核結果'],['compare','📈 批次比對'],['settings','⚙️ 設定']];
+function renderNav(){$('#nav').innerHTML=VIEWS.map(v=>`<a class="${S.view===v[0]?'on':''}" data-v="${v[0]}">${v[1]}</a>`).join('');
+ $('#nav').querySelectorAll('a').forEach(a=>a.onclick=()=>go(a.dataset.v))}
+function go(v){S.view=v;renderNav();V[v]()}
+const defTpl={id:'__builtin',name:'（僅內建檢核）',rules:[],builtin:{},exceptions:[]};
+async function getTpl(id){return id==='__builtin'?Object.assign({},defTpl,{minScore:CFG.defMinScore??'',builtinThr:Object.assign({},CFG.defBuiltinThr||{})}):await dget('templates',id)}
+async function refreshHeader(){const ds=(await dall('datasets')).sort((a,b)=>b.time-a.time);const tp=await dall('templates');
+ if(S.ds&&!ds.find(d=>d.id===S.ds))S.ds=null;if(!S.ds&&ds.length)S.ds=ds[0].id;
+ $('#hdDs').innerHTML=ds.length?ds.map(d=>`<option value="${d.id}" ${S.ds===d.id?'selected':''}>${h(d.name)}（${d.n.toLocaleString()} 筆）</option>`).join(''):'<option value="">（尚無資料集）</option>';
+ if(!(await getTpl(S.tpl)))S.tpl='__builtin';
+ $('#hdTpl').innerHTML=[defTpl,...tp].map(t=>`<option value="${t.id}" ${S.tpl===t.id?'selected':''}>${h(t.name)}</option>`).join('')}
+$('#hdDs').onchange=e=>{S.ds=e.target.value;if(['profile','datasets','rules'].includes(S.view))go(S.view)};
+$('#hdTpl').onchange=e=>{S.tpl=e.target.value;if(S.view==='rules')go('rules')};
+$('#hdRun').onclick=doRun;
+
+/* ================= 跨資料集參照 ================= */
+async function buildRefs(tpl){const refs={};const all=await dall('datasets');
+ for(const r of (tpl.rules||[]).filter(r=>r.type==='ref'&&r.on!==false)){const q=r.p;
+  const d=all.filter(x=>x.name===q.refName).sort((a,b)=>b.time-a.time)[0];if(!d)throw Error(`規則「${r.name}」找不到參照資料集「${q.refName}」`);
+  const idx=(q.refCols||[]).map(c=>d.cols.indexOf(c));if(!idx.length||idx.some(i=>i<0))throw Error(`參照資料集「${d.name}」缺少欄位：${(q.refCols||[]).join(', ')}`);
+  const set=new Set();for(const row of await loadRows(d.id))set.add(idx.map(i=>String(row[i]??'').trim()).join('\u0001'));refs[r.id]=[...set]}
+ return refs}
+
+/* ================= 執行稽核 ================= */
+async function auditTask(ds,tpl,onP){const rows=await loadRows(ds.id);const prof=(await dget('profiles',ds.id))?.cols||[];
+ const holidays=(await dall('holidays')).map(x=>x.date);const refs=await buildRefs(tpl);
+ return startTask({cmd:'audit',ds:{id:ds.id,name:ds.name,cols:ds.cols,badRows:ds.badRows||[]},rows,tpl,prof,holidays,refs},d=>d.type==='progress'&&onP&&onP(d))}
+async function doRun(){if(CUR)return;if(!S.ds)return toast('請先匯入資料集');const ds=await dget('datasets',S.ds);const tpl=await getTpl(S.tpl);
+ busy('載入資料…');try{const task=await auditTask(ds,tpl,d=>busy(progText(d)));busy('稽核中…',task);
+  const {run,issues}=await task.promise;busy('儲存結果…');
+  await dput('runs',run);for(let i=0,n=0;i<issues.length;i+=10000,n++)await dput('issues',{run:run.id,n,data:issues.slice(i,i+10000)});
+  S.run=run.id;S.page=1;S.flt={rule:'',col:'',sev:''};busy('');
+  toast(`稽核完成：${run.score.toFixed(2)} 分（${run.grade}）${run.pass==null?'':run.pass?'｜通過':'｜不通過'}`);go('results')}
+ catch(e){busy('');if(e.message!=='已取消')alert('稽核失敗：'+e.message);else toast('已取消稽核')}}
+
+/* ================= 圖表 ================= */
+function bars(items,opt={}){if(!items.length)return '<span class="muted">無資料</span>';const max=Math.max(...items.map(x=>x[1]),1);const H=22,W=opt.w||420,L=opt.lw||140;
+ return `<svg width="100%" viewBox="0 0 ${W} ${items.length*H+4}" style="max-width:${W}px">`+items.map((x,i)=>{const w=(W-L-60)*x[1]/max;
+ return `<text x="${L-4}" y="${i*H+15}" font-size="11" text-anchor="end">${h(String(x[0]).slice(0,18))}</text><rect x="${L}" y="${i*H+4}" width="${Math.max(w,1)}" height="14" fill="${opt.color||themeColor('--theme-primary')}"/><text x="${L+w+4}" y="${i*H+15}" font-size="11">${x[1].toLocaleString()}</text>`}).join('')+'</svg>'}
+function line(points){if(!points.length)return '';const W=640,H=220,P=36;const n=points.length;const X=i=>P+(n===1?(W-2*P)/2:i*(W-2*P)/(n-1));const Y=v=>H-P-(v/100)*(H-2*P);
+ let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="max-width:${W}px;background:${themeColor('--theme-surface')}">`;
+ for(const g of [0,50,70,85,95,100])s+=`<line x1="${P}" x2="${W-P}" y1="${Y(g)}" y2="${Y(g)}" stroke="${themeColor('--theme-border-soft')}"/><text x="${P-4}" y="${Y(g)+4}" font-size="10" text-anchor="end">${g}</text>`;
+ s+=`<polyline fill="none" stroke="${themeColor('--theme-primary')}" stroke-width="2" points="${points.map((p,i)=>X(i)+','+Y(p[1])).join(' ')}"/>`;
+ points.forEach((p,i)=>{const c=p[2]===false?themeColor('--theme-danger'):p[2]===true?themeColor('--theme-success'):themeColor('--theme-primary');s+=`<circle cx="${X(i)}" cy="${Y(p[1])}" r="4" fill="${c}"><title>${h(p[0])}：${p[1].toFixed(2)}</title></circle><text x="${X(i)}" y="${Y(p[1])-8}" font-size="10" text-anchor="middle">${p[1].toFixed(1)}</text><text x="${X(i)}" y="${H-P+14}" font-size="9" text-anchor="middle">${h(String(p[0]).slice(0,12))}</text>`});return s+'</svg>'}
+
+const V={};
+/* ================= 匯入 ================= */
+V.import=()=>{$('#main').innerHTML=`<div class="card"><h3>匯入資料檔（CSV / TSV / TXT / XLSX）</h3>
+<div class="drop" id="drop">將檔案拖曳到此，或點擊選擇檔案<br><span class="muted">CSV：自動偵測編碼（UTF-8 / BOM / UTF-16 / Big5）與分隔符號，串流解析不需一次載入整個檔案<br>Excel：支援 .xlsx / .xlsm，可選擇工作表；舊版 .xls 請先另存為 .xlsx<br>資料僅儲存在本機 IndexedDB</span></div>
+<input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,.xlsm" hidden></div><div id="impOpt"></div>`;
+ const f=$('#file');$('#drop').onclick=()=>f.click();f.onchange=()=>f.files[0]&&loadFile(f.files[0]);
+ const d=$('#drop');d.ondragover=e=>{e.preventDefault();d.style.background='var(--theme-surface-soft)'};d.ondragleave=()=>d.style.background='';
+ d.ondrop=e=>{e.preventDefault();d.style.background='';e.dataTransfer.files[0]&&loadFile(e.dataTransfer.files[0])};if(S.imp)renderImp()};
+async function loadFile(file){const head=await file.slice(0,4).arrayBuffer();const b=new Uint8Array(head);
+ const isZip=b[0]===0x50&&b[1]===0x4B;const I={file,name:file.name.replace(/\.[^.]+$/,''),header:true,skip:0};
+ if(/\.xls$/i.test(file.name)&&!isZip)return alert('不支援舊版 .xls，請在 Excel 另存為 .xlsx 或 CSV。');
+ if(isZip){I.kind='xlsx';I.sheet=0;S.imp=I;await xlsxPreview()}
+ else{I.kind='csv';I.buf=await file.slice(0,2*1024*1024).arrayBuffer();I.enc=detectEnc(I.buf);I.text=new TextDecoder(I.enc).decode(I.buf,{stream:true}).replace(/^\uFEFF/,'');I.delim=detectDelim(I.text);S.imp=I;renderImp()}}
+async function xlsxPreview(){const I=S.imp;$('#impOpt').innerHTML='<div class="card">讀取 Excel 預覽中…</div>';
+ try{const r=await startTask({cmd:'xlsxPreview',file:I.file,sheet:I.sheet,limit:I.skip+21}).promise;I.sheets=r.sheets;I.pv=r.rows;renderImp()}
+ catch(e){$('#impOpt').innerHTML='';S.imp=null;alert('Excel 讀取失敗：'+e.message)}}
+function renderImp(){const I=S.imp;let pv,bad=0;
+ if(I.kind==='csv'){pv=parseCSV(I.text,I.delim,I.skip+21).slice(I.skip);bad=(I.text.match(/\uFFFD/g)||[]).length}else pv=I.pv.slice(I.skip);
+ const w=Math.max(0,...pv.map(r=>r.length));const hd=I.header?fixCols(pv[0]||[]):Array.from({length:w},(_,i)=>'欄位'+(i+1));const body=I.header?pv.slice(1,21):pv.slice(0,20);
+ $('#impOpt').innerHTML=`<div class="card"><h3>匯入設定：${h(I.file.name)}（${(I.file.size/1048576).toFixed(2)} MB）</h3><div class="row">
+資料集名稱 <input id="iName" value="${h(I.name)}" style="width:220px">
+${I.kind==='csv'?`編碼 <select id="iEnc">${ENCS.map(e=>`<option value="${e[0]}" ${I.enc===e[0]?'selected':''}>${e[1]}</option>`).join('')}</select>
+分隔符號 <select id="iDel">${[[',','逗號 ,'],['\t','Tab'],['|','直線 |'],[';','分號 ;']].map(x=>`<option value="${h(x[0])}" ${I.delim===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select>`
+:`工作表 <select id="iSheet">${I.sheets.map((s,i)=>`<option value="${i}" ${I.sheet===i?'selected':''}>${h(s)}</option>`).join('')}</select>`}
+<label><input type="checkbox" id="iHdr" ${I.header?'checked':''}> 第一列為標題</label>
+略過前 <input type="number" id="iSkip" value="${I.skip}" min="0" style="width:60px"> 列
+<button id="iGo">確認匯入</button></div>
+${bad?`<div class="sev-高">⚠ 預覽中有 ${bad} 個無法解碼的字元，請嘗試切換編碼。</div>`:''}
+<div class="muted">預覽前 20 列${I.kind==='xlsx'?'（日期儲存格已轉為 YYYY-MM-DD）':''}</div><div class="tw"><table><tr><th>#</th>${hd.map(c=>`<th>${h(c)}</th>`).join('')}</tr>
+${body.map((r,i)=>`<tr${I.kind==='csv'&&r.length!==hd.length?' class="hl"':''}><td>${i+1}</td>${r.map(c=>`<td>${h(c)}</td>`).join('')}</tr>`).join('')}</table></div></div>`;
+ if(I.kind==='csv'){$('#iEnc').onchange=e=>{I.enc=e.target.value;I.text=new TextDecoder(I.enc).decode(I.buf,{stream:true}).replace(/^\uFEFF/,'');renderImp()};$('#iDel').onchange=e=>{I.delim=e.target.value;renderImp()}}
+ else $('#iSheet').onchange=e=>{I.sheet=+e.target.value;xlsxPreview()};
+ $('#iHdr').onchange=e=>{I.header=e.target.checked;renderImp()};
+ $('#iSkip').onchange=e=>{I.skip=Math.max(0,+e.target.value||0);I.kind==='xlsx'?xlsxPreview():renderImp()};$('#iName').oninput=e=>I.name=e.target.value;
+ $('#iGo').onclick=doImport}
+const ENCS=[['utf-8','UTF-8'],['big5','Big5 / Big5-HKSCS'],['utf-16le','UTF-16 LE'],['utf-16be','UTF-16 BE'],['gb18030','GB18030']];
+async function doImport(){if(CUR)return toast('目前有工作執行中');const I=S.imp;const id=uid();let chain=Promise.resolve(),werr=null;$('#iGo').disabled=true;
+ const task=startTask({cmd:'import',file:I.file,kind:I.kind,enc:I.enc,delim:I.delim,header:I.header,skip:I.skip,sheet:I.sheet},d=>{
+  if(d.type==='chunk')chain=chain.then(()=>dput('rows',{ds:id,n:d.n,data:d.data})).catch(e=>{werr=e});
+  else if(d.type==='progress')busy(progText(d),task)});
+ busy('匯入中…',task);
+ try{const r=await task.promise;busy('寫入資料庫…');await chain;if(werr)throw werr;
+  await dput('profiles',{ds:id,cols:r.profile});
+  await dput('datasets',{id,name:I.name||I.file.name,file:I.file.name,kind:I.kind,enc:I.kind==='csv'?I.enc:'xlsx：'+I.sheets[I.sheet],delim:I.delim,cols:r.cols,n:r.n,badRows:r.badRows,badCount:r.badCount,time:Date.now()});
+  S.ds=id;S.imp=null;busy('');await refreshHeader();toast(`匯入完成：${r.n.toLocaleString()} 筆、${r.cols.length} 欄`);go('profile')}
+ catch(e){await chain.catch(()=>{});await delRange('rows',id);busy('');if($('#iGo'))$('#iGo').disabled=false;if(e.message==='已取消')toast('已取消匯入');else alert('匯入失敗：'+e.message)}}
+
+/* ================= 資料集 ================= */
+V.datasets=async()=>{const ds=(await dall('datasets')).sort((a,b)=>b.time-a.time);
+ $('#main').innerHTML=`<div class="card"><h3>資料集（${ds.length}）</h3><div class="muted">同名稱的資料集視為同一資料來源的不同批次；「跨資料集參照」規則會自動使用同名稱中最新匯入的一份。</div><div class="tw"><table><tr><th>名稱</th><th>來源檔</th><th>編碼/來源</th><th>筆數</th><th>欄數</th><th>結構異常</th><th>匯入時間</th><th>操作</th></tr>
+${ds.map(d=>`<tr${d.id===S.ds?' style="background:var(--theme-surface-soft)"':''}><td>${h(d.name)}</td><td>${h(d.file)}</td><td>${h(d.enc)}</td><td>${d.n.toLocaleString()}</td><td>${d.cols.length}</td><td>${d.badCount||0}</td><td>${nowStr(d.time)}</td>
+<td><button class="sec" data-a="use" data-id="${d.id}">選用</button> <button class="sec" data-a="pv" data-id="${d.id}">預覽</button> <button class="sec" data-a="rn" data-id="${d.id}">改名</button> <button class="del" data-a="del" data-id="${d.id}">刪除</button></td></tr>`).join('')}</table></div></div><div id="dsPv"></div>`;
+ $('#main').querySelectorAll('button[data-a]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id,d=await dget('datasets',id);
+  if(b.dataset.a==='use'){S.ds=id;await refreshHeader();go('profile')}
+  if(b.dataset.a==='rn'){const n=prompt('新名稱',d.name);if(n){d.name=n;await dput('datasets',d);await refreshHeader();go('datasets')}}
+  if(b.dataset.a==='del'){if(!confirm(`刪除資料集「${d.name}」？（稽核紀錄會保留）`))return;await delRange('rows',id);await ddel('profiles',id);await ddel('datasets',id);await refreshHeader();go('datasets')}
+  if(b.dataset.a==='pv'){const ch=await dget('rows',[id,0]);const r=(ch?.data||[]).slice(0,100);
+   $('#dsPv').innerHTML=`<div class="card"><h3>預覽：${h(d.name)}（前 100 筆）</h3><div class="tw"><table><tr><th>#</th>${d.cols.map(c=>`<th>${h(c)}</th>`).join('')}</tr>${r.map((x,i)=>`<tr><td>${i+1}</td>${x.map(c=>`<td>${h(c)}</td>`).join('')}</tr>`).join('')}</table></div></div>`}})};
+
+/* ================= 欄位剖析 ================= */
+V.profile=async()=>{if(!S.ds){$('#main').innerHTML='<div class="card">請先匯入資料集。</div>';return}
+ const d=await dget('datasets',S.ds),P=(await dget('profiles',S.ds)).cols;const tot=P.reduce((s,p)=>s+p.nulls,0);
+ $('#main').innerHTML=`<div class="kpis"><div class="kpi"><b>${d.n.toLocaleString()}</b>筆數</div><div class="kpi"><b>${d.cols.length}</b>欄數</div>
+<div class="kpi"><b>${pct(tot/Math.max(1,d.n*d.cols.length))}</b>整體空值率</div><div class="kpi"><b>${d.badCount||0}</b>結構異常列</div><div class="kpi"><b style="font-size:16px">${h(d.enc)}</b>編碼/來源</div></div><br>
+<div class="card"><h3>欄位總覽 <span style="float:right"><button id="sug">💡 依剖析建議規則</button></span></h3><div class="tw"><table><tr><th>欄位</th><th>推斷型態</th><th>型態符合率</th><th>空值率</th><th>假空值</th><th>唯一率</th><th>最小</th><th>最大</th><th>平均</th><th>長度</th><th>前後空白</th><th>全半形混用</th><th></th></tr>
+${P.map((p,i)=>`<tr><td><b>${h(p.name)}</b></td><td>${TYPE_NAME[p.type]}</td><td>${pct(p.typeMatch)}</td><td>${pct(p.nullRate)}</td><td>${p.fake}</td><td>${pct(p.uniqRate)}${p.cap?'<span class="muted">*</span>':''}</td>
+<td>${p.type==='date'?h(p.dmin):fmt(p.min)}</td><td>${p.type==='date'?h(p.dmax):fmt(p.max)}</td><td>${fmt(p.mean)}</td><td>${p.lenMin??''}~${p.lenMax??''}</td><td>${p.trim}</td><td>${p.width}</td><td><button class="sec" data-i="${i}">明細</button></td></tr>`).join('')}</table></div>
+<div class="muted">* 相異值超過 ${DISTINCT_CAP.toLocaleString()} 個，唯一率為下限估計。</div></div><div id="pDet"></div>`;
+ $('#sug').onclick=()=>suggestUI(d,P);
+ $('#main').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{const p=P[+b.dataset.i];
+  const sv=[['筆數',p.total],['空值',p.nulls],['唯一值',p.uniq+(p.cap?'+':'')],['常見長度',p.lenMode],['統編檢查碼正確',p.ban],['身分證檢查碼正確',p.twid]];
+  if(p.mean!=null)sv.push(['最小',fmt(p.min)],['Q1',fmt(p.q1)],['中位數',fmt(p.median)],['Q3',fmt(p.q3)],['最大',fmt(p.max)],['平均',fmt(p.mean)],['標準差',fmt(p.std)],['負值數',p.neg],['零值數',p.zero]);
+  if(p.type==='date')sv.push(['最早',p.dmin],['最晚',p.dmax],['無效日期',p.badDate],['格式',Object.entries(p.fmts||{}).map(x=>x[0]+':'+x[1]).join('、')]);
+  $('#pDet').innerHTML=`<div class="card"><h3>欄位明細：${h(p.name)}（${TYPE_NAME[p.type]}）</h3><div class="grid2"><div><table>${sv.map(x=>`<tr><th>${x[0]}</th><td>${h(x[1])}</td></tr>`).join('')}</table>${p.sampled?'<div class="muted">分位數與直方圖以 20 萬筆隨機抽樣估計</div>':''}</div>
+  <div><b>前 10 常見值</b>${bars(p.top.map(x=>[x[0]===''?'(空)':x[0],x[1]]))}${p.hist?'<b>分布直方圖</b>'+bars(p.hist,{color:themeColor('--theme-info')}):''}</div></div></div>`;$('#pDet').scrollIntoView()})};
+
+/* ================= 依剖析建議規則 ================= */
+function suggestRules(P){const s=[];const req=P.filter(p=>p.total>0&&p.nulls===0&&p.fake===0).map(p=>p.name);
+ if(req.length)s.push({type:'required',sev:'高',p:{cols:req},why:`${req.length} 個欄位空值率 0%`});
+ for(const p of P){const ne=p.ne??(p.total-p.nulls);if(!ne)continue;
+  if(p.nulls===0&&p.total>1&&p.uniqRate===1&&!p.cap)s.push({type:'unique',sev:'高',p:{cols:[p.name]},why:'唯一率 100%'});
+  else if(p.cap&&!p.dupSeen&&p.nulls===0)s.push({type:'unique',sev:'高',p:{cols:[p.name]},why:'抽樣範圍內未見重複（估計）'});
+  if(['int','dec','num','date'].includes(p.type)&&p.typeMatch>=0.95)s.push({type:'type',sev:'中',p:{col:p.name,dtype:p.type==='date'?'date':p.type==='int'?'int':'num'},why:`型態符合率 ${pct(p.typeMatch)}`});
+  if(p.type==='date')s.push({type:'dateexist',sev:'中',p:{col:p.name},why:`日期欄位，無效日期 ${p.badDate||0} 筆`});
+  if(p.vals&&p.vals.length>=2&&p.vals.length<=30&&p.type!=='date'&&ne>=p.vals.length*3)s.push({type:'enum',sev:'中',p:{col:p.name,list:p.vals.map(v=>v.trim()).filter((v,i,a)=>a.indexOf(v)===i).join(',')},why:`僅 ${p.vals.length} 種值`});
+  if(p.type==='text'&&p.lenMin===p.lenMax&&p.lenMin>0&&p.uniq>1)s.push({type:'length',sev:'低',p:{col:p.name,min:String(p.lenMin),max:String(p.lenMax)},why:`長度固定為 ${p.lenMin}`});
+  if(p.mean!=null&&p.type!=='date'&&p.neg===0)s.push({type:'range',sev:'中',p:{col:p.name,min:'0',max:''},why:'無負值'});
+  if(p.ban/ne>=0.9)s.push({type:'checksum',sev:'高',p:{col:p.name,ck:'ban'},why:`${pct(p.ban/ne)} 符合統編檢查碼`});
+  if(p.twid/ne>=0.9)s.push({type:'checksum',sev:'高',p:{col:p.name,ck:'twid'},why:`${pct(p.twid/ne)} 符合身分證檢查碼`})}
+ return s}
+async function suggestUI(ds,P){let t=S.tpl==='__builtin'?null:await dget('templates',S.tpl);
+ const have=new Set((t?.rules||[]).map(r=>r.type+JSON.stringify(r.p)));const list=suggestRules(P).filter(x=>!have.has(x.type+JSON.stringify(x.p)));
+ if(!list.length)return toast('沒有新的建議規則');
+ const m=modal(`<h3>💡 建議規則（${list.length}）</h3><div class="muted">依「${h(ds.name)}」剖析結果產生；將加入範本：<b>${t?h(t.name):'（新建）'+h(ds.name)+' 範本'}</b></div>
+ <div class="row" style="margin-top:8px"><label><input type="checkbox" id="sgAll" checked> 全選</label></div>
+ <div class="tw" style="max-height:55vh"><table><tr><th></th><th>類型</th><th>內容</th><th>依據</th><th>嚴重度</th></tr>
+ ${list.map((x,i)=>`<tr><td><input type="checkbox" data-sg="${i}" checked></td><td>${RTYPES[x.type].n}</td><td>${h(ruleDesc(x))}</td><td class="muted">${h(x.why)}</td><td><select data-sv="${i}">${['高','中','低'].map(s=>`<option ${s===x.sev?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</table></div>
+ <br><button id="sgOk">加入選取的規則</button> <button class="sec" id="sgNo">取消</button>`);
+ m.querySelector('#sgAll').onchange=e=>m.querySelectorAll('[data-sg]').forEach(c=>c.checked=e.target.checked);
+ m.querySelector('#sgNo').onclick=()=>m.remove();
+ m.querySelector('#sgOk').onclick=async()=>{if(!t){t={id:uid(),name:ds.name+' 範本',rules:[],builtin:{},builtinThr:{},exceptions:[]};S.tpl=t.id}
+  let n=0;m.querySelectorAll('[data-sg]').forEach(c=>{if(!c.checked)return;const x=list[+c.dataset.sg];const r={id:'r_'+uid(),type:x.type,p:x.p,sev:m.querySelector(`[data-sv="${c.dataset.sg}"]`).value,dim:RTYPES[x.type].dim,on:true,thr:''};
+   r.name=RTYPES[x.type].n+'：'+ruleDesc(r);t.rules.push(r);n++});
+  await dput('templates',t);m.remove();await refreshHeader();toast(`已加入 ${n} 條規則`);go('rules')}}
+
+/* ================= 規則管理 ================= */
+V.rules=async()=>{const tp=await dall('templates');const t=S.tpl==='__builtin'?null:await dget('templates',S.tpl);
+ const ds=S.ds?await dget('datasets',S.ds):null;
+ if(t){t.builtinThr=t.builtinThr||{};t.exceptions=t.exceptions||[]}
+ const allR=t?[...BUILTIN,...t.rules]:[];const rn=id=>id==='*'?'（全部規則）':(allR.find(r=>r.id===id)||{}).name||id;
+ $('#main').innerHTML=`<datalist id="colList">${(ds?ds.cols:[]).map(c=>`<option value="${h(c)}">`).join('')}</datalist>
+<div class="card"><h3>稽核範本</h3><div class="row">
+<button id="tNew">＋ 新增範本</button><button class="sec" id="tImp">匯入範本 JSON</button><input type="file" id="tFile" accept=".json" hidden>
+${ds?`<button class="sec" id="tSug">💡 依目前資料集建議規則</button>`:''}
+${t?`<button class="sec" id="tRen">改名</button><button class="sec" id="tCopy">複製</button><button class="sec" id="tExp">匯出範本 JSON</button><button class="del" id="tDel">刪除範本</button>`:''}</div>
+<div class="muted">目前範本：<b>${h(t?t.name:defTpl.name)}</b>（共 ${tp.length} 個範本，可於上方「範本」切換）</div>
+${t?`<div class="row" style="margin-top:8px">最低通過分數 <input id="tMin" type="number" step="0.1" value="${h(t.minScore??'')}" style="width:80px" placeholder="不判定"> <span class="muted">留空表示不以總分判定；任一規則超過門檻或總分低於此值即「不通過」</span></div>`:''}</div>
+${t?`<div class="card"><h3>內建檢核</h3><table><tr><th>啟用</th><th>名稱</th><th>維度</th><th>嚴重度</th><th>允許問題率（%）</th></tr>
+${BUILTIN.map(b=>`<tr><td><input type="checkbox" data-b="${b.id}" ${t.builtin?.[b.id]!==false?'checked':''}></td><td>${b.name}</td><td>${b.dim}</td><td class="sev-${b.sev}">${b.sev}</td><td><input data-bt="${b.id}" value="${h(t.builtinThr[b.id]??'')}" style="width:80px" placeholder="不判定"></td></tr>`).join('')}</table></div>
+<div class="card"><h3>自訂規則（${t.rules.length}） <button id="rAdd" style="float:right">＋ 新增規則</button></h3><div class="tw"><table><tr><th>啟用</th><th>名稱</th><th>類型</th><th>維度</th><th>嚴重度</th><th>門檻</th><th>內容</th><th>操作</th></tr>
+${t.rules.map((r,i)=>`<tr><td><input type="checkbox" data-on="${i}" ${r.on!==false?'checked':''}></td><td>${h(r.name)}</td><td>${RTYPES[r.type].n}</td><td>${r.dim}</td><td class="sev-${r.sev}">${r.sev}</td><td>${numOrNull(r.thr)==null?'—':r.thr+'%'}</td><td>${h(ruleDesc(r))}</td>
+<td><button class="sec" data-e="${i}">編輯</button> <button class="del" data-d="${i}">刪除</button></td></tr>`).join('')}</table></div></div>
+<div class="card"><h3>例外清單（${t.exceptions.length}）</h3><div class="muted">符合「規則＋欄位＋值」的問題不列入稽核結果。可在「稽核結果」的明細直接加入。</div>
+<div class="row" style="margin-top:6px">規則 <select id="exR"><option value="*">（全部規則）</option>${allR.map(r=>`<option value="${r.id}">${h(r.name)}</option>`).join('')}</select>
+欄位 <input id="exC" list="colList" style="width:140px"> 值 <input id="exV" style="width:160px"> 說明 <input id="exN" style="width:160px"> <button class="sec" id="exAdd">新增</button> <button class="del" id="exClr">清空</button></div>
+<div class="tw" style="max-height:300px"><table><tr><th>規則</th><th>欄位</th><th>值</th><th>說明</th><th>建立時間</th><th></th></tr>
+${t.exceptions.map((x,i)=>`<tr><td>${h(rn(x.rule))}</td><td>${h(x.col)}</td><td>${h(x.val)}</td><td>${h(x.note||'')}</td><td>${x.time?nowStr(x.time):''}</td><td><a href="#" data-xd="${i}">刪除</a></td></tr>`).join('')}</table></div></div>`
+:`<div class="card">「僅內建檢核」為系統預設，規則不可編輯。<br>其通過標準（最低通過分數、各內建檢核允許問題率）可在「⚙️ 設定 → 預設判定標準」設定。目前：最低通過分數 <b>${numOrNull(CFG.defMinScore)==null?'未設定':CFG.defMinScore}</b>，已設定門檻的內建檢核 <b>${Object.values(CFG.defBuiltinThr||{}).filter(v=>numOrNull(v)!=null).length}</b> 項。 <button class="sec" id="goSet">前往設定</button></div>`}`;
+ $('#tNew').onclick=async()=>{const n=prompt('範本名稱','新稽核範本');if(!n)return;const nt={id:uid(),name:n,rules:[],builtin:{},builtinThr:{},exceptions:[]};await dput('templates',nt);S.tpl=nt.id;await refreshHeader();go('rules')};
+ $('#tImp').onclick=()=>$('#tFile').click();
+ $('#tFile').onchange=async e=>{try{const j=JSON.parse(await e.target.files[0].text());const list=Array.isArray(j)?j:[j];for(const x of list){if(!x.rules)throw Error('格式錯誤');x.id=uid();await dput('templates',x);S.tpl=x.id}await refreshHeader();toast('範本已匯入');go('rules')}catch(er){alert('匯入失敗：'+er.message)}};
+ if($('#goSet'))$('#goSet').onclick=()=>go('settings');
+ if($('#tSug'))$('#tSug').onclick=async()=>suggestUI(ds,(await dget('profiles',ds.id)).cols);
+ if(!t)return;
+ const save=()=>dput('templates',t);
+ $('#tMin').onchange=async e=>{t.minScore=e.target.value.trim();await save();toast('已儲存')};
+ $('#tRen').onclick=async()=>{const n=prompt('新名稱',t.name);if(n){t.name=n;await save();await refreshHeader();go('rules')}};
+ $('#tCopy').onclick=async()=>{const c=JSON.parse(JSON.stringify(t));c.id=uid();c.name+='（複本）';await dput('templates',c);S.tpl=c.id;await refreshHeader();go('rules')};
+ $('#tExp').onclick=()=>download(t.name+'.template.json',JSON.stringify(t,null,2),'application/json');
+ $('#tDel').onclick=async()=>{if(!confirm('刪除範本「'+t.name+'」？'))return;await ddel('templates',t.id);S.tpl='__builtin';await refreshHeader();go('rules')};
+ $('#main').querySelectorAll('[data-b]').forEach(c=>c.onchange=async()=>{t.builtin=t.builtin||{};t.builtin[c.dataset.b]=c.checked;await save()});
+ $('#main').querySelectorAll('[data-bt]').forEach(c=>c.onchange=async()=>{t.builtinThr[c.dataset.bt]=c.value.trim();await save();toast('已儲存')});
+ $('#main').querySelectorAll('[data-on]').forEach(c=>c.onchange=async()=>{t.rules[+c.dataset.on].on=c.checked;await save()});
+ $('#main').querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{if(!confirm('刪除此規則？'))return;t.rules.splice(+b.dataset.d,1);await save();go('rules')});
+ $('#main').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>ruleEditor(t,+b.dataset.e));
+ $('#main').querySelectorAll('[data-xd]').forEach(a=>a.onclick=async e=>{e.preventDefault();t.exceptions.splice(+a.dataset.xd,1);await save();go('rules')});
+ $('#exAdd').onclick=async()=>{const c=$('#exC').value.trim();if(!c)return alert('請輸入欄位');t.exceptions.push({rule:$('#exR').value,col:c,val:$('#exV').value,note:$('#exN').value,time:Date.now()});await save();go('rules')};
+ $('#exClr').onclick=async()=>{if(confirm('清空全部例外？')){t.exceptions=[];await save();go('rules')}};
+ $('#rAdd').onclick=()=>ruleEditor(t,-1)};
+
+async function ruleEditor(t,idx){const ds=S.ds?await dget('datasets',S.ds):null;const cols=ds?ds.cols:[];
+ const names=[...new Set((await dall('datasets')).map(d=>d.name))];
+ const r=idx>=0?JSON.parse(JSON.stringify(t.rules[idx])):{id:'r_'+uid(),name:'',type:'required',sev:'中',dim:'完整性',p:{},on:true,thr:''};
+ const m=modal(`<h3>${idx>=0?'編輯':'新增'}規則</h3><datalist id="colList2">${cols.map(c=>`<option value="${h(c)}">`).join('')}</datalist>
+<div class="row">名稱 <input id="rN" style="width:300px" value="${h(r.name)}" placeholder="留空自動命名"></div>
+<div class="row">類型 <select id="rT">${Object.entries(RTYPES).map(([k,v])=>`<option value="${k}" ${r.type===k?'selected':''}>${v.n}</option>`).join('')}</select>
+維度 <select id="rD">${DIMS.map(d=>`<option ${r.dim===d?'selected':''}>${d}</option>`).join('')}</select>
+嚴重度 <select id="rS">${['高','中','低'].map(s=>`<option ${r.sev===s?'selected':''}>${s}</option>`).join('')}</select>
+允許問題率 <input id="rThr" value="${h(r.thr??'')}" style="width:70px" placeholder="不判定">%</div>
+<div id="rF"></div><div class="muted" id="rHint"></div><br><div class="row"><button id="rOk">儲存</button><button class="sec" id="rCancel">取消</button>${ds?'<button class="sec" id="rTest">以目前資料集試算</button>':''}<span id="rRes"></span></div>`);
+ const colIn=(k,v)=>`<input list="colList2" data-k="${k}" value="${h(v||'')}" placeholder="欄位名稱" style="width:180px">`;
+ function fields(){const q=r.p;let s='';const T=r.type;
+  if(T==='required'||T==='unique')s=`<div class="row">欄位（Ctrl 可多選） <select multiple data-k="cols" size="6" style="min-width:240px">${cols.concat((q.cols||[]).filter(c=>!cols.includes(c))).map(c=>`<option ${(q.cols||[]).includes(c)?'selected':''}>${h(c)}</option>`).join('')}</select></div>`;
+  else if(T==='expr')s=`<div>運算式（為 true 表示通過）<br><textarea data-k="expr" rows="3" style="width:100%">${h(q.expr||'')}</textarea></div>`;
+  else if(T==='ref')s=`<div class="row">本資料集欄位 <input list="colList2" data-k="cols" data-arr="1" value="${h((q.cols||[]).join(','))}" placeholder="多欄以逗號分隔" style="width:220px"></div>
+   <div class="row">參照資料集 <select data-k="refName">${names.map(n=>`<option ${q.refName===n?'selected':''}>${h(n)}</option>`).join('')}</select>
+   參照欄位 <input data-k="refCols" data-arr="1" value="${h((q.refCols||[]).join(','))}" placeholder="多欄以逗號分隔，順序需對應" style="width:220px"></div>`;
+  else{s=`<div class="row">欄位 ${colIn('col',q.col)}`;
+   if(T==='type')s+=` 型態 <select data-k="dtype">${['int','num','date','bool','text'].map(x=>`<option value="${x}" ${q.dtype===x?'selected':''}>${TYPE_NAME[x]}</option>`).join('')}</select>`;
+   if(T==='length'||T==='range')s+=` 最小 <input data-k="min" value="${h(q.min??'')}" style="width:90px"> 最大 <input data-k="max" value="${h(q.max??'')}" style="width:90px">`;
+   if(T==='enum')s+=`</div><div>允許值（以逗號或換行分隔）<br><textarea data-k="list" rows="3" style="width:100%">${h(q.list||'')}</textarea>`;
+   if(T==='regex')s+=` 樣式 <input data-k="pattern" value="${h(q.pattern||'')}" style="width:240px" placeholder="^\\d{8}$">`;
+   if(T==='compare')s+=` <select data-k="op">${['=','≠','>','≥','<','≤'].map(o=>`<option ${q.op===o?'selected':''}>${o}</option>`).join('')}</select> 比較欄位 ${colIn('col2',q.col2)} 或固定值 <input data-k="value" value="${h(q.value||'')}" style="width:100px">`;
+   if(T==='conditional')s+=` <select data-k="op">${['=','≠','包含','有值'].map(o=>`<option ${q.op===o?'selected':''}>${o}</option>`).join('')}</select> 值 <input data-k="value" value="${h(q.value||'')}" style="width:100px"> 時，必填欄位 ${colIn('col2',q.col2)}`;
+   if(T==='checksum')s+=` 種類 <select data-k="ck"><option value="ban" ${q.ck==='ban'?'selected':''}>統一編號</option><option value="twid" ${q.ck==='twid'?'selected':''}>身分證／新式居留證</option></select>`;
+   if(T==='dategap')s+=` <label><input type="checkbox" data-k="biz" ${q.biz?'checked':''}> 僅檢查營業日（排除週末與假日檔）</label>`;
+   s+='</div>'}
+  m.querySelector('#rF').innerHTML=s;
+  m.querySelector('#rHint').innerHTML=T==='expr'?'欄位可直接寫名稱、row.名稱 或 {含空白的名稱}；運算子：&& || ! == != > >= < <= + - * / in [..]；函式：len() num() empty() trim() date() upper()<br>例：AMT >= 0 && TYPE in [\'1\',\'3\']　或　empty(到期日) || date(到期日) >= date(起始日)'
+   :T==='dategap'?'日期缺口：找出最小與最大日期之間缺少資料的日期。':T==='ref'?'稽核時自動使用「參照資料集」同名稱中最新匯入的一份；比對時會去除前後空白。':''}
+ function collect(){const q={};m.querySelectorAll('#rF [data-k]').forEach(e=>{const k=e.dataset.k;q[k]=e.multiple?[...e.selectedOptions].map(o=>o.value):e.type==='checkbox'?e.checked:e.dataset.arr?e.value.split(/[,，]/).map(s=>s.trim()).filter(Boolean):e.value.trim()});
+  if(r.type==='compare'&&!q.col2&&q.value==='')throw Error('請指定比較欄位或固定值');
+  if(['required','unique','ref'].includes(r.type)&&!(q.cols||[]).length)throw Error('請指定欄位');
+  if(r.type==='ref'){if(!q.refName)throw Error('請選擇參照資料集');if((q.refCols||[]).length!==q.cols.length)throw Error('參照欄位數量需與本資料集欄位相同')}
+  if(r.type==='expr'&&!q.expr)throw Error('請輸入運算式');if(r.type==='expr'&&cols.length)compileExpr(q.expr,cols);
+  if(r.type==='regex')new RegExp(q.pattern);
+  if(!['required','unique','expr','ref'].includes(r.type)&&!q.col)throw Error('請指定欄位');
+  const thr=m.querySelector('#rThr').value.trim();if(thr!==''&&isNaN(+thr))throw Error('允許問題率需為數字');
+  r.p=q;r.thr=thr;r.dim=m.querySelector('#rD').value;r.sev=m.querySelector('#rS').value;r.name=m.querySelector('#rN').value.trim()||RTYPES[r.type].n+'：'+ruleDesc(r)}
+ fields();
+ m.querySelector('#rT').onchange=e=>{r.type=e.target.value;r.p={};m.querySelector('#rD').value=RTYPES[r.type].dim;fields()};
+ m.querySelector('#rCancel').onclick=()=>m.remove();
+ m.querySelector('#rOk').onclick=async()=>{try{collect()}catch(e){return alert(e.message)}if(idx>=0)t.rules[idx]=r;else t.rules.push(r);await dput('templates',t);m.remove();go('rules')};
+ const tb=m.querySelector('#rTest');if(tb)tb.onclick=async()=>{try{collect();m.querySelector('#rRes').textContent='試算中…';
+  const task=await auditTask(ds,{id:'t',name:'t',rules:[r],builtin:Object.fromEntries(BUILTIN.map(b=>[b.id,false])),exceptions:t.exceptions||[]});const res=await task.promise;
+  const x=res.run.rules[0];m.querySelector('#rRes').innerHTML=`命中 <b>${x.hits.toLocaleString()}</b>（${pct(x.rate)}）${x.exc?'，例外 '+x.exc:''}${x.pass==null?'':'　'+passBadge(x.pass)}`+(res.issues.length?`<br><span class="muted">例：第 ${res.issues[0].r||'—'} 列 ${h(res.issues[0].v)} ${h(res.issues[0].m)}</span>`:'')}
+  catch(e){m.querySelector('#rRes').textContent='';alert(e.message)}}}
+
+/* ================= 稽核結果 ================= */
+V.results=async()=>{const runs=(await dall('runs')).sort((a,b)=>b.time-a.time);if(!runs.length){$('#main').innerHTML='<div class="card">尚無稽核紀錄，請選擇資料集與範本後按「執行稽核」。</div>';return}
+ if(!S.run||!runs.find(r=>r.id===S.run))S.run=runs[0].id;const R=runs.find(r=>r.id===S.run);const iss=await loadIssues(R.id);
+ const F=S.flt;const list=iss.filter(x=>(!F.rule||x.rule===F.rule)&&(!F.col||x.c===F.col)&&(!F.sev||x.sev===F.sev));
+ const pages=Math.max(1,Math.ceil(list.length/CFG.pageSize));S.page=Math.min(S.page,pages);const off=(S.page-1)*CFG.pageSize;const pg=list.slice(off,off+CFG.pageSize);
+ const rn=Object.fromEntries(R.rules.map(r=>[r.id,r.name]));const colsU=[...new Set(iss.map(x=>x.c))];const canEx=R.tpl!=='__builtin';
+ $('#main').innerHTML=`<div class="card"><div class="row">稽核紀錄 <select id="rSel">${runs.map(r=>`<option value="${r.id}" ${r.id===R.id?'selected':''}>${nowStr(r.time)}｜${h(r.dsName)}｜${h(r.tplName)}｜${r.score.toFixed(1)}${r.pass==null?'':r.pass?'｜通過':'｜不通過'}</option>`).join('')}</select>
+<button class="sec" id="xCsv">匯出問題明細 CSV</button><button class="sec" id="xRows">匯出問題列原始資料</button><button class="sec" id="xRpt">匯出 HTML 報告</button><button class="sec" id="xFix">匯出清理後資料</button><button class="del" id="xDel">刪除此紀錄</button></div></div>
+<div class="kpis"><div class="kpi"><span class="grade g${R.grade}">${R.grade}</span><br>${R.score.toFixed(2)} 分<br>${passBadge(R.pass)}</div>
+${DIMS.map(d=>`<div class="kpi"><b>${R.dims[d]==null?'—':R.dims[d].toFixed(1)}</b>${d}</div>`).join('')}
+<div class="kpi"><b>${R.issueRows.toLocaleString()}</b>問題列數 / ${R.n.toLocaleString()}</div><div class="kpi"><b>${R.issueCount.toLocaleString()}</b>問題明細${R.truncated?'<br><span class="sev-高">已達上限 20 萬</span>':''}<br><span class="muted">例外排除 ${(R.excTotal||0).toLocaleString()}</span></div></div>
+${R.reasons&&R.reasons.length?`<div class="card" style="border-left:4px solid var(--theme-danger);margin-top:12px"><b>不通過原因</b><ul style="margin:6px 0">${R.reasons.map(x=>`<li>${h(x)}</li>`).join('')}</ul></div>`:''}<br>
+<div class="grid2"><div class="card"><h3>各規則命中</h3>${bars(R.rules.filter(r=>r.hits).sort((a,b)=>b.hits-a.hits).slice(0,15).map(r=>[r.name,r.hits]),{color:themeColor('--theme-danger'),lw:170})}</div>
+<div class="card"><h3>規則彙總</h3><div class="tw" style="max-height:320px"><table><tr><th>規則</th><th>維度</th><th>嚴重度</th><th>命中</th><th>比率</th><th>門檻</th><th>判定</th><th>例外</th></tr>
+${R.rules.map(r=>`<tr><td title="${h(r.desc)}"><a href="#" data-fr="${r.id}">${h(r.name)}</a></td><td>${r.dim}</td><td class="sev-${r.sev}">${r.sev}</td><td>${r.hits.toLocaleString()}</td><td>${pct(r.rate)}</td><td>${r.thr==null?'—':r.thr+'%'}</td><td>${r.pass==null?'—':passBadge(r.pass)}</td><td>${r.exc||0}</td></tr>`).join('')}</table></div></div></div>
+<div class="card"><h3>問題明細（${list.length.toLocaleString()}）</h3><div class="row">
+規則 <select id="fR"><option value="">全部</option>${R.rules.map(r=>`<option value="${r.id}" ${F.rule===r.id?'selected':''}>${h(r.name)}</option>`).join('')}</select>
+欄位 <select id="fC"><option value="">全部</option>${colsU.map(c=>`<option ${F.col===c?'selected':''}>${h(c)}</option>`).join('')}</select>
+嚴重度 <select id="fS"><option value="">全部</option>${['高','中','低'].map(s=>`<option ${F.sev===s?'selected':''}>${s}</option>`).join('')}</select>
+<button class="sec" id="pP">‹</button> 第 ${S.page} / ${pages} 頁 <button class="sec" id="pN">›</button></div>
+<div class="tw"><table><tr><th>列號</th><th>欄位</th><th>規則</th><th>嚴重度</th><th>值</th><th>說明</th><th>例外</th></tr>
+${pg.map((x,i)=>`<tr style="cursor:pointer" data-row="${x.r}" data-col="${h(x.c)}"><td>${x.r||'—'}</td><td>${h(x.c)}</td><td>${h(rn[x.rule]||x.rule)}</td><td class="sev-${x.sev}">${x.sev}</td><td>${h(x.v)}</td><td>${h(x.m)}</td>
+<td><button class="sec mini" data-ex="${off+i}" ${canEx?'':'disabled title="「僅內建檢核」不可設定例外"'}>＋例外</button></td></tr>`).join('')}</table></div><div class="muted">點選列可檢視原始整列資料；「＋例外」會加入範本「${h(R.tplName)}」的例外清單，下次稽核生效</div></div>`;
+ $('#rSel').onchange=e=>{S.run=e.target.value;S.page=1;S.flt={rule:'',col:'',sev:''};go('results')};
+ $('#fR').onchange=e=>{F.rule=e.target.value;S.page=1;go('results')};$('#fC').onchange=e=>{F.col=e.target.value;S.page=1;go('results')};$('#fS').onchange=e=>{F.sev=e.target.value;S.page=1;go('results')};
+ $('#pP').onclick=()=>{if(S.page>1){S.page--;go('results')}};$('#pN').onclick=()=>{if(S.page<pages){S.page++;go('results')}};
+ $('#main').querySelectorAll('[data-fr]').forEach(a=>a.onclick=e=>{e.preventDefault();F.rule=a.dataset.fr;S.page=1;go('results')});
+ $('#main').querySelectorAll('tr[data-row]').forEach(tr=>tr.onclick=()=>showRow(R,+tr.dataset.row,tr.dataset.col));
+ $('#main').querySelectorAll('[data-ex]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=list[+b.dataset.ex];if(x.v==='')return alert('此問題沒有特定值（例如整列重複、運算式、空值），無法設為例外。\n可改為調整該規則的「允許問題率」。');const t=await dget('templates',R.tpl);if(!t)return alert('範本已不存在');
+  const note=prompt(`將以下項目加入例外：\n規則：${rn[x.rule]}\n欄位：${x.c}\n值：${x.v}\n\n說明（選填）`,'');if(note===null)return;
+  t.exceptions=t.exceptions||[];if(t.exceptions.some(y=>y.rule===x.rule&&y.col===x.c&&y.val===x.v))return toast('已存在相同例外');
+  t.exceptions.push({rule:x.rule,col:x.c,val:x.v,note,time:Date.now()});await dput('templates',t);b.disabled=true;b.textContent='已加入';toast('已加入例外，下次稽核生效')});
+ $('#xCsv').onclick=()=>{const L=[['列號','欄位','規則','維度','嚴重度','值','說明']];const rd=Object.fromEntries(R.rules.map(r=>[r.id,r]));
+  for(const x of list)L.push([x.r||'',x.c,rd[x.rule]?.name||x.rule,rd[x.rule]?.dim||'',x.sev,x.v,x.m]);
+  download(`問題明細_${R.dsName}_${stamp(R.time)}.csv`,'\uFEFF'+L.map(r=>r.map(csvq).join(',')).join('\r\n'),'text/csv')};
+ $('#xRows').onclick=()=>exportIssueRows(R,list);
+ $('#xRpt').onclick=()=>download(`稽核報告_${R.dsName}_${stamp(R.time)}.html`,reportHTML(R,iss),'text/html');
+ $('#xFix').onclick=()=>exportFixed(R);
+ $('#xDel').onclick=async()=>{if(!confirm('刪除此稽核紀錄？'))return;await delRange('issues',R.id);await ddel('runs',R.id);S.run=null;go('results')}};
+async function showRow(R,r,col){if(!r)return toast('此問題不對應特定資料列');const d=await dget('datasets',R.ds);if(!d)return toast('原始資料集已刪除');
+ const ch=await dget('rows',[d.id,Math.floor((r-1)/5000)]);const row=ch.data[(r-1)%5000];const iss=(await loadIssues(R.id)).filter(x=>x.r===r);const rn=Object.fromEntries(R.rules.map(x=>[x.id,x.name]));
+ const m=modal(`<h3>第 ${r} 列原始資料</h3><div class="tw"><table><tr><th>欄位</th><th>值</th></tr>${d.cols.map((c,i)=>`<tr class="${c===col||iss.some(x=>x.c===c||x.c.split('+').includes(c))?'hl':''}"><th>${h(c)}</th><td>${h(row[i])}</td></tr>`).join('')}</table></div>
+ <h3>此列所有問題（${iss.length}）</h3><ul>${iss.map(x=>`<li><span class="sev-${x.sev}">[${x.sev}]</span> ${h(x.c)}：${h(rn[x.rule])} ${h(x.m)}</li>`).join('')}</ul><button id="mc">關閉</button>`);m.querySelector('#mc').onclick=()=>m.remove()}
+async function exportIssueRows(R,list){const d=await dget('datasets',R.ds);if(!d)return alert('原始資料集已刪除');const rows=await loadRows(d.id);const rn=Object.fromEntries(R.rules.map(x=>[x.id,x.name]));
+ const g=new Map();for(const x of list){if(!x.r)continue;if(!g.has(x.r))g.set(x.r,[]);g.get(x.r).push(`[${x.sev}]${x.c}：${rn[x.rule]}${x.m?'（'+x.m+'）':''}`)}
+ const out=[['原始列號',...d.cols,'問題數','問題說明'].map(csvq).join(',')];for(const [r,ms] of [...g.entries()].sort((a,b)=>a[0]-b[0]))out.push([r,...rows[r-1],ms.length,ms.join('；')].map(csvq).join(','));
+ download(`問題列_${R.dsName}_${stamp(R.time)}.csv`,'\uFEFF'+out.join('\r\n'),'text/csv');toast(`已匯出 ${g.size.toLocaleString()} 列`)}
+async function exportFixed(R){const d=await dget('datasets',R.ds);if(!d)return alert('原始資料集已刪除');
+ if(!confirm('將匯出套用以下清理的資料副本（不修改原資料）：\n1. 去除前後空白\n2. 全形英數符號轉半形\n3. 假空值轉為空白\n\n是否繼續？'))return;
+ const rows=await loadRows(d.id);const out=[d.cols.map(csvq).join(',')];
+ for(const r of rows)out.push(r.map(v=>{v=toHalf(String(v??'')).trim();if(isFake(v))v='';return csvq(v)}).join(','));
+ download(`${d.name}_cleaned.csv`,'\uFEFF'+out.join('\r\n'),'text/csv')}
+function reportHTML(R,iss){const rn=Object.fromEntries(R.rules.map(r=>[r.id,r.name]));
+ return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>資料品質稽核報告</title><style>body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Noto Sans CJK TC",system-ui,sans-serif;margin:30px;color:#303030;background:#f6f6f6}table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:20px}th,td{border:1px solid #e4e4e4;padding:4px 6px;text-align:left}th{background:#ececec}.g{font-size:40px;font-weight:bold;color:#444}.高{color:#333;font-weight:bold}.中{color:#5c5c5c}.ok{color:#505050;font-weight:bold}.ng{color:#333;font-weight:bold}</style></head><body>
+<h1>資料品質稽核報告</h1><table><tr><th>資料集</th><td>${h(R.dsName)}</td><th>稽核範本</th><td>${h(R.tplName)}</td></tr><tr><th>稽核時間</th><td>${nowStr(R.time)}</td><th>資料筆數</th><td>${R.n.toLocaleString()}</td></tr>
+<tr><th>判定結果</th><td class="${R.pass?'ok':'ng'}">${R.pass==null?'未設定門檻':R.pass?'通過':'不通過'}</td><th>最低通過分數</th><td>${R.minScore??'—'}</td></tr></table>
+<p>品質總分：<span class="g">${R.score.toFixed(2)}</span>　等級：<span class="g">${R.grade}</span>　問題列數：${R.issueRows.toLocaleString()}（${pct(R.issueRows/Math.max(1,R.n))}）　例外排除：${(R.excTotal||0).toLocaleString()}</p>
+${R.reasons&&R.reasons.length?`<h2>不通過原因</h2><ul>${R.reasons.map(x=>`<li>${h(x)}</li>`).join('')}</ul>`:''}
+<h2>維度分數</h2><table><tr>${DIMS.map(d=>`<th>${d}</th>`).join('')}</tr><tr>${DIMS.map(d=>`<td>${R.dims[d]==null?'—':R.dims[d].toFixed(2)}</td>`).join('')}</tr></table>
+<h2>規則結果</h2>${bars(R.rules.filter(r=>r.hits).sort((a,b)=>b.hits-a.hits).slice(0,15).map(r=>[r.name,r.hits]),{color:'#333333',lw:170})}
+<table><tr><th>規則</th><th>內容</th><th>維度</th><th>嚴重度</th><th>命中</th><th>比率</th><th>門檻</th><th>判定</th><th>例外</th></tr>${R.rules.map(r=>`<tr><td>${h(r.name)}</td><td>${h(r.desc)}</td><td>${r.dim}</td><td class="${r.sev}">${r.sev}</td><td>${r.hits.toLocaleString()}</td><td>${pct(r.rate)}</td><td>${r.thr==null?'—':r.thr+'%'}</td><td class="${r.pass?'ok':'ng'}">${r.pass==null?'—':r.pass?'通過':'不通過'}</td><td>${r.exc||0}</td></tr>`).join('')}</table>
+<h2>問題樣本（前 100 筆）</h2><table><tr><th>列號</th><th>欄位</th><th>規則</th><th>嚴重度</th><th>值</th><th>說明</th></tr>${iss.slice(0,100).map(x=>`<tr><td>${x.r||'—'}</td><td>${h(x.c)}</td><td>${h(rn[x.rule])}</td><td class="${x.sev}">${x.sev}</td><td>${h(x.v)}</td><td>${h(x.m)}</td></tr>`).join('')}</table>
+<p style="color:#707070;font-size:12px">由「資料品質稽核中心」產生 ${nowStr(Date.now())}</p></body></html>`}
+
+/* ================= 批次比對 ================= */
+V.compare=async()=>{const runs=(await dall('runs')).sort((a,b)=>a.time-b.time);
+ if(!runs.length){$('#main').innerHTML='<div class="card">尚無稽核紀錄。</div>';return}
+ const tpls=[...new Map(runs.map(r=>[r.tpl,r.tplName])).entries()];
+ S.cmpTpl=S.cmpTpl&&tpls.find(t=>t[0]===S.cmpTpl)?S.cmpTpl:runs[runs.length-1].tpl;const list=runs.filter(r=>r.tpl===S.cmpTpl);
+ const a=list.find(r=>r.id===S.cmpA)||list[list.length-2]||list[0],b=list.find(r=>r.id===S.cmpB)||list[list.length-1];
+ const opt=sel=>list.map(r=>`<option value="${r.id}" ${sel&&sel.id===r.id?'selected':''}>${nowStr(r.time)}｜${h(r.dsName)}｜${r.score.toFixed(1)}</option>`).join('');
+ const diff=(x,y)=>{const d=y-x;return d===0?'0':`<span class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(2)}</span>`};
+ const diffBad=(x,y)=>{const d=y-x;return d===0?'0':`<span class="${d<0?'up':'down'}">${d>0?'+':''}${d.toLocaleString()}</span>`};
+ const ids=[...new Set([...a.rules.map(r=>r.id),...b.rules.map(r=>r.id)])];const okN=list.filter(r=>r.pass===true).length,ngN=list.filter(r=>r.pass===false).length;
+ $('#main').innerHTML=`<div class="card"><div class="row">範本 <select id="cT">${tpls.map(t=>`<option value="${t[0]}" ${t[0]===S.cmpTpl?'selected':''}>${h(t[1])}</option>`).join('')}</select><span class="muted">共 ${list.length} 次稽核｜通過 ${okN}｜不通過 ${ngN}</span></div></div>
+<div class="card"><h3>品質分數趨勢</h3>${line(list.map(r=>[nowStr(r.time).slice(5,16)+' '+r.dsName,r.score,r.pass]))}<div class="muted">點的顏色：綠＝通過、紅＝不通過、藍＝未判定</div>
+<div class="tw" style="max-height:260px"><table><tr><th>時間</th><th>資料集</th><th>筆數</th><th>分數</th><th>等級</th><th>判定</th>${DIMS.map(d=>`<th>${d}</th>`).join('')}<th>問題列</th></tr>
+${list.slice().reverse().map(r=>`<tr><td>${nowStr(r.time)}</td><td>${h(r.dsName)}</td><td>${r.n.toLocaleString()}</td><td>${r.score.toFixed(2)}</td><td><span class="grade g${r.grade}" style="width:24px;height:24px;line-height:24px;font-size:13px">${r.grade}</span></td><td>${passBadge(r.pass)}</td>${DIMS.map(d=>`<td>${r.dims[d]==null?'—':r.dims[d].toFixed(1)}</td>`).join('')}<td>${r.issueRows.toLocaleString()}</td></tr>`).join('')}</table></div></div>
+<div class="card"><h3>兩批次比對</h3><div class="row">基準 <select id="cA">${opt(a)}</select> 比較 <select id="cB">${opt(b)}</select></div>
+<table><tr><th>項目</th><th>基準</th><th>比較</th><th>差異</th></tr>
+<tr><td><b>總分</b></td><td>${a.score.toFixed(2)}</td><td>${b.score.toFixed(2)}</td><td>${diff(a.score,b.score)}</td></tr>
+<tr><td><b>判定</b></td><td>${passBadge(a.pass)}</td><td>${passBadge(b.pass)}</td><td></td></tr>
+<tr><td>筆數</td><td>${a.n.toLocaleString()}</td><td>${b.n.toLocaleString()}</td><td>${(b.n-a.n).toLocaleString()}</td></tr>
+${DIMS.map(d=>`<tr><td>${d}</td><td>${a.dims[d]?.toFixed(2)??'—'}</td><td>${b.dims[d]?.toFixed(2)??'—'}</td><td>${a.dims[d]!=null&&b.dims[d]!=null?diff(a.dims[d],b.dims[d]):'—'}</td></tr>`).join('')}
+${ids.map(id=>{const x=a.rules.find(r=>r.id===id),y=b.rules.find(r=>r.id===id);return `<tr><td>規則：${h((y||x).name)}</td><td>${x?x.hits.toLocaleString()+'（'+pct(x.rate)+'）':'—'}</td><td>${y?y.hits.toLocaleString()+'（'+pct(y.rate)+'）':'—'}</td><td>${x&&y?diffBad(x.hits,y.hits):'—'}</td></tr>`}).join('')}</table></div>`;
+ $('#cT').onchange=e=>{S.cmpTpl=e.target.value;S.cmpA=S.cmpB=null;go('compare')};$('#cA').onchange=e=>{S.cmpA=e.target.value;S.cmpB=b.id;go('compare')};$('#cB').onchange=e=>{S.cmpB=e.target.value;S.cmpA=a.id;go('compare')}};
+
+/* ================= 設定 ================= */
+V.settings=async()=>{const hol=(await dall('holidays')).sort((a,b)=>a.date<b.date?-1:1);
+ $('#main').innerHTML=`<div class="card"><h3>檢核參數</h3>
+<div class="row">假空值字詞（逗號分隔）<input id="sN" style="width:360px" value="${h(CFG.nullTokens.join(','))}"></div>
+<div class="row">異常值方法 <select id="sM"><option value="z" ${CFG.outMethod==='z'?'selected':''}>Z-score</option><option value="iqr" ${CFG.outMethod==='iqr'?'selected':''}>IQR</option></select>
+Z 門檻 <input id="sZ" type="number" step="0.1" value="${CFG.outThr}" style="width:70px"> IQR 倍數 <input id="sK" type="number" step="0.1" value="${CFG.iqrK}" style="width:70px">
+每頁筆數 <input id="sP" type="number" value="${CFG.pageSize}" style="width:80px"> <button id="sSave">儲存</button></div>
+<div class="muted">執行模式：${WORKER_OK?'背景 Web Worker（大型檔案處理時畫面不會卡住）':'主執行緒相容模式（瀏覽器不允許本機背景工作）'}</div></div>
+<div class="card"><h3>預設判定標準（套用於「僅內建檢核」）</h3>
+<div class="row">最低通過分數 <input id="dMin" type="number" step="0.1" value="${h(CFG.defMinScore??'')}" style="width:80px" placeholder="不判定"> <span class="muted">留空且下方門檻皆空白時，「僅內建檢核」結果顯示「未判定」</span></div>
+<table><tr><th>內建檢核</th><th>嚴重度</th><th>允許問題率（%）</th></tr>${BUILTIN.map(b=>`<tr><td>${b.name}</td><td class="sev-${b.sev}">${b.sev}</td><td><input data-dt="${b.id}" value="${h((CFG.defBuiltinThr||{})[b.id]??'')}" style="width:80px" placeholder="不判定"></td></tr>`).join('')}</table>
+<div class="row" style="margin-top:8px"><button id="dSave">儲存預設判定標準</button><span class="muted">僅影響之後執行的稽核；自訂範本仍依各自設定</span></div></div>
+<div class="card"><h3>假日檔（${hol.length} 天）</h3><div class="row"><button class="sec" id="hImp">匯入假日檔（CSV/TXT）</button><input type="file" id="hFile" accept=".csv,.txt" hidden>
+<input id="hAdd" placeholder="YYYY-MM-DD 或 民國 115/01/01" style="width:200px"><input id="hName" placeholder="說明" style="width:140px"><button class="sec" id="hAddB">新增</button><button class="del" id="hClr">清空</button></div>
+<div class="muted">每列第一個可辨識的日期即視為假日（支援 YYYYMMDD、YYYY-MM-DD、YYYY/MM/DD、民國年），同列其他文字作為說明。用於「日期缺口」規則的營業日判斷。</div>
+<div class="tw" style="max-height:260px"><table><tr><th>日期</th><th>說明</th><th></th></tr>${hol.map(x=>`<tr><td>${x.date}</td><td>${h(x.name||'')}</td><td><a href="#" data-hd="${x.date}">刪除</a></td></tr>`).join('')}</table></div></div>
+<div class="card"><h3>完整備份 / 還原</h3><div class="row"><button class="sec" id="bExp">匯出完整備份 JSON</button><button class="sec" id="bImp">匯入備份（覆蓋）</button><input type="file" id="bFile" accept=".json" hidden><button class="del" id="bClr">清除所有資料</button></div>
+<div class="muted">備份包含資料集、剖析結果、範本（含例外與門檻）、稽核紀錄、假日檔與設定。</div></div>`;
+ $('#sSave').onclick=async()=>{CFG.nullTokens=$('#sN').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);CFG.outMethod=$('#sM').value;CFG.outThr=+$('#sZ').value||3;CFG.iqrK=+$('#sK').value||1.5;CFG.pageSize=Math.max(20,+$('#sP').value||200);await saveCfg();toast('設定已儲存')};
+ $('#dSave').onclick=async()=>{const v=$('#dMin').value.trim();if(v!==''&&isNaN(+v))return alert('最低通過分數需為數字');const thr={};let bad=false;
+  $('#main').querySelectorAll('[data-dt]').forEach(i=>{const x=i.value.trim();if(x!==''&&isNaN(+x))bad=true;if(x!=='')thr[i.dataset.dt]=x});if(bad)return alert('允許問題率需為數字');
+  CFG.defMinScore=v;CFG.defBuiltinThr=thr;await saveCfg();toast('預設判定標準已儲存')};
+ $('#hImp').onclick=()=>$('#hFile').click();
+ $('#hFile').onchange=async e=>{const buf=await e.target.files[0].arrayBuffer();const t=new TextDecoder(detectEnc(buf)).decode(buf);let n=0;
+  for(const ln of t.split(/\r?\n/)){const parts=ln.split(/[,\t|; ]+/);let d=null;const rest=[];for(const p of parts){const c=p.replace(/"/g,'');const x=!d&&parseDate(c,true);if(x)d=x;else rest.push(c)}
+   if(d){await dput('holidays',{date:d,name:rest.join(' ').trim()});n++}}toast(`已匯入 ${n} 天`);go('settings')};
+ $('#hAddB').onclick=async()=>{const d=parseDate($('#hAdd').value,true);if(!d)return alert('日期格式錯誤');await dput('holidays',{date:d,name:$('#hName').value});go('settings')};
+ $('#hClr').onclick=async()=>{if(confirm('清空假日檔？')){await dclear('holidays');go('settings')}};
+ $('#main').querySelectorAll('[data-hd]').forEach(a=>a.onclick=async e=>{e.preventDefault();await ddel('holidays',a.dataset.hd);go('settings')});
+ const STORES=['datasets','rows','profiles','templates','runs','issues','holidays','settings'];
+ $('#bExp').onclick=async()=>{const o={app:'dqa_center',ver:3,time:Date.now()};for(const s of STORES)o[s]=await dall(s);download(`資料品質稽核中心_備份_${stamp(Date.now())}.json`,JSON.stringify(o),'application/json')};
+ $('#bImp').onclick=()=>$('#bFile').click();
+ $('#bFile').onchange=async e=>{try{const o=JSON.parse(await e.target.files[0].text());if(o.app!=='dqa_center')throw Error('不是本工具的備份檔');if(!confirm('匯入將覆蓋目前所有資料，確定？'))return;
+  for(const s of STORES){await dclear(s);for(const x of o[s]||[])await dput(s,x)}await loadCfg();S.ds=null;S.run=null;S.tpl='__builtin';await refreshHeader();toast('備份已還原');go('datasets')}catch(er){alert('還原失敗：'+er.message)}};
+ $('#bClr').onclick=async()=>{if(!confirm('確定清除所有資料？此動作無法復原。'))return;for(const s of STORES)await dclear(s);S.ds=null;S.run=null;S.tpl='__builtin';await refreshHeader();go('import')}};
+
+window.addEventListener('sql-spa-tools-theme-change', () => {
+  if (['profile', 'results', 'compare'].includes(S.view)) V[S.view]();
+});
+
+/* ================= 啟動 ================= */
+(async()=>{try{await openDB();await loadCfg();WORKER_OK=await testWorker();$('#hdMode').textContent=WORKER_OK?'⚙ 背景模式':'⚙ 相容模式';$('#hdMode').title=WORKER_OK?'使用 Web Worker 背景處理':'瀏覽器不允許本機 Worker，改於主執行緒處理';
+ await refreshHeader();renderNav();V.import()}catch(e){document.body.innerHTML='<p style="padding:20px">無法開啟 IndexedDB：'+h(e.message)+'</p>'}})();
+
+function themeColor(token){return getComputedStyle(document.documentElement).getPropertyValue(token).trim()}
+</script>
+</body>
+</html>

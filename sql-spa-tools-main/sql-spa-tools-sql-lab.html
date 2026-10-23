@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL SPA Tools｜SQL Lab</title>
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<style>
+:root{--fs:14px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--theme-page);color:var(--theme-text);font:14px/1.5 var(--theme-font-sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{display:grid;grid-template-rows:48px minmax(0,1fr);height:100vh;width:100vw;overflow:hidden}
+header{display:flex;align-items:center;gap:10px;padding:0 14px;min-width:0;overflow:hidden;background:var(--theme-surface);border-bottom:1px solid var(--theme-border)}
+header .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+header .logo h1{margin:0;font:inherit}
+header .logo i{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--theme-surface-soft);color:var(--theme-text);font-style:normal;font-size:13px}
+header .sp{flex:1}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--theme-surface-alt);border:1px solid var(--theme-border);color:var(--theme-muted);white-space:nowrap}
+.badge.ok{background:var(--theme-success-soft);color:var(--theme-success);border-color:transparent}
+.badge.warn{background:var(--theme-warning-soft);color:var(--theme-warning);border-color:transparent}
+.badge.bad{background:var(--theme-danger-soft);color:var(--theme-danger);border-color:transparent}
+.body{display:grid;grid-template-columns:76px minmax(0,1fr);min-height:0;min-width:0}
+#wsSel{min-width:90px;flex-shrink:1}
+@media(max-width:900px){header .logo .small{display:none}}
+@media(max-width:640px){#saveBadge,#engBadge{display:none}}
+nav{background:var(--theme-surface);border-right:1px solid var(--theme-border);display:flex;flex-direction:column;padding:8px 6px;gap:4px;overflow:auto;min-height:0;position:relative;z-index:2}
+nav a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:8px;color:var(--theme-muted);text-decoration:none;font-size:12px}
+nav a span{font-size:18px;line-height:1}nav a:hover{background:var(--theme-surface-soft);color:var(--theme-text)}
+nav a.active{background:var(--theme-secondary-soft);color:var(--theme-primary);font-weight:600}
+main{min-width:0;min-height:0;overflow:auto}.page{padding:18px 22px;max-width:1300px}.page h2{margin:0 0 4px;font-size:20px}.page .sub{color:var(--theme-muted);margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--theme-border);background:var(--theme-surface);border-radius:7px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--theme-primary);color:var(--theme-primary)}.btn.pri{background:var(--theme-primary);border-color:var(--theme-primary);color:var(--theme-surface)}.btn.pri:hover{color:var(--theme-surface)}
+.btn.danger:hover{border-color:var(--theme-danger);color:var(--theme-danger)}.btn.sm{padding:3px 8px;font-size:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+input[type=text],input[type=number],input[type=search],select,textarea.plain{background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:7px;padding:6px 9px;outline:none}
+input:focus,select:focus,textarea.plain:focus{border-color:var(--theme-primary);outline:2px solid var(--theme-secondary-soft);outline-offset:1px}
+textarea.plain{width:100%;font-family:var(--theme-font-mono);font-size:13px;resize:vertical}
+.card{background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:10px;padding:14px 16px;margin-bottom:14px}.card h3{margin:0 0 10px;font-size:15px}
+.muted{color:var(--theme-muted)}.small{font-size:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label.chk{display:inline-flex;align-items:center;gap:5px;cursor:pointer}kbd{font-family:var(--theme-font-mono);font-size:11px;padding:1px 5px;border:1px solid var(--theme-border);border-bottom-width:2px;border-radius:4px;background:var(--theme-surface-alt)}
+.ed-page{display:grid;grid-template-columns:var(--sideW,260px) 5px minmax(0,1fr);height:100%;min-height:0;min-width:0;overflow:hidden}.ed-page.noside{grid-template-columns:0 0 minmax(0,1fr)}.ed-page.noside .side,.ed-page.noside .vsplit{display:none}
+.vsplit{cursor:col-resize;background:var(--theme-surface-alt);border-right:1px solid var(--theme-border)}.vsplit:hover,.vsplit.drag{background:var(--theme-surface-soft)}
+.side{border-right:1px solid var(--theme-border);background:var(--theme-surface);overflow:auto;min-height:0;min-width:0}.side h4{margin:0;padding:10px 12px 6px;font-size:12px;color:var(--theme-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
+.tree{list-style:none;margin:0;padding:0 6px 10px}.tree li{padding:0}.tree .t{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:5px;cursor:pointer;user-select:none;white-space:nowrap;overflow:hidden;min-width:0}.tree .t .ic{flex-shrink:0}.tree .t .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.tree .t:hover{background:var(--theme-surface-soft)}.tree .t .cnt{margin-left:auto;font-size:11px;color:var(--theme-muted);flex-shrink:0;padding-left:4px}.tree ul{list-style:none;margin:0;padding:0 0 4px 22px}.tree ul li{font-size:12.5px;color:var(--theme-muted);padding:1px 4px;font-family:var(--theme-font-mono);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tree ul li:hover{color:var(--theme-primary)}.tree .t .car{flex-shrink:0;width:14px;text-align:center;color:var(--theme-muted);font-size:10px;border-radius:3px}.tree .t .car:hover{background:var(--theme-border);color:var(--theme-text)}.tree .t.sel{background:var(--theme-secondary-soft);color:var(--theme-primary)}
+.ctxmenu{position:fixed;z-index:70;min-width:230px;max-width:340px;background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:9px;box-shadow:var(--theme-shadow);padding:5px;font-size:13px;animation:fi .1s}.ctxmenu .mh{padding:6px 10px;font-size:12px;color:var(--theme-muted);border-bottom:1px solid var(--theme-border);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ctxmenu .mi{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;white-space:nowrap}.ctxmenu .mi:hover{background:var(--theme-surface-soft);color:var(--theme-primary)}.ctxmenu .mi i{font-style:normal;width:16px;text-align:center;color:var(--theme-muted)}.ctxmenu .mi kbd{margin-left:auto}.ctxmenu .sep{height:1px;background:var(--theme-border);margin:4px 2px}.tree ul li b{color:var(--theme-warning);font-weight:600}
+.work{display:flex;flex-direction:column;min-width:0;min-height:0}.work .toolbar{padding:8px 10px;background:var(--theme-surface);border-bottom:1px solid var(--theme-border);flex-shrink:0}.ed-wrap{position:relative;min-height:80px;display:flex;background:var(--theme-surface-alt);flex-shrink:0}.splitter{flex-shrink:0;height:6px;cursor:row-resize;background:var(--theme-surface-alt);border-block:1px solid var(--theme-border)}.splitter:hover{background:var(--theme-surface-soft)}
+.results{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--theme-surface)}.tabs{display:flex;gap:2px;padding:6px 8px 0;border-bottom:1px solid var(--theme-border);overflow-x:auto;flex-shrink:0}.tab{padding:6px 12px;border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;cursor:pointer;color:var(--theme-muted);white-space:nowrap;font-size:13px}.tab.active{background:var(--theme-surface);border-color:var(--theme-border);color:var(--theme-text);margin-bottom:-1px;font-weight:600}.tab .n{font-size:11px;margin-left:4px;color:var(--theme-muted);font-weight:400}.tab.err{color:var(--theme-danger)}.tabbody{flex:1;overflow:auto;min-height:0;position:relative}.resbar{display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--theme-border);font-size:12px;color:var(--theme-muted);position:sticky;left:0}
+.code{position:relative;flex:1;display:flex;min-width:0;font-family:var(--theme-font-mono);font-size:var(--fs);line-height:1.55}.code .gutter{width:46px;flex-shrink:0;text-align:right;padding:10px 8px 10px 0;color:var(--theme-muted);background:var(--theme-surface-alt);border-right:1px solid var(--theme-border);overflow:hidden;user-select:none;white-space:pre}.code .area{position:relative;flex:1;min-width:0;overflow:hidden}.code pre,.code textarea{margin:0;border:0;padding:10px 12px;font:inherit;line-height:inherit;white-space:pre;tab-size:2;position:absolute;inset:0;overflow:auto}.code pre{pointer-events:none;color:var(--theme-text);overflow:hidden}.code textarea{background:transparent;color:transparent;caret-color:var(--theme-text);resize:none;outline:none}.code textarea::selection{background:var(--theme-secondary-soft);color:transparent}.hk{color:var(--theme-info);font-weight:600}.hs{color:var(--theme-danger)}.hn{color:var(--theme-success)}.hc{color:var(--theme-muted);font-style:italic}.hf{color:var(--theme-purple)}.code.mini{min-height:110px;border:1px solid var(--theme-border);border-radius:7px;overflow:hidden;background:var(--theme-surface-alt)}
+table.dt{border-collapse:separate;border-spacing:0;font-size:13px;font-family:var(--theme-font-mono);min-width:100%}table.dt th,table.dt td{padding:4px 10px;border-right:1px solid var(--theme-border);border-bottom:1px solid var(--theme-border);white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis;text-align:left}table.dt th{position:sticky;top:0;background:var(--theme-surface-alt);font-weight:600;cursor:pointer;z-index:1;font-family:var(--theme-font-sans)}table.dt th:hover{color:var(--theme-primary)}table.dt td.rn,table.dt th.rn{color:var(--theme-muted);text-align:right;background:var(--theme-surface-alt);position:sticky;left:0;cursor:default}table.dt td.num{text-align:right;color:var(--theme-success)}table.dt td.null{color:var(--theme-muted);font-style:italic}table.dt tr:hover td{background:var(--theme-surface-soft)}table.dt tr.d-missing td{background:var(--theme-danger-soft)}table.dt tr.d-extra td{background:var(--theme-success-soft)}table.dt td.d-changed{background:var(--theme-warning-soft)!important}table.dt td.d-changed s{color:var(--theme-muted);margin-right:6px}
+table.plain{border-collapse:collapse;width:100%;font-size:13px}table.plain th,table.plain td{padding:7px 10px;border-bottom:1px solid var(--theme-border);text-align:left;vertical-align:top}table.plain th{color:var(--theme-muted);font-weight:600;font-size:12px}table.plain tr:hover td{background:var(--theme-surface-alt)}
+.msgs{padding:8px 12px;font-size:13px}.msg{padding:6px 10px;border-radius:6px;margin-bottom:6px;border-left:3px solid var(--theme-border);background:var(--theme-surface-alt);white-space:pre-wrap;word-break:break-word}.msg.ok{border-color:var(--theme-success)}.msg.err{border-color:var(--theme-danger);background:var(--theme-danger-soft)}.msg.warn{border-color:var(--theme-warning);background:var(--theme-warning-soft)}.msg code{font-family:var(--theme-font-mono);font-size:12px;color:var(--theme-muted)}.empty{padding:40px;text-align:center;color:var(--theme-muted)}
+.list-item{padding:10px 12px;border:1px solid var(--theme-border);border-radius:8px;background:var(--theme-surface);margin-bottom:8px}.list-item:hover{border-color:var(--theme-primary)}.list-item pre{margin:6px 0 0;font-family:var(--theme-font-mono);font-size:12px;color:var(--theme-muted);white-space:pre-wrap;max-height:90px;overflow:hidden}.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--theme-surface-soft);color:var(--theme-primary);margin-right:4px;cursor:pointer}.status{font-weight:700;font-size:12px;padding:1px 8px;border-radius:999px}.status.pass{background:var(--theme-success-soft);color:var(--theme-success)}.status.fail{background:var(--theme-danger-soft);color:var(--theme-danger)}.status.error{background:var(--theme-warning-soft);color:var(--theme-warning)}.status.none{background:var(--theme-surface-alt);color:var(--theme-muted)}
+.tests{display:grid;grid-template-columns:300px minmax(0,1fr);height:100%;min-height:0;min-width:0}.tests .side{padding-bottom:20px}.tc{display:flex;align-items:center;gap:6px;padding:6px 10px;margin:0 6px;border-radius:6px;cursor:pointer;font-size:13px}.tc:hover{background:var(--theme-surface-soft)}.tc.active{background:var(--theme-surface-soft);color:var(--theme-primary)}.suite-h{display:flex;align-items:center;gap:6px;padding:8px 12px 4px;font-size:12px;font-weight:700;color:var(--theme-muted)}.suite-h .btn{margin-left:auto}.tests .detail{overflow:auto;padding:16px 20px}.field{margin-bottom:12px}.field>label{display:block;font-size:12px;color:var(--theme-muted);margin-bottom:4px;font-weight:600}.box{border:1px solid var(--theme-border);border-radius:8px;overflow:auto;max-height:320px;background:var(--theme-surface)}
+.drop{border:2px dashed var(--theme-border);border-radius:12px;padding:36px;text-align:center;color:var(--theme-muted);cursor:pointer;background:var(--theme-surface)}.drop.over{border-color:var(--theme-primary);background:var(--theme-surface-soft);color:var(--theme-primary)}
+.modal-bg{position:fixed;inset:0;background:color-mix(in srgb,var(--theme-text) 35%,transparent);display:grid;place-items:center;z-index:50}.modal{background:var(--theme-surface);border-radius:12px;box-shadow:var(--theme-shadow);width:min(720px,92vw);max-height:88vh;display:flex;flex-direction:column}.modal header{border-bottom:1px solid var(--theme-border);background:transparent;height:auto;padding:12px 16px;font-weight:700}.modal .mb{padding:14px 16px;overflow:auto}.modal .mf{padding:10px 16px;border-top:1px solid var(--theme-border);display:flex;justify-content:flex-end;gap:8px}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:210}.toast{background:var(--theme-text);color:var(--theme-page);padding:9px 14px;border-radius:8px;font-size:13px;box-shadow:var(--theme-shadow);max-width:420px;animation:fi .15s}.toast.bad{background:var(--theme-danger);color:var(--theme-surface)}@keyframes fi{from{opacity:0;transform:translateY(6px)}}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--theme-border);border-radius:6px;border:2px solid transparent;background-clip:padding-box}
+@media(max-width:760px){.tests{grid-template-columns:220px minmax(0,1fr)}.page{padding:14px}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body><noscript>請啟用 JavaScript。</noscript>
+<script>/* ===================== MiniSQL：內建純 JS SQL 引擎 ===================== */
+const MiniSQL = (() => {
+  'use strict';
+  const RESERVED = new Set(('SELECT FROM WHERE GROUP ORDER HAVING LIMIT OFFSET UNION INTERSECT EXCEPT JOIN INNER LEFT RIGHT FULL CROSS OUTER ON USING AS AND OR NOT IN IS LIKE GLOB BETWEEN CASE WHEN THEN ELSE END NULL BY DISTINCT ALL VALUES SET INTO EXISTS ASC DESC CAST WITH OVER PARTITION NATURAL ESCAPE').split(' '));
+  const AGG = new Set(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'GROUP_CONCAT', 'TOTAL', 'STRING_AGG']);
+  const WINONLY = new Set(['ROW_NUMBER', 'RANK', 'DENSE_RANK', 'LAG', 'LEAD', 'FIRST_VALUE', 'LAST_VALUE', 'NTILE']);
+
+  class SqlError extends Error {}
+  const err = (m) => { throw new SqlError(m); };
+
+  /* ---------- Tokenizer ---------- */
+  function tokenize(sql) {
+    const out = []; let i = 0; const n = sql.length;
+    while (i < n) {
+      const c = sql[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === '-' && sql[i + 1] === '-') { while (i < n && sql[i] !== '\n') i++; continue; }
+      if (c === '/' && sql[i + 1] === '*') { const e = sql.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+      const s = i;
+      if (c === "'") {
+        let v = ''; i++;
+        for (;;) {
+          if (i >= n) err('字串未結束（缺少單引號）');
+          if (sql[i] === "'") { if (sql[i + 1] === "'") { v += "'"; i += 2; continue; } i++; break; }
+          v += sql[i++];
+        }
+        out.push({ t: 'str', v, s, e: i }); continue;
+      }
+      if (c === '"' || c === '`' || c === '[') {
+        const close = c === '[' ? ']' : c; let v = ''; i++;
+        while (i < n && sql[i] !== close) v += sql[i++];
+        if (i >= n) err('識別字引號未結束'); i++;
+        out.push({ t: 'id', v, u: v.toUpperCase(), q: true, s, e: i }); continue;
+      }
+      if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(sql[i + 1] || ''))) {
+        const m = /^(\d*\.?\d+(?:[eE][+-]?\d+)?|\d+\.)/.exec(sql.slice(i));
+        i += m[0].length; out.push({ t: 'num', v: Number(m[0]), s, e: i }); continue;
+      }
+      if (/[A-Za-z_\u0080-\uffff]/.test(c)) {
+        let v = ''; while (i < n && /[A-Za-z0-9_$\u0080-\uffff]/.test(sql[i])) v += sql[i++];
+        out.push({ t: 'id', v, u: v.toUpperCase(), q: false, s, e: i }); continue;
+      }
+      const two = sql.substr(i, 2);
+      if (['<=', '>=', '<>', '!=', '==', '||'].includes(two)) { out.push({ t: 'op', v: two, s, e: i + 2 }); i += 2; continue; }
+      if ('=<>+-*/%(),.;?'.includes(c)) { out.push({ t: 'op', v: c, s, e: i + 1 }); i++; continue; }
+      err(`無法辨識的字元：${c}`);
+    }
+    out.push({ t: 'eof', s: n, e: n });
+    return out;
+  }
+
+  /* ---------- Parser ---------- */
+  class Parser {
+    constructor(sql) { this.sql = sql; this.k = tokenize(sql); this.i = 0; }
+    peek(o = 0) { return this.k[Math.min(this.i + o, this.k.length - 1)]; }
+    next() { return this.k[this.i++]; }
+    isKw(w, o = 0) { const t = this.peek(o); return t.t === 'id' && !t.q && t.u === w; }
+    acceptKw(w) { if (this.isKw(w)) { this.i++; return true; } return false; }
+    expectKw(w) { if (!this.acceptKw(w)) this.fail(`預期關鍵字 ${w}`); }
+    isOp(v, o = 0) { const t = this.peek(o); return t.t === 'op' && t.v === v; }
+    acceptOp(v) { if (this.isOp(v)) { this.i++; return true; } return false; }
+    expectOp(v) { if (!this.acceptOp(v)) this.fail(`預期符號 ${v}`); }
+    fail(m) {
+      const t = this.peek(); const near = t.t === 'eof' ? '結尾' : this.sql.slice(t.s, t.e);
+      const line = this.sql.slice(0, t.s).split('\n').length;
+      err(`${m}（第 ${line} 行，靠近「${near}」）`);
+    }
+    ident() {
+      const t = this.peek();
+      if (t.t === 'id' && (t.q || !RESERVED.has(t.u))) { this.i++; return t.v; }
+      if (t.t === 'str') { this.i++; return t.v; }
+      this.fail('預期名稱');
+    }
+    src(a, b) { return this.sql.slice(a, b).trim(); }
+
+    statements() {
+      const list = [];
+      for (;;) {
+        while (this.acceptOp(';'));
+        if (this.peek().t === 'eof') break;
+        const s0 = this.peek().s;
+        const st = this.statement();
+        st.text = this.src(s0, this.k[this.i - 1].e);
+        list.push(st);
+        if (!this.acceptOp(';') && this.peek().t !== 'eof') this.fail('敘述結尾應為分號');
+      }
+      return list;
+    }
+    statement() {
+      if (this.acceptKw('EXPLAIN')) { if (this.acceptKw('QUERY')) this.expectKw('PLAN'); return { type: 'explain', stmt: this.statement() }; }
+      if (this.isKw('SELECT') || this.isKw('WITH') || this.isOp('(') || this.isKw('VALUES')) return this.select();
+      if (this.acceptKw('CREATE')) return this.create();
+      if (this.isKw('INSERT') || this.isKw('REPLACE')) return this.insert();
+      if (this.acceptKw('UPDATE')) return this.update();
+      if (this.acceptKw('DELETE')) return this.del();
+      if (this.acceptKw('DROP')) return this.drop();
+      if (this.acceptKw('ALTER')) return this.alter();
+      if (this.acceptKw('BEGIN')) { this.acceptKw('TRANSACTION'); return { type: 'begin' }; }
+      if (this.acceptKw('COMMIT') || this.acceptKw('END')) { this.acceptKw('TRANSACTION'); return { type: 'commit' }; }
+      if (this.acceptKw('ROLLBACK')) { this.acceptKw('TRANSACTION'); return { type: 'rollback' }; }
+      this.fail('不支援的敘述');
+    }
+
+    /* SELECT */
+    select() {
+      let ctes = null;
+      if (this.acceptKw('WITH')) {
+        this.acceptKw('RECURSIVE'); ctes = [];
+        do {
+          const name = this.ident(); let cols = null;
+          if (this.acceptOp('(')) { cols = []; do cols.push(this.ident()); while (this.acceptOp(',')); this.expectOp(')'); }
+          this.expectKw('AS'); this.expectOp('('); const q = this.select(); this.expectOp(')');
+          ctes.push({ name, cols, q });
+        } while (this.acceptOp(','));
+      }
+      const cores = [this.selectCore()], ops = [];
+      for (;;) {
+        let op = null;
+        if (this.acceptKw('UNION')) op = this.acceptKw('ALL') ? 'UNION ALL' : 'UNION';
+        else if (this.acceptKw('INTERSECT')) op = 'INTERSECT';
+        else if (this.acceptKw('EXCEPT') || this.acceptKw('MINUS')) op = 'EXCEPT';
+        if (!op) break; ops.push(op); cores.push(this.selectCore());
+      }
+      const q = { type: 'select', ctes, cores, ops, orderBy: null, limit: null, offset: null };
+      if (this.acceptKw('ORDER')) { this.expectKw('BY'); q.orderBy = this.orderList(); }
+      if (this.acceptKw('LIMIT')) {
+        q.limit = this.expr();
+        if (this.acceptKw('OFFSET')) q.offset = this.expr();
+        else if (this.acceptOp(',')) { q.offset = q.limit; q.limit = this.expr(); }
+      }
+      return q;
+    }
+    orderList() {
+      const l = [];
+      do {
+        const e = this.expr(); let desc = false;
+        if (this.acceptKw('DESC')) desc = true; else this.acceptKw('ASC');
+        let nulls = null; if (this.acceptKw('NULLS')) { nulls = this.acceptKw('FIRST') ? 'first' : (this.expectKw('LAST'), 'last'); }
+        l.push({ e, desc, nulls });
+      } while (this.acceptOp(','));
+      return l;
+    }
+    selectCore() {
+      if (this.acceptOp('(')) { const q = this.select(); this.expectOp(')'); return { sub: q }; }
+      if (this.acceptKw('VALUES')) {
+        const rows = [];
+        do { this.expectOp('('); const r = []; do r.push(this.expr()); while (this.acceptOp(',')); this.expectOp(')'); rows.push(r); } while (this.acceptOp(','));
+        return { values: rows };
+      }
+      this.expectKw('SELECT');
+      const c = { distinct: false, cols: [], from: null, where: null, groupBy: null, having: null };
+      if (this.acceptKw('DISTINCT')) c.distinct = true; else this.acceptKw('ALL');
+      if (this.isKw('TOP')) this.fail('SQLite 不支援 TOP，請改用 LIMIT');
+      do {
+        const s0 = this.peek().s;
+        if (this.acceptOp('*')) { c.cols.push({ star: true }); continue; }
+        if (this.peek().t === 'id' && this.isOp('.', 1) && this.isOp('*', 2)) { const t = this.ident(); this.i += 2; c.cols.push({ star: true, table: t }); continue; }
+        const e = this.expr(); let alias = null;
+        if (this.acceptKw('AS')) alias = this.ident();
+        else { const t = this.peek(); if ((t.t === 'id' && (t.q || !RESERVED.has(t.u))) || t.t === 'str') alias = this.ident(); }
+        c.cols.push({ e, alias, name: alias || (e.k === 'col' ? e.name : this.src(s0, this.k[this.i - 1].e)) });
+      } while (this.acceptOp(','));
+      if (this.acceptKw('FROM')) c.from = this.fromClause();
+      if (this.acceptKw('WHERE')) c.where = this.expr();
+      if (this.acceptKw('GROUP')) { this.expectKw('BY'); c.groupBy = []; do c.groupBy.push(this.expr()); while (this.acceptOp(',')); }
+      if (this.acceptKw('HAVING')) c.having = this.expr();
+      return c;
+    }
+    tableRef() {
+      let src;
+      if (this.acceptOp('(')) { const q = this.select(); this.expectOp(')'); src = { sub: q, alias: null }; }
+      else { const name = this.ident(); src = { name, alias: name }; if (this.acceptOp('.')) { src.name = this.ident(); src.alias = src.name; } }
+      if (this.acceptKw('AS')) src.alias = this.ident();
+      else { const t = this.peek(); if (t.t === 'id' && (t.q || !RESERVED.has(t.u)) && !['LEFT', 'RIGHT', 'INNER', 'CROSS', 'FULL', 'JOIN', 'NATURAL'].includes(t.u)) src.alias = this.ident(); }
+      if (!src.alias) src.alias = '(subquery)';
+      return src;
+    }
+    fromClause() {
+      const items = [{ src: this.tableRef(), join: 'base' }];
+      for (;;) {
+        let jt = null;
+        if (this.acceptOp(',')) jt = 'cross';
+        else if (this.acceptKw('CROSS')) { this.expectKw('JOIN'); jt = 'cross'; }
+        else if (this.acceptKw('INNER')) { this.expectKw('JOIN'); jt = 'inner'; }
+        else if (this.acceptKw('LEFT')) { this.acceptKw('OUTER'); this.expectKw('JOIN'); jt = 'left'; }
+        else if (this.acceptKw('RIGHT')) { this.acceptKw('OUTER'); this.expectKw('JOIN'); jt = 'right'; }
+        else if (this.acceptKw('FULL')) { this.acceptKw('OUTER'); this.expectKw('JOIN'); jt = 'full'; }
+        else if (this.acceptKw('JOIN')) jt = 'inner';
+        if (!jt) break;
+        const it = { src: this.tableRef(), join: jt, on: null, using: null };
+        if (this.acceptKw('ON')) it.on = this.expr();
+        else if (this.acceptKw('USING')) { this.expectOp('('); it.using = []; do it.using.push(this.ident()); while (this.acceptOp(',')); this.expectOp(')'); }
+        items.push(it);
+      }
+      return items;
+    }
+
+    /* DDL / DML */
+    create() {
+      let unique = false; let temp = this.acceptKw('TEMP') || this.acceptKw('TEMPORARY');
+      if (this.acceptKw('UNIQUE')) unique = true;
+      if (this.acceptKw('INDEX')) {
+        const ine = this.ifNotExists(); const name = this.ident(); this.expectKw('ON'); const table = this.ident();
+        this.expectOp('('); const cols = []; do { cols.push(this.ident()); this.acceptKw('ASC') || this.acceptKw('DESC'); } while (this.acceptOp(',')); this.expectOp(')');
+        return { type: 'createIndex', name, table, cols, unique, ine };
+      }
+      if (this.acceptKw('VIEW')) {
+        const ine = this.ifNotExists(); const name = this.ident(); this.expectKw('AS');
+        const s0 = this.peek().s; const q = this.select();
+        return { type: 'createView', name, ine, sql: this.src(s0, this.k[this.i - 1].e), q };
+      }
+      this.expectKw('TABLE'); void temp;
+      const ine = this.ifNotExists(); const name = this.ident();
+      if (this.acceptKw('AS')) return { type: 'createTable', name, ine, asSelect: this.select() };
+      this.expectOp('(');
+      const cols = [], pk = [], uniques = [];
+      do {
+        if (this.isKw('PRIMARY') || this.isKw('UNIQUE') || this.isKw('CONSTRAINT') || this.isKw('FOREIGN') || this.isKw('CHECK')) {
+          if (this.acceptKw('CONSTRAINT')) this.ident();
+          if (this.acceptKw('PRIMARY')) { this.expectKw('KEY'); this.expectOp('('); do pk.push(this.ident()); while (this.acceptOp(',')); this.expectOp(')'); }
+          else if (this.acceptKw('UNIQUE')) { this.expectOp('('); const u = []; do u.push(this.ident()); while (this.acceptOp(',')); this.expectOp(')'); uniques.push(u); }
+          else this.skipParenGroup();
+          continue;
+        }
+        const col = { name: this.ident(), type: '', pk: false, notnull: false, unique: false, dflt: null, autoinc: false };
+        const tt = [];
+        while (this.peek().t === 'id' && !['PRIMARY', 'NOT', 'NULL', 'DEFAULT', 'UNIQUE', 'REFERENCES', 'CHECK', 'CONSTRAINT', 'COLLATE', 'AUTOINCREMENT'].includes(this.peek().u)) tt.push(this.next().v);
+        if (this.acceptOp('(')) { const a = [this.next().v]; while (this.acceptOp(',')) a.push(this.next().v); this.expectOp(')'); tt.push('(' + a.join(',') + ')'); }
+        col.type = tt.join(' ').toUpperCase();
+        for (;;) {
+          if (this.acceptKw('CONSTRAINT')) { this.ident(); continue; }
+          if (this.acceptKw('PRIMARY')) { this.expectKw('KEY'); this.acceptKw('ASC') || this.acceptKw('DESC'); col.pk = true; if (this.acceptKw('AUTOINCREMENT')) col.autoinc = true; continue; }
+          if (this.acceptKw('NOT')) { this.expectKw('NULL'); col.notnull = true; continue; }
+          if (this.acceptKw('NULL')) continue;
+          if (this.acceptKw('UNIQUE')) { col.unique = true; continue; }
+          if (this.acceptKw('DEFAULT')) { if (this.acceptOp('(')) { col.dflt = this.expr(); this.expectOp(')'); } else col.dflt = this.unary(); continue; }
+          if (this.acceptKw('COLLATE')) { this.ident(); continue; }
+          if (this.acceptKw('CHECK')) { this.skipParenGroup(); continue; }
+          if (this.acceptKw('REFERENCES')) { this.ident(); if (this.isOp('(')) this.skipParenGroup(); continue; }
+          break;
+        }
+        cols.push(col);
+      } while (this.acceptOp(','));
+      this.expectOp(')');
+      if (this.acceptKw('WITHOUT')) this.ident();
+      cols.forEach(c => { if (pk.some(p => p.toUpperCase() === c.name.toUpperCase())) c.pk = true; });
+      return { type: 'createTable', name, ine, cols, pkCols: pk.length ? pk : cols.filter(c => c.pk).map(c => c.name), uniques };
+    }
+    skipParenGroup() {
+      while (!this.isOp('(') && this.peek().t !== 'eof') this.i++;
+      let d = 0;
+      do { if (this.isOp('(')) d++; else if (this.isOp(')')) d--; this.i++; } while (d > 0 && this.peek().t !== 'eof');
+    }
+    ifNotExists() { if (this.acceptKw('IF')) { this.expectKw('NOT'); this.expectKw('EXISTS'); return true; } return false; }
+    insert() {
+      let conflict = null;
+      if (this.acceptKw('REPLACE')) conflict = 'REPLACE';
+      else { this.expectKw('INSERT'); if (this.acceptKw('OR')) conflict = this.next().u; }
+      this.expectKw('INTO'); const table = this.ident(); let cols = null;
+      if (this.isKw('AS')) { this.i++; this.ident(); }
+      if (this.isOp('(') && !(this.isKw('SELECT', 1) || this.isKw('WITH', 1))) { this.i++; cols = []; do cols.push(this.ident()); while (this.acceptOp(',')); this.expectOp(')'); }
+      if (this.acceptKw('DEFAULT')) { this.expectKw('VALUES'); return { type: 'insert', table, cols: [], rows: [[]], conflict }; }
+      const q = this.select();
+      return { type: 'insert', table, cols, q, conflict };
+    }
+    update() {
+      if (this.acceptKw('OR')) this.next();
+      const table = this.ident(); let alias = table;
+      if (this.acceptKw('AS')) alias = this.ident(); else if (!this.isKw('SET')) alias = this.ident();
+      this.expectKw('SET'); const sets = [];
+      do { const c = this.ident(); this.expectOp('='); sets.push({ c, e: this.expr() }); } while (this.acceptOp(','));
+      const where = this.acceptKw('WHERE') ? this.expr() : null;
+      return { type: 'update', table, alias, sets, where };
+    }
+    del() {
+      this.expectKw('FROM'); const table = this.ident(); let alias = table;
+      if (this.acceptKw('AS')) alias = this.ident(); else if (this.peek().t === 'id' && !this.isKw('WHERE')) alias = this.ident();
+      const where = this.acceptKw('WHERE') ? this.expr() : null;
+      return { type: 'delete', table, alias, where };
+    }
+    drop() {
+      const kind = this.next().u; if (!['TABLE', 'VIEW', 'INDEX'].includes(kind)) this.fail('DROP 只支援 TABLE / VIEW / INDEX');
+      let ie = false; if (this.acceptKw('IF')) { this.expectKw('EXISTS'); ie = true; }
+      return { type: 'drop', kind, name: this.ident(), ie };
+    }
+    alter() {
+      this.expectKw('TABLE'); const table = this.ident();
+      if (this.acceptKw('RENAME')) {
+        if (this.acceptKw('TO')) return { type: 'alter', table, op: 'renameTable', to: this.ident() };
+        this.acceptKw('COLUMN'); const from = this.ident(); this.expectKw('TO');
+        return { type: 'alter', table, op: 'renameCol', from, to: this.ident() };
+      }
+      if (this.acceptKw('ADD')) {
+        this.acceptKw('COLUMN'); const name = this.ident(); const tt = [];
+        while (this.peek().t === 'id' && !['NOT', 'DEFAULT', 'NULL'].includes(this.peek().u)) tt.push(this.next().v);
+        if (this.isOp('(')) this.skipParenGroup();
+        let dflt = null, notnull = false;
+        for (;;) {
+          if (this.acceptKw('DEFAULT')) { dflt = this.unary(); continue; }
+          if (this.acceptKw('NOT')) { this.expectKw('NULL'); notnull = true; continue; }
+          if (this.acceptKw('NULL')) continue; break;
+        }
+        return { type: 'alter', table, op: 'addCol', col: { name, type: tt.join(' ').toUpperCase(), pk: false, notnull, unique: false, dflt } };
+      }
+      if (this.acceptKw('DROP')) { this.acceptKw('COLUMN'); return { type: 'alter', table, op: 'dropCol', name: this.ident() }; }
+      this.fail('不支援的 ALTER TABLE 語法');
+    }
+
+    /* Expressions */
+    expr() { return this.or(); }
+    or() { let l = this.and(); while (this.acceptKw('OR')) l = { k: 'or', l, r: this.and() }; return l; }
+    and() { let l = this.not(); while (this.acceptKw('AND')) l = { k: 'and', l, r: this.not() }; return l; }
+    not() { if (this.acceptKw('NOT')) return { k: 'not', e: this.not() }; return this.cmp(); }
+    cmp() {
+      let l = this.add();
+      for (;;) {
+        const t = this.peek();
+        if (t.t === 'op' && ['=', '==', '!=', '<>', '<', '<=', '>', '>='].includes(t.v)) { this.i++; l = { k: 'bin', op: t.v === '==' ? '=' : t.v === '<>' ? '!=' : t.v, l, r: this.add() }; continue; }
+        if (this.acceptKw('IS')) { const neg = this.acceptKw('NOT'); if (this.acceptKw('DISTINCT')) { this.expectKw('FROM'); l = { k: 'is', neg: !neg, l, r: this.add() }; } else l = { k: 'is', neg, l, r: this.add() }; continue; }
+        if (this.acceptKw('ISNULL')) { l = { k: 'is', neg: false, l, r: { k: 'lit', v: null } }; continue; }
+        if (this.acceptKw('NOTNULL')) { l = { k: 'is', neg: true, l, r: { k: 'lit', v: null } }; continue; }
+        let neg = false;
+        if (this.isKw('NOT') && (this.isKw('IN', 1) || this.isKw('LIKE', 1) || this.isKw('BETWEEN', 1) || this.isKw('GLOB', 1))) { this.i++; neg = true; }
+        if (this.acceptKw('IN')) {
+          this.expectOp('(');
+          if (this.isKw('SELECT') || this.isKw('WITH')) { const q = this.select(); this.expectOp(')'); l = { k: 'in', neg, l, q }; continue; }
+          const list = []; if (!this.isOp(')')) do list.push(this.expr()); while (this.acceptOp(','));
+          this.expectOp(')'); l = { k: 'in', neg, l, list }; continue;
+        }
+        if (this.acceptKw('LIKE') || this.acceptKw('GLOB')) {
+          const glob = this.k[this.i - 1].u === 'GLOB'; const r = this.add(); let esc = null;
+          if (this.acceptKw('ESCAPE')) esc = this.add();
+          l = { k: 'like', neg, l, r, esc, glob }; continue;
+        }
+        if (this.acceptKw('BETWEEN')) { const a = this.add(); this.expectKw('AND'); l = { k: 'between', neg, l, a, b: this.add() }; continue; }
+        if (neg) this.fail('NOT 用法錯誤');
+        return l;
+      }
+    }
+    add() { let l = this.mul(); for (;;) { if (this.isOp('+') || this.isOp('-')) { const op = this.next().v; l = { k: 'bin', op, l, r: this.mul() }; } else return l; } }
+    mul() { let l = this.concat(); for (;;) { if (this.isOp('*') || this.isOp('/') || this.isOp('%')) { const op = this.next().v; l = { k: 'bin', op, l, r: this.concat() }; } else return l; } }
+    concat() { let l = this.unary(); while (this.acceptOp('||')) l = { k: 'bin', op: '||', l, r: this.unary() }; return l; }
+    unary() {
+      if (this.acceptOp('-')) { const e = this.unary(); return e.k === 'lit' && typeof e.v === 'number' ? { k: 'lit', v: -e.v } : { k: 'neg', e }; }
+      if (this.acceptOp('+')) return this.unary();
+      return this.primary();
+    }
+    primary() {
+      const t = this.peek();
+      if (t.t === 'num') { this.i++; return { k: 'lit', v: t.v, real: /[.eE]/.test(this.sql.slice(t.s, t.e)) }; }
+      if (t.t === 'str') { this.i++; return { k: 'lit', v: t.v }; }
+      if (t.t === 'op' && t.v === '(') {
+        this.i++;
+        if (this.isKw('SELECT') || this.isKw('WITH')) { const q = this.select(); this.expectOp(')'); return { k: 'sub', q }; }
+        const e = this.expr();
+        if (this.isOp(',')) { const list = [e]; while (this.acceptOp(',')) list.push(this.expr()); this.expectOp(')'); return { k: 'row', list }; }
+        this.expectOp(')'); return e;
+      }
+      if (t.t !== 'id') this.fail('預期運算式');
+      if (!t.q) {
+        switch (t.u) {
+          case 'NULL': this.i++; return { k: 'lit', v: null };
+          case 'TRUE': this.i++; return { k: 'lit', v: 1 };
+          case 'FALSE': this.i++; return { k: 'lit', v: 0 };
+          case 'CURRENT_DATE': case 'CURRENT_TIME': case 'CURRENT_TIMESTAMP': this.i++; return { k: 'fn', name: t.u, args: [] };
+          case 'CASE': return this.caseExpr();
+          case 'CAST': { this.i++; this.expectOp('('); const e = this.expr(); this.expectKw('AS'); const tt = []; while (!this.isOp(')') && !this.isOp('(')) tt.push(this.next().v); if (this.isOp('(')) this.skipParenGroup(); this.expectOp(')'); return { k: 'cast', e, type: tt.join(' ').toUpperCase() }; }
+          case 'EXISTS': { this.i++; this.expectOp('('); const q = this.select(); this.expectOp(')'); return { k: 'exists', q }; }
+          case 'NOT': this.i++; return { k: 'not', e: this.cmp() };
+        }
+      }
+      if (!t.q && RESERVED.has(t.u)) this.fail(`這裡不能使用關鍵字 ${t.u}`);
+      this.i++;
+      if (this.isOp('(') && !t.q) {
+        this.i++;
+        const fn = { k: 'fn', name: t.u, args: [], distinct: false, star: false, over: null };
+        if (this.acceptOp('*')) fn.star = true;
+        else if (!this.isOp(')')) { if (this.acceptKw('DISTINCT')) fn.distinct = true; do fn.args.push(this.expr()); while (this.acceptOp(',')); if (this.acceptKw('ORDER')) { this.expectKw('BY'); this.orderList(); } }
+        this.expectOp(')');
+        if (this.acceptKw('FILTER')) { this.expectOp('('); this.expectKw('WHERE'); fn.filter = this.expr(); this.expectOp(')'); }
+        if (this.acceptKw('OVER')) {
+          this.expectOp('('); const ov = { part: [], order: [] };
+          if (this.acceptKw('PARTITION')) { this.expectKw('BY'); do ov.part.push(this.expr()); while (this.acceptOp(',')); }
+          if (this.acceptKw('ORDER')) { this.expectKw('BY'); ov.order = this.orderList(); }
+          if (this.isKw('ROWS') || this.isKw('RANGE')) { ov.frame = this.peek().u; while (!this.isOp(')')) { if (this.isKw('UNBOUNDED') && this.isKw('FOLLOWING', 1)) ov.full = true; this.i++; } }
+          this.expectOp(')'); fn.over = ov;
+        }
+        return fn;
+      }
+      if (this.isOp('.')) { this.i++; const c = this.next(); if (c.t !== 'id') this.fail('預期欄位名稱'); return { k: 'col', table: t.v, name: c.v }; }
+      return { k: 'col', table: null, name: t.v };
+    }
+    caseExpr() {
+      this.expectKw('CASE'); let base = null;
+      if (!this.isKw('WHEN')) base = this.expr();
+      const whens = [];
+      while (this.acceptKw('WHEN')) { const w = this.expr(); this.expectKw('THEN'); whens.push([w, this.expr()]); }
+      let els = null; if (this.acceptKw('ELSE')) els = this.expr();
+      this.expectKw('END'); return { k: 'case', base, whens, els };
+    }
+  }
+
+  /* ---------- Value helpers ---------- */
+  const isNum = (v) => typeof v === 'number';
+  const numericStr = (s) => typeof s === 'string' && /^\s*[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?\s*$/.test(s);
+  function toNum(v) {
+    if (v === null) return null; if (isNum(v)) return v;
+    const m = /^\s*[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?/.exec(String(v)); return m ? Number(m[0]) : 0;
+  }
+  const truthy = (v) => v === null ? null : (toNum(v) !== 0);
+  function cmpVals(a, b) {
+    if (a === null && b === null) return 0; if (a === null) return -1; if (b === null) return 1;
+    if (isNum(a) && isNum(b)) return a < b ? -1 : a > b ? 1 : 0;
+    if (isNum(a) && numericStr(b)) return cmpVals(a, Number(b));
+    if (isNum(b) && numericStr(a)) return cmpVals(Number(a), b);
+    if (isNum(a)) return -1; if (isNum(b)) return 1;
+    a = String(a); b = String(b); return a < b ? -1 : a > b ? 1 : 0;
+  }
+  function affinity(type) {
+    const t = (type || '').toUpperCase();
+    if (t.includes('INT')) return 'int';
+    if (/CHAR|CLOB|TEXT/.test(t)) return 'text';
+    if (t === '' || t.includes('BLOB')) return 'none';
+    if (/REAL|FLOA|DOUB/.test(t)) return 'real';
+    return 'numeric';
+  }
+  function coerce(v, type) {
+    if (v === null || v === undefined) return null;
+    const a = affinity(type);
+    if (a === 'text') return isNum(v) ? String(v) : v;
+    if (a === 'none') return v;
+    if (typeof v === 'string' && numericStr(v)) { const n = Number(v); return a === 'real' ? n : n; }
+    return v;
+  }
+  const keyOf = (arr) => JSON.stringify(arr.map(v => isNum(v) ? ['n', v] : v));
+  function likeToRegex(p, esc, glob) {
+    let r = '';
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (esc && c === esc) { r += (p[++i] || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); continue; }
+      if (glob) { if (c === '*') r += '.*'; else if (c === '?') r += '.'; else r += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+      else if (c === '%') r += '[\\s\\S]*'; else if (c === '_') r += '[\\s\\S]'; else r += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    return new RegExp('^' + r + '$', glob ? '' : 'i');
+  }
+  const pad = (n, w = 2) => String(n).padStart(w, '0');
+  function parseDate(v) {
+    if (v === null || v === undefined) return null;
+    if (isNum(v)) return new Date((v - 2440587.5) * 86400000);
+    const s = String(v).trim();
+    if (s.toLowerCase() === 'now') return new Date();
+    const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?/.exec(s);
+    if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0), +((m[7] || '0').padEnd(3, '0').slice(0, 3))));
+    const t = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(s);
+    if (t) return new Date(Date.UTC(2000, 0, 1, +t[1], +t[2], +(t[3] || 0)));
+    return null;
+  }
+  function applyMods(d, mods) {
+    for (const raw of mods) {
+      if (d === null || raw === null) return null;
+      const m = String(raw).trim().toLowerCase();
+      let r;
+      if ((r = /^([+-]?\d+(?:\.\d+)?)\s*(day|hour|minute|second|month|year)s?$/.exec(m))) {
+        const n = Number(r[1]); d = new Date(d.getTime());
+        if (r[2] === 'day') d.setUTCDate(d.getUTCDate() + n);
+        else if (r[2] === 'hour') d.setUTCHours(d.getUTCHours() + n);
+        else if (r[2] === 'minute') d.setUTCMinutes(d.getUTCMinutes() + n);
+        else if (r[2] === 'second') d.setUTCSeconds(d.getUTCSeconds() + n);
+        else if (r[2] === 'month') d.setUTCMonth(d.getUTCMonth() + n);
+        else d.setUTCFullYear(d.getUTCFullYear() + n);
+      } else if (m === 'start of month') d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+      else if (m === 'start of year') d = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      else if (m === 'start of day') d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      else if (m === 'localtime') d = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      else if (m === 'utc') d = new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+      else if ((r = /^weekday (\d)$/.exec(m))) { d = new Date(d.getTime()); while (d.getUTCDay() !== +r[1]) d.setUTCDate(d.getUTCDate() + 1); }
+      else return null;
+    }
+    return d;
+  }
+  function strftime(fmt, d) {
+    if (d === null) return null;
+    const jd = d.getTime() / 86400000 + 2440587.5;
+    return fmt.replace(/%([dfHjmMSswYW%])/g, (_, c) => {
+      switch (c) {
+        case 'd': return pad(d.getUTCDate()); case 'H': return pad(d.getUTCHours()); case 'm': return pad(d.getUTCMonth() + 1);
+        case 'M': return pad(d.getUTCMinutes()); case 'S': return pad(d.getUTCSeconds()); case 'Y': return pad(d.getUTCFullYear(), 4);
+        case 'f': return pad(d.getUTCSeconds()) + '.' + pad(d.getUTCMilliseconds(), 3); case 's': return String(Math.floor(d.getTime() / 1000));
+        case 'w': return String(d.getUTCDay()); case 'j': return pad(Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000) + 1, 3);
+        case 'W': { const j = Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000); return pad(Math.floor((j + 7 - ((d.getUTCDay() + 6) % 7)) / 7)); }
+        case '%': return '%'; default: return String(jd);
+      }
+    });
+  }
+
+  /* ---------- Scalar functions ---------- */
+  const FN = {
+    UPPER: (a) => a === null ? null : String(a).toUpperCase(),
+    LOWER: (a) => a === null ? null : String(a).toLowerCase(),
+    LENGTH: (a) => a === null ? null : [...String(a)].length,
+    LEN: (a) => a === null ? null : [...String(a)].length,
+    SUBSTR: (s, st, len) => {
+      if (s === null || st === null) return null; const ch = [...String(s)]; let p = toNum(st);
+      let L = len === undefined ? ch.length : toNum(len);
+      let b = p > 0 ? p - 1 : p < 0 ? ch.length + p : 0; if (p === 0 && len !== undefined) L -= 1;
+      if (L < 0) { b = b + L; L = -L; } if (b < 0) { L += b; b = 0; }
+      return ch.slice(b, b + Math.max(0, L)).join('');
+    },
+    TRIM: (s, c) => s === null ? null : c === undefined ? String(s).trim() : String(s).replace(new RegExp(`^[${esc(c)}]+|[${esc(c)}]+$`, 'g'), ''),
+    LTRIM: (s, c) => s === null ? null : String(s).replace(new RegExp(`^[${c === undefined ? '\\s' : esc(c)}]+`), ''),
+    RTRIM: (s, c) => s === null ? null : String(s).replace(new RegExp(`[${c === undefined ? '\\s' : esc(c)}]+$`), ''),
+    REPLACE: (s, a, b) => s === null || a === null || b === null ? null : a === '' ? String(s) : String(s).split(String(a)).join(String(b)),
+    INSTR: (s, a) => s === null || a === null ? null : [...String(s).slice(0, Math.max(0, String(s).indexOf(String(a))))].length + (String(s).indexOf(String(a)) >= 0 ? 1 : 0),
+    ABS: (a) => a === null ? null : Math.abs(toNum(a)),
+    ROUND: (a, d) => { if (a === null) return null; const p = Math.pow(10, d === undefined || d === null ? 0 : toNum(d)); const x = toNum(a) * p; const r = Math.sign(x) * Math.round(Math.abs(x) + 1e-9) / p; return (d === undefined || toNum(d) === 0) ? Number(r.toFixed(0)) : r; },
+    CEIL: (a) => a === null ? null : Math.ceil(toNum(a)), CEILING: (a) => a === null ? null : Math.ceil(toNum(a)),
+    FLOOR: (a) => a === null ? null : Math.floor(toNum(a)),
+    POWER: (a, b) => a === null || b === null ? null : Math.pow(toNum(a), toNum(b)), POW: (a, b) => a === null || b === null ? null : Math.pow(toNum(a), toNum(b)),
+    SQRT: (a) => a === null ? null : Math.sqrt(toNum(a)), MOD: (a, b) => a === null || b === null || toNum(b) === 0 ? null : toNum(a) % toNum(b),
+    SIGN: (a) => a === null ? null : Math.sign(toNum(a)),
+    RANDOM: () => Math.floor(Math.random() * 2 ** 52) - 2 ** 51,
+    COALESCE: (...a) => { for (const v of a) if (v !== null) return v; return null; },
+    IFNULL: (a, b) => a === null ? b : a, NVL: (a, b) => a === null ? b : a, ISNULL: (a, b) => a === null ? b : a,
+    NULLIF: (a, b) => cmpVals(a, b) === 0 ? null : a,
+    IIF: (c, a, b) => truthy(c) ? a : b,
+    TYPEOF: (a) => a === null ? 'null' : isNum(a) ? (Number.isInteger(a) ? 'integer' : 'real') : 'text',
+    CONCAT: (...a) => a.map(v => v === null ? '' : String(v)).join(''),
+    CONCAT_WS: (s, ...a) => s === null ? null : a.filter(v => v !== null).map(String).join(String(s)),
+    HEX: (a) => a === null ? '' : [...new TextEncoder().encode(String(a))].map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase(),
+    QUOTE: (a) => a === null ? 'NULL' : isNum(a) ? String(a) : "'" + String(a).replace(/'/g, "''") + "'",
+    UNICODE: (a) => a === null ? null : String(a).codePointAt(0), CHAR: (...a) => String.fromCodePoint(...a.map(toNum)),
+    PRINTF: (f, ...a) => printf(f, a), FORMAT: (f, ...a) => printf(f, a),
+    LPAD: (s, n, c = ' ') => s === null ? null : String(s).padStart(toNum(n), c), RPAD: (s, n, c = ' ') => s === null ? null : String(s).padEnd(toNum(n), c),
+    LEFT: (s, n) => s === null ? null : [...String(s)].slice(0, toNum(n)).join(''), RIGHT: (s, n) => s === null ? null : [...String(s)].slice(-toNum(n) || Infinity).join(''),
+    DATE: (v, ...m) => { const d = applyMods(parseDate(v === undefined ? 'now' : v), m); return d && strftime('%Y-%m-%d', d); },
+    TIME: (v, ...m) => { const d = applyMods(parseDate(v === undefined ? 'now' : v), m); return d && strftime('%H:%M:%S', d); },
+    DATETIME: (v, ...m) => { const d = applyMods(parseDate(v === undefined ? 'now' : v), m); return d && strftime('%Y-%m-%d %H:%M:%S', d); },
+    JULIANDAY: (v, ...m) => { const d = applyMods(parseDate(v), m); return d && d.getTime() / 86400000 + 2440587.5; },
+    UNIXEPOCH: (v, ...m) => { const d = applyMods(parseDate(v === undefined ? 'now' : v), m); return d && Math.floor(d.getTime() / 1000); },
+    STRFTIME: (f, v, ...m) => { if (f === null) return null; const d = applyMods(parseDate(v === undefined ? 'now' : v), m); return strftime(String(f), d); },
+    CURRENT_DATE: () => strftime('%Y-%m-%d', new Date()), CURRENT_TIME: () => strftime('%H:%M:%S', new Date()),
+    CURRENT_TIMESTAMP: () => strftime('%Y-%m-%d %H:%M:%S', new Date()),
+    MAX: (...a) => a.some(v => v === null) ? null : a.reduce((x, y) => cmpVals(x, y) >= 0 ? x : y),
+    MIN: (...a) => a.some(v => v === null) ? null : a.reduce((x, y) => cmpVals(x, y) <= 0 ? x : y),
+    GREATEST: (...a) => a.some(v => v === null) ? null : a.reduce((x, y) => cmpVals(x, y) >= 0 ? x : y),
+    LEAST: (...a) => a.some(v => v === null) ? null : a.reduce((x, y) => cmpVals(x, y) <= 0 ? x : y),
+  };
+  function esc(c) { return String(c).replace(/[\]\\^-]/g, '\\$&'); }
+  function printf(f, a) {
+    if (f === null) return null; let i = 0;
+    return String(f).replace(/%([-0+ ]*)(\d*)(?:\.(\d+))?([dfsxXqQ%])/g, (_, fl, w, p, t) => {
+      if (t === '%') return '%'; let v = a[i++]; let s;
+      if (t === 'd') s = String(Math.trunc(toNum(v) || 0));
+      else if (t === 'f') s = (toNum(v) || 0).toFixed(p === undefined ? 6 : +p);
+      else if (t === 'x' || t === 'X') { s = (Math.trunc(toNum(v) || 0)).toString(16); if (t === 'X') s = s.toUpperCase(); }
+      else if (t === 'q' || t === 'Q') s = v === null ? 'NULL' : "'" + String(v).replace(/'/g, "''") + "'";
+      else s = v === null ? '' : String(v);
+      if (fl.includes('+') && t !== 's' && !s.startsWith('-')) s = '+' + s;
+      if (w) s = fl.includes('-') ? s.padEnd(+w) : s.padStart(+w, fl.includes('0') && t !== 's' ? '0' : ' ');
+      return s;
+    });
+  }
+
+  /* ---------- Database ---------- */
+  class Database {
+    constructor(json) {
+      this.s = json ? (typeof json === 'string' ? JSON.parse(json) : json) : { tables: {}, views: {}, indexes: {} };
+      this.s.tables = this.s.tables || {}; this.s.views = this.s.views || {}; this.s.indexes = this.s.indexes || {};
+      this.snapshot = null;
+    }
+    export() { return JSON.stringify(this.s); }
+    clone() { return new Database(JSON.parse(this.export())); }
+    findTable(name, must = true) {
+      const u = name.toUpperCase();
+      for (const k in this.s.tables) if (k.toUpperCase() === u) return this.s.tables[k];
+      if (must) err(`沒有這個資料表：${name}`); return null;
+    }
+    findView(name) { const u = name.toUpperCase(); for (const k in this.s.views) if (k.toUpperCase() === u) return this.s.views[k]; return null; }
+    colIndex(t, name, must = true) {
+      const u = name.toUpperCase(); const i = t.columns.findIndex(c => c.name.toUpperCase() === u);
+      if (i < 0 && must) err(`資料表 ${t.name} 沒有欄位：${name}`); return i;
+    }
+
+    exec(sql) {
+      const results = []; let P;
+      try { P = new Parser(sql); } catch (e) { return { results, error: e.message }; }
+      for (;;) {
+        let st;
+        try {
+          while (P.acceptOp(';'));
+          if (P.peek().t === 'eof') break;
+          const s0 = P.peek().s; st = P.statement(); st.text = P.src(s0, P.k[P.i - 1].e);
+          if (!P.acceptOp(';') && P.peek().t !== 'eof') P.fail('敘述結尾應為分號');
+        } catch (e) { return { results, error: e.message }; }
+        const t0 = performance.now();
+        try {
+          const r = this.run(st);
+          r.sql = st.text; r.ms = performance.now() - t0; results.push(r);
+        } catch (e) {
+          if (!(e instanceof SqlError)) console.error(e);
+          return { results, error: e.message, failedSql: st.text };
+        }
+      }
+      return { results };
+    }
+
+    run(st) {
+      switch (st.type) {
+        case 'select': { const r = this.select(st, null, {}); return { columns: r.columns, values: r.rows }; }
+        case 'explain': return { columns: ['id', 'detail'], values: this.explain(st.stmt).map((d, i) => [i + 1, d]) };
+        case 'createTable': return this.createTable(st);
+        case 'createIndex': {
+          const t = this.findTable(st.table); st.cols.forEach(c => this.colIndex(t, c));
+          if (this.s.indexes[st.name]) { if (st.ine) return { message: '索引已存在，略過' }; err(`索引已存在：${st.name}`); }
+          if (st.unique) { const ix = st.cols.map(c => this.colIndex(t, c)); const seen = new Set(); for (const r of t.rows) { const k = keyOf(ix.map(i => r[i])); if (ix.some(i => r[i] === null)) continue; if (seen.has(k)) err('建立 UNIQUE 索引失敗：已有重複值'); seen.add(k); } t.uniques = (t.uniques || []).concat([st.cols]); }
+          this.s.indexes[st.name] = { name: st.name, table: t.name, cols: st.cols, unique: st.unique };
+          return { message: `已建立索引 ${st.name}` };
+        }
+        case 'createView':
+          if (this.findView(st.name) || this.findTable(st.name, false)) { if (st.ine) return { message: '已存在，略過' }; err(`名稱已存在：${st.name}`); }
+          this.select(st.q, null, {}); this.s.views[st.name] = { name: st.name, sql: st.sql };
+          return { message: `已建立檢視 ${st.name}` };
+        case 'insert': return this.insert(st);
+        case 'update': return this.update(st);
+        case 'delete': return this.delete(st);
+        case 'drop': return this.drop(st);
+        case 'alter': return this.alter(st);
+        case 'begin': if (this.snapshot) err('交易已在進行中'); this.snapshot = JSON.stringify(this.s); return { message: '交易開始' };
+        case 'commit': if (!this.snapshot) err('目前沒有進行中的交易'); this.snapshot = null; return { message: '交易已提交' };
+        case 'rollback': if (!this.snapshot) err('目前沒有進行中的交易'); this.s = JSON.parse(this.snapshot); this.snapshot = null; return { message: '交易已回復' };
+      }
+      err('不支援的敘述');
+    }
+
+    createTable(st) {
+      if (this.findTable(st.name, false) || this.findView(st.name)) { if (st.ine) return { message: `資料表 ${st.name} 已存在，略過` }; err(`資料表已存在：${st.name}`); }
+      let t;
+      if (st.asSelect) {
+        const r = this.select(st.asSelect, null, {});
+        const cols = r.columns.map((c, i) => {
+          const vals = r.rows.map(x => x[i]).filter(v => v !== null);
+          const type = vals.length && vals.every(v => isNum(v) && Number.isInteger(v)) ? 'INTEGER' : vals.length && vals.every(isNum) ? 'REAL' : 'TEXT';
+          return { name: c, type, pk: false, notnull: false, unique: false, dflt: null };
+        });
+        t = { name: st.name, columns: cols, pkCols: [], uniques: [], rows: r.rows.map(x => x.slice()), seq: 0 };
+      } else {
+        const names = new Set();
+        st.cols.forEach(c => { const u = c.name.toUpperCase(); if (names.has(u)) err(`欄位名稱重複：${c.name}`); names.add(u); });
+        t = { name: st.name, columns: st.cols.map(c => ({ ...c, dflt: c.dflt ? c.dflt : null })), pkCols: st.pkCols, uniques: st.uniques || [], rows: [], seq: 0 };
+      }
+      this.s.tables[st.name] = t;
+      return { message: `已建立資料表 ${st.name}` };
+    }
+
+    checkRow(t, row, skipIdx = -1) {
+      t.columns.forEach((c, i) => { if ((c.notnull || (c.pk && t.pkCols.length === 1 && affinity(c.type) !== 'int' && false)) && row[i] === null) err(`NOT NULL 限制失敗：${t.name}.${c.name}`); });
+      const sets = [];
+      if (t.pkCols.length) sets.push(t.pkCols);
+      t.columns.forEach(c => { if (c.unique) sets.push([c.name]); });
+      (t.uniques || []).forEach(u => sets.push(u));
+      for (const cols of sets) {
+        const ix = cols.map(c => this.colIndex(t, c));
+        if (ix.some(i => row[i] === null)) continue;
+        const k = keyOf(ix.map(i => row[i]));
+        for (let r = 0; r < t.rows.length; r++) {
+          if (r === skipIdx) continue;
+          if (keyOf(ix.map(i => t.rows[r][i])) === k) return { conflict: r, cols };
+        }
+      }
+      return null;
+    }
+
+    insert(st) {
+      const t = this.findTable(st.table);
+      const cols = st.cols && st.cols.length ? st.cols.map(c => this.colIndex(t, c)) : (st.cols ? [] : t.columns.map((_, i) => i));
+      let rows;
+      if (st.rows) rows = st.rows; else rows = this.select(st.q, null, {}).rows;
+      const backup = t.rows.slice(); const seqB = t.seq; let n = 0;
+      try {
+        for (const vals of rows) {
+          if (vals.length !== cols.length) err(`欄位數 ${cols.length} 與值的數量 ${vals.length} 不符`);
+          const row = t.columns.map(c => c.dflt ? this.evalConst(c.dflt) : null);
+          cols.forEach((ci, j) => { row[ci] = vals[j]; });
+          t.columns.forEach((c, i) => { row[i] = coerce(row[i], c.type); });
+          if (t.pkCols.length === 1) {
+            const pi = this.colIndex(t, t.pkCols[0]);
+            if (affinity(t.columns[pi].type) === 'int' && /^INTEGER$/i.test(t.columns[pi].type.trim())) {
+              if (row[pi] === null) { const mx = t.rows.reduce((m, r) => Math.max(m, isNum(r[pi]) ? r[pi] : 0), t.columns[pi].autoinc ? t.seq || 0 : 0); row[pi] = mx + 1; }
+              else if (!(isNum(row[pi]) && Number.isInteger(row[pi]))) err(`資料型別不符：${t.columns[pi].name} 必須是整數`);
+              t.seq = Math.max(t.seq || 0, row[pi]);
+            }
+          }
+          const c = this.checkRow(t, row);
+          if (c) {
+            if (st.conflict === 'IGNORE') continue;
+            if (st.conflict === 'REPLACE') { t.rows.splice(c.conflict, 1); const c2 = this.checkRow(t, row); if (c2) t.rows.splice(c2.conflict, 1); }
+            else err(`UNIQUE 限制失敗：${t.name}.${c.cols.join(', ')}`);
+          }
+          t.rows.push(row); n++;
+        }
+      } catch (e) { t.rows = backup; t.seq = seqB; throw e; }
+      return { message: `已新增 ${n} 筆`, changes: n };
+    }
+    evalConst(e) { return this.eval(e, { b: [], parent: null }); }
+
+    update(st) {
+      const t = this.findTable(st.table);
+      const sets = st.sets.map(s => ({ i: this.colIndex(t, s.c), e: s.e }));
+      const backup = t.rows.slice(); let n = 0;
+      const cols = t.columns.map(c => c.name);
+      try {
+        const newRows = t.rows.map(r => {
+          const ctx = { b: [{ alias: st.alias, table: t.name, cols, vals: r }], parent: null, db: this };
+          if (st.where && !truthy(this.eval(st.where, ctx))) return r;
+          const nr = r.slice(); sets.forEach(s => { nr[s.i] = coerce(this.eval(s.e, ctx), t.columns[s.i].type); }); n++; return nr;
+        });
+        t.rows = [];
+        for (const r of newRows) { const c = this.checkRow(t, r); if (c) err(`UNIQUE 限制失敗：${t.name}.${c.cols.join(', ')}`); t.rows.push(r); }
+      } catch (e) { t.rows = backup; throw e; }
+      return { message: `已更新 ${n} 筆`, changes: n };
+    }
+    delete(st) {
+      const t = this.findTable(st.table); const cols = t.columns.map(c => c.name); const before = t.rows.length;
+      t.rows = t.rows.filter(r => st.where && !truthy(this.eval(st.where, { b: [{ alias: st.alias, table: t.name, cols, vals: r }], parent: null })));
+      const n = before - t.rows.length; return { message: `已刪除 ${n} 筆`, changes: n };
+    }
+    drop(st) {
+      if (st.kind === 'TABLE') {
+        const t = this.findTable(st.name, false); if (!t) { if (st.ie) return { message: '不存在，略過' }; err(`沒有這個資料表：${st.name}`); }
+        delete this.s.tables[t.name];
+        for (const k in this.s.indexes) if (this.s.indexes[k].table === t.name) delete this.s.indexes[k];
+        return { message: `已刪除資料表 ${t.name}` };
+      }
+      if (st.kind === 'VIEW') { const v = this.findView(st.name); if (!v) { if (st.ie) return { message: '不存在，略過' }; err(`沒有這個檢視：${st.name}`); } delete this.s.views[v.name]; return { message: `已刪除檢視 ${v.name}` }; }
+      const k = Object.keys(this.s.indexes).find(x => x.toUpperCase() === st.name.toUpperCase());
+      if (!k) { if (st.ie) return { message: '不存在，略過' }; err(`沒有這個索引：${st.name}`); }
+      const ix = this.s.indexes[k]; delete this.s.indexes[k];
+      if (ix.unique) { const t = this.findTable(ix.table, false); if (t) t.uniques = (t.uniques || []).filter(u => keyOf(u) !== keyOf(ix.cols)); }
+      return { message: `已刪除索引 ${k}` };
+    }
+    alter(st) {
+      const t = this.findTable(st.table);
+      if (st.op === 'renameTable') {
+        if (this.findTable(st.to, false)) err(`資料表已存在：${st.to}`);
+        delete this.s.tables[t.name]; const old = t.name; t.name = st.to; this.s.tables[st.to] = t;
+        for (const k in this.s.indexes) if (this.s.indexes[k].table === old) this.s.indexes[k].table = st.to;
+        return { message: `已更名為 ${st.to}` };
+      }
+      if (st.op === 'addCol') {
+        if (this.colIndex(t, st.col.name, false) >= 0) err(`欄位已存在：${st.col.name}`);
+        if (st.col.notnull && !st.col.dflt && t.rows.length) err('新增 NOT NULL 欄位必須提供 DEFAULT');
+        t.columns.push(st.col); const v = st.col.dflt ? coerce(this.evalConst(st.col.dflt), st.col.type) : null;
+        t.rows.forEach(r => r.push(v)); return { message: `已新增欄位 ${st.col.name}` };
+      }
+      if (st.op === 'renameCol') {
+        const i = this.colIndex(t, st.from); const old = t.columns[i].name; t.columns[i].name = st.to;
+        t.pkCols = t.pkCols.map(c => c.toUpperCase() === old.toUpperCase() ? st.to : c);
+        return { message: `已將欄位 ${old} 更名為 ${st.to}` };
+      }
+      if (st.op === 'dropCol') {
+        const i = this.colIndex(t, st.name); if (t.columns[i].pk) err('不能刪除主鍵欄位');
+        t.columns.splice(i, 1); t.rows.forEach(r => r.splice(i, 1)); return { message: `已刪除欄位 ${st.name}` };
+      }
+    }
+
+    /* ---- Query execution ---- */
+    resolveSource(src, parent, scope) {
+      if (src.sub) { const r = this.select(src.sub, parent, scope); return { cols: r.columns, rows: r.rows, label: '子查詢' }; }
+      const u = src.name.toUpperCase();
+      if (scope.ctes && scope.ctes[u]) { const c = scope.ctes[u]; return { cols: c.columns, rows: c.rows, label: 'CTE ' + src.name }; }
+      const t = this.findTable(src.name, false);
+      if (t) return { cols: t.columns.map(c => c.name), rows: t.rows, label: '資料表 ' + t.name, table: t.name };
+      const v = this.findView(src.name);
+      if (v) { const q = new Parser(v.sql).select(); const r = this.select(q, null, {}); return { cols: r.columns, rows: r.rows, label: '檢視 ' + v.name }; }
+      err(`沒有這個資料表：${src.name}`);
+    }
+
+    select(q, parent, scope) {
+      if (q.ctes) {
+        scope = { ...scope, ctes: { ...(scope.ctes || {}) } };
+        for (const c of q.ctes) {
+          const sel = c.q; const u = c.name.toUpperCase();
+          const recursive = sel.ops.length && sel.cores.slice(1).some(core => core.from && core.from.some(f => f.src.name && f.src.name.toUpperCase() === u));
+          if (recursive) {
+            const anchor = this.runCore(sel.cores[0], parent, scope, null);
+            let cols = c.cols || anchor.columns; let all = anchor.rows.slice(); let work = anchor.rows; let guard = 0;
+            const unionAll = sel.ops[0] === 'UNION ALL'; const seen = new Set(all.map(keyOf));
+            while (work.length) {
+              if (++guard > 100000) err('遞迴 CTE 超過上限');
+              const sc = { ...scope, ctes: { ...scope.ctes, [u]: { columns: cols, rows: work } } };
+              let nr = this.runCore(sel.cores[1], parent, sc, null).rows;
+              if (!unionAll) nr = nr.filter(r => { const k = keyOf(r); if (seen.has(k)) return false; seen.add(k); return true; });
+              all = all.concat(nr); work = nr;
+              if (sel.limit && all.length >= toNum(this.evalConst(sel.limit))) break;
+            }
+            scope.ctes[u] = { columns: cols, rows: all };
+          } else {
+            const r = this.select(sel, parent, scope);
+            scope.ctes[u] = { columns: c.cols || r.columns, rows: r.rows };
+          }
+        }
+      }
+      let res;
+      if (q.cores.length === 1) res = this.runCore(q.cores[0], parent, scope, q.orderBy);
+      else {
+        res = this.runCore(q.cores[0], parent, scope, null);
+        for (let i = 0; i < q.ops.length; i++) {
+          const r = this.runCore(q.cores[i + 1], parent, scope, null);
+          if (r.columns.length !== res.columns.length) err(`${q.ops[i]} 兩側欄位數不同`);
+          const op = q.ops[i];
+          if (op === 'UNION ALL') res.rows = res.rows.concat(r.rows);
+          else if (op === 'UNION') { const s = new Set(); res.rows = res.rows.concat(r.rows).filter(x => { const k = keyOf(x); if (s.has(k)) return false; s.add(k); return true; }); }
+          else if (op === 'INTERSECT') { const rs = new Set(r.rows.map(keyOf)); const s = new Set(); res.rows = res.rows.filter(x => { const k = keyOf(x); if (!rs.has(k) || s.has(k)) return false; s.add(k); return true; }); }
+          else { const rs = new Set(r.rows.map(keyOf)); const s = new Set(); res.rows = res.rows.filter(x => { const k = keyOf(x); if (rs.has(k) || s.has(k)) return false; s.add(k); return true; }); }
+        }
+        if (q.orderBy) {
+          const idx = q.orderBy.map(o => {
+            if (o.e.k === 'lit' && isNum(o.e.v)) { if (o.e.v < 1 || o.e.v > res.columns.length) err('ORDER BY 欄位序號超出範圍'); return o.e.v - 1; }
+            if (o.e.k === 'col') { const i = res.columns.findIndex(c => c.toUpperCase() === o.e.name.toUpperCase()); if (i >= 0) return i; }
+            err('複合查詢的 ORDER BY 必須使用輸出欄位名稱或序號');
+          });
+          res.rows.sort((a, b) => { for (let j = 0; j < idx.length; j++) { const o = q.orderBy[j]; const c = orderCmp(a[idx[j]], b[idx[j]], o); if (c) return c; } return 0; });
+        }
+      }
+      if (q.limit || q.offset) {
+        const off = q.offset ? toNum(this.eval(q.offset, { b: [], parent })) : 0;
+        const lim = q.limit ? toNum(this.eval(q.limit, { b: [], parent })) : -1;
+        res.rows = res.rows.slice(off, lim < 0 ? undefined : off + lim);
+      }
+      return res;
+    }
+
+    runCore(core, parent, scope, orderBy) {
+      if (core.sub) return this.select(core.sub, parent, scope);
+      if (core.values) {
+        const rows = core.values.map(r => r.map(e => this.eval(e, { b: [], parent })));
+        return { columns: rows[0].map((_, i) => 'column' + (i + 1)), rows };
+      }
+      // FROM
+      let ctxs = [{ b: [], parent, db: this }]; const shape = [];
+      if (core.from) {
+        for (const it of core.from) {
+          const s = this.resolveSource(it.src, parent, scope);
+          const sh = { alias: it.src.alias, cols: s.cols };
+          const nullB = { alias: sh.alias, cols: s.cols, vals: s.cols.map(() => null) };
+          const out = []; const rightMatched = new Set();
+          if (it.join === 'base' || it.join === 'cross') {
+            for (const c of ctxs) for (const r of s.rows) out.push({ b: c.b.concat([{ alias: sh.alias, cols: s.cols, vals: r }]), parent, db: this });
+          } else {
+            const usingIx = it.using ? it.using.map(u => {
+              const ri = s.cols.findIndex(c => c.toUpperCase() === u.toUpperCase()); if (ri < 0) err(`USING 欄位不存在：${u}`); return ri;
+            }) : null;
+            for (const c of ctxs) {
+              let matched = false;
+              s.rows.forEach((r, ri) => {
+                const nc = { b: c.b.concat([{ alias: sh.alias, cols: s.cols, vals: r }]), parent, db: this };
+                let ok = true;
+                if (it.on) ok = truthy(this.eval(it.on, nc));
+                else if (usingIx) ok = it.using.every((u, j) => cmpVals(this.resolve(c, null, u), r[usingIx[j]]) === 0 && r[usingIx[j]] !== null);
+                if (ok) { matched = true; rightMatched.add(ri); out.push(nc); }
+              });
+              if (!matched && (it.join === 'left' || it.join === 'full')) out.push({ b: c.b.concat([nullB]), parent, db: this });
+            }
+            if (it.join === 'right' || it.join === 'full') {
+              s.rows.forEach((r, ri) => { if (!rightMatched.has(ri)) out.push({ b: shape.map(p => ({ alias: p.alias, cols: p.cols, vals: p.cols.map(() => null) })).concat([{ alias: sh.alias, cols: s.cols, vals: r }]), parent, db: this }); });
+            }
+          }
+          shape.push(sh); ctxs = out;
+          if (it.join === 'base') ctxs = out;
+        }
+      }
+      ctxs.forEach(c => { c.scope = scope; });
+      if (core.where) ctxs = ctxs.filter(c => truthy(this.eval(core.where, c)));
+      // Grouping
+      const aggUsed = core.cols.some(c => c.e && hasAgg(c.e)) || (core.having && hasAgg(core.having)) || (orderBy && orderBy.some(o => hasAgg(o.e)));
+      if (core.groupBy || aggUsed) {
+        const groups = new Map();
+        if (core.groupBy) {
+          const outNames = core.cols.map(c => (c.alias || '').toUpperCase());
+          for (const c of ctxs) {
+            const k = keyOf(core.groupBy.map(g => this.groupKeyVal(g, c, core, outNames)));
+            if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c);
+          }
+        } else groups.set('all', ctxs);
+        const nullCtx = { b: shape.map(p => ({ alias: p.alias, cols: p.cols, vals: p.cols.map(() => null) })), parent, db: this, scope };
+        ctxs = [...groups.values()].map(g => ({ ...(g[0] || nullCtx), group: g }));
+        if (core.having) ctxs = ctxs.filter(c => truthy(this.eval(core.having, c)));
+      }
+      // Window functions
+      const wins = []; core.cols.forEach(c => c.e && collectWin(c.e, wins)); if (orderBy) orderBy.forEach(o => collectWin(o.e, wins));
+      if (wins.length) this.computeWindows(wins, ctxs);
+      // Projection
+      const columns = [], proj = [];
+      core.cols.forEach(c => {
+        if (c.star) {
+          const bs = ctxs[0] ? ctxs[0].b : shape.map(p => ({ alias: p.alias, cols: p.cols }));
+          if (!core.from) err('沒有 FROM 時不能使用 *');
+          bs.forEach((b, bi) => {
+            if (c.table && b.alias.toUpperCase() !== c.table.toUpperCase()) return;
+            b.cols.forEach((n, ci) => { columns.push(n); proj.push({ bi, ci }); });
+          });
+          if (c.table && !bs.some(b => b.alias.toUpperCase() === c.table.toUpperCase())) err(`沒有這個資料表別名：${c.table}`);
+        } else { columns.push(c.name); proj.push({ e: c.e }); }
+      });
+      let rows = ctxs.map(c => ({ c, v: proj.map(p => p.e ? this.eval(p.e, c) : c.b[p.bi].vals[p.ci]) }));
+      if (core.distinct) { const s = new Set(); rows = rows.filter(r => { const k = keyOf(r.v); if (s.has(k)) return false; s.add(k); return true; }); }
+      if (orderBy) {
+        const keyFns = orderBy.map(o => {
+          if (o.e.k === 'lit' && isNum(o.e.v)) { const i = o.e.v - 1; if (i < 0 || i >= columns.length) err('ORDER BY 欄位序號超出範圍'); return r => r.v[i]; }
+          if (o.e.k === 'col' && !o.e.table) {
+            const i = core.cols.findIndex(c => c.alias && c.alias.toUpperCase() === o.e.name.toUpperCase());
+            if (i >= 0) { const pi = columns.indexOf(core.cols[i].name); return r => r.v[pi >= 0 ? pi : i]; }
+          }
+          return r => this.eval(o.e, r.c);
+        });
+        rows.forEach(r => { r.k = keyFns.map(f => f(r)); });
+        rows.sort((a, b) => { for (let j = 0; j < keyFns.length; j++) { const c = orderCmp(a.k[j], b.k[j], orderBy[j]); if (c) return c; } return 0; });
+      }
+      return { columns, rows: rows.map(r => r.v) };
+    }
+    groupKeyVal(g, c, core, outNames) {
+      if (g.k === 'lit' && isNum(g.v)) { const col = core.cols[g.v - 1]; if (!col || !col.e) err('GROUP BY 欄位序號超出範圍'); return this.eval(col.e, c); }
+      if (g.k === 'col' && !g.table) {
+        try { return this.eval(g, c); } catch (e) {
+          const i = outNames.indexOf(g.name.toUpperCase()); if (i >= 0) return this.eval(core.cols[i].e, c); throw e;
+        }
+      }
+      return this.eval(g, c);
+    }
+    computeWindows(wins, ctxs) {
+      for (const w of wins) {
+        const parts = new Map();
+        ctxs.forEach((c, i) => { const k = keyOf(w.over.part.map(p => this.eval(p, c))); if (!parts.has(k)) parts.set(k, []); parts.get(k).push(i); });
+        for (const idxs of parts.values()) {
+          const ord = w.over.order;
+          const keys = idxs.map(i => ord.map(o => this.eval(o.e, ctxs[i])));
+          const order = idxs.map((_, j) => j);
+          if (ord.length) order.sort((a, b) => { for (let j = 0; j < ord.length; j++) { const c = orderCmp(keys[a][j], keys[b][j], ord[j]); if (c) return c; } return a - b; });
+          const sorted = order.map(j => idxs[j]); const sk = order.map(j => keyOf(keys[j]));
+          const set = (pos, v) => { const c = ctxs[sorted[pos]]; (c.win || (c.win = new Map())).set(w, v); };
+          const argv = (pos, n = 0) => w.args[n] ? this.eval(w.args[n], ctxs[sorted[pos]]) : null;
+          const N = sorted.length;
+          if (w.name === 'ROW_NUMBER') { for (let p = 0; p < N; p++) set(p, p + 1); continue; }
+          if (w.name === 'RANK' || w.name === 'DENSE_RANK') { let rank = 0, dense = 0; for (let p = 0; p < N; p++) { if (p === 0 || sk[p] !== sk[p - 1]) { rank = p + 1; dense++; } set(p, w.name === 'RANK' ? rank : dense); } continue; }
+          if (w.name === 'NTILE') { const n = toNum(argv(0)); for (let p = 0; p < N; p++) set(p, Math.floor(p * n / N) + 1); continue; }
+          if (w.name === 'LAG' || w.name === 'LEAD') {
+            for (let p = 0; p < N; p++) {
+              const off = w.args[1] ? toNum(argv(p, 1)) : 1; const q = w.name === 'LAG' ? p - off : p + off;
+              set(p, q >= 0 && q < N ? argv(q) : (w.args[2] ? argv(p, 2) : null));
+            } continue;
+          }
+          if (w.name === 'FIRST_VALUE') { for (let p = 0; p < N; p++) set(p, argv(0)); continue; }
+          if (w.name === 'LAST_VALUE') {
+            for (let p = 0; p < N; p++) { let e = p; if (!ord.length || w.over.full) e = N - 1; else while (e + 1 < N && sk[e + 1] === sk[p]) e++; set(p, argv(e)); } continue;
+          }
+          if (AGG.has(w.name)) {
+            const running = ord.length && !w.over.full;
+            let p = 0;
+            while (p < N) {
+              let e = p; if (running) { while (e + 1 < N && sk[e + 1] === sk[p]) e++; } else e = N - 1;
+              const upto = running ? e : N - 1;
+              const g = sorted.slice(0, upto + 1).map(i => ctxs[i]);
+              const v = this.aggregate({ ...w, over: null }, g);
+              for (let x = p; x <= e; x++) set(x, v);
+              p = e + 1;
+            }
+            continue;
+          }
+          err(`不支援的視窗函數：${w.name}`);
+        }
+      }
+    }
+    aggregate(node, group) {
+      if (node.filter) group = group.filter(c => truthy(this.eval(node.filter, c)));
+      if (node.name === 'COUNT' && node.star) return group.length;
+      let vals = group.map(c => this.eval(node.args[0], c)).filter(v => v !== null);
+      if (node.distinct) { const s = new Set(); vals = vals.filter(v => { const k = keyOf([v]); if (s.has(k)) return false; s.add(k); return true; }); }
+      switch (node.name) {
+        case 'COUNT': return vals.length;
+        case 'SUM': return vals.length ? fixFloat(vals.reduce((a, b) => a + toNum(b), 0)) : null;
+        case 'TOTAL': return fixFloat(vals.reduce((a, b) => a + toNum(b), 0));
+        case 'AVG': return vals.length ? vals.reduce((a, b) => a + toNum(b), 0) / vals.length : null;
+        case 'MIN': return vals.length ? vals.reduce((a, b) => cmpVals(a, b) <= 0 ? a : b) : null;
+        case 'MAX': return vals.length ? vals.reduce((a, b) => cmpVals(a, b) >= 0 ? a : b) : null;
+        case 'GROUP_CONCAT': case 'STRING_AGG': {
+          const sep = node.args[1] ? this.eval(node.args[1], group[0] || { b: [] }) : ',';
+          return vals.length ? vals.map(String).join(sep === null ? ',' : String(sep)) : null;
+        }
+      }
+    }
+
+    resolve(ctx, table, name) {
+      const T = table && table.toUpperCase(), N = name.toUpperCase();
+      for (let c = ctx; c; c = c.parent) {
+        let found = undefined, hits = 0;
+        for (const b of c.b) {
+          if (T && b.alias.toUpperCase() !== T) continue;
+          const i = b.cols.findIndex(x => x.toUpperCase() === N);
+          if (i >= 0) { hits++; if (found === undefined) found = b.vals ? b.vals[i] : null; }
+        }
+        if (hits > 1 && !T) err(`欄位名稱不明確：${name}（請加上資料表別名）`);
+        if (hits) return found;
+      }
+      err(`沒有這個欄位：${table ? table + '.' : ''}${name}`);
+    }
+
+    eval(n, c) {
+      switch (n.k) {
+        case 'lit': return n.v;
+        case 'col': return this.resolve(c, n.table, n.name);
+        case 'neg': { const v = this.eval(n.e, c); return v === null ? null : -toNum(v); }
+        case 'not': { const v = truthy(this.eval(n.e, c)); return v === null ? null : v ? 0 : 1; }
+        case 'and': { const a = truthy(this.eval(n.l, c)); if (a === false) return 0; const b = truthy(this.eval(n.r, c)); if (b === false) return 0; return a === null || b === null ? null : 1; }
+        case 'or': { const a = truthy(this.eval(n.l, c)); if (a === true) return 1; const b = truthy(this.eval(n.r, c)); if (b === true) return 1; return a === null || b === null ? null : 0; }
+        case 'bin': {
+          const a = this.eval(n.l, c), b = this.eval(n.r, c);
+          if (n.op === '||') return a === null || b === null ? null : String(a) + String(b);
+          if (a === null || b === null) return null;
+          switch (n.op) {
+            case '=': return cmpVals(a, b) === 0 ? 1 : 0; case '!=': return cmpVals(a, b) !== 0 ? 1 : 0;
+            case '<': return cmpVals(a, b) < 0 ? 1 : 0; case '<=': return cmpVals(a, b) <= 0 ? 1 : 0;
+            case '>': return cmpVals(a, b) > 0 ? 1 : 0; case '>=': return cmpVals(a, b) >= 0 ? 1 : 0;
+          }
+          const x = toNum(a), y = toNum(b);
+          switch (n.op) {
+            case '+': return fixFloat(x + y); case '-': return fixFloat(x - y); case '*': return fixFloat(x * y);
+            case '/': if (y === 0) return null; return isIntLike(a) && isIntLike(b) && !n.l.real && !n.r.real ? Math.trunc(x / y) : x / y;
+            case '%': if (y === 0) return null; return Math.trunc(x) % Math.trunc(y);
+          }
+          break;
+        }
+        case 'is': { const a = this.eval(n.l, c), b = this.eval(n.r, c); const eq = (a === null && b === null) || (a !== null && b !== null && cmpVals(a, b) === 0); return (n.neg ? !eq : eq) ? 1 : 0; }
+        case 'in': {
+          const a = this.eval(n.l, c); if (a === null) return null;
+          let list;
+          if (n.q) { const r = this.select(n.q, c, c.scope || {}); if (r.columns.length !== 1) err('IN 子查詢只能回傳一個欄位'); list = r.rows.map(x => x[0]); }
+          else list = n.list.map(e => this.eval(e, c));
+          let hasNull = false;
+          for (const v of list) { if (v === null) { hasNull = true; continue; } if (cmpVals(a, v) === 0) return n.neg ? 0 : 1; }
+          return hasNull ? null : n.neg ? 1 : 0;
+        }
+        case 'like': {
+          const a = this.eval(n.l, c), p = this.eval(n.r, c); if (a === null || p === null) return null;
+          const e = n.esc ? this.eval(n.esc, c) : null; const m = likeToRegex(String(p), e, n.glob).test(String(a));
+          return (n.neg ? !m : m) ? 1 : 0;
+        }
+        case 'between': {
+          const a = this.eval(n.l, c), x = this.eval(n.a, c), y = this.eval(n.b, c); if (a === null || x === null || y === null) return null;
+          const m = cmpVals(a, x) >= 0 && cmpVals(a, y) <= 0; return (n.neg ? !m : m) ? 1 : 0;
+        }
+        case 'case': {
+          if (n.base) { const b = this.eval(n.base, c); for (const [w, t] of n.whens) { const v = this.eval(w, c); if (b !== null && v !== null && cmpVals(b, v) === 0) return this.eval(t, c); } }
+          else for (const [w, t] of n.whens) if (truthy(this.eval(w, c))) return this.eval(t, c);
+          return n.els ? this.eval(n.els, c) : null;
+        }
+        case 'cast': {
+          const v = this.eval(n.e, c); if (v === null) return null; const a = affinity(n.type);
+          if (a === 'int') return Math.trunc(toNum(v)); if (a === 'real') return toNum(v);
+          if (a === 'text') return String(v); if (a === 'numeric') { const x = toNum(v); return x; } return v;
+        }
+        case 'sub': { const r = this.select(n.q, c, c.scope || {}); if (r.columns.length !== 1) err('純量子查詢只能回傳一個欄位'); return r.rows.length ? r.rows[0][0] : null; }
+        case 'exists': return this.select(n.q, c, c.scope || {}).rows.length ? 1 : 0;
+        case 'row': err('不支援列值運算式');
+        case 'fn': {
+          if (n.over) { if (!c.win || !c.win.has(n)) err(`視窗函數 ${n.name} 只能用在 SELECT 欄位或 ORDER BY`); return c.win.get(n); }
+          if (WINONLY.has(n.name)) err(`${n.name}() 必須搭配 OVER (...)`);
+          if (AGG.has(n.name) && (n.star || n.args.length === 1 || n.name === 'GROUP_CONCAT' || n.name === 'STRING_AGG' || n.name === 'COUNT')) {
+            if (!c.group) err(`聚合函數 ${n.name} 使用位置錯誤`);
+            return this.aggregate(n, c.group);
+          }
+          const f = FN[n.name]; if (!f) err(`不支援的函數：${n.name}()`);
+          return norm(f(...n.args.map(a => this.eval(a, c))));
+        }
+      }
+      err('無法計算的運算式');
+    }
+
+    explain(st) {
+      const out = [];
+      const walk = (q, d) => {
+        const ind = '  '.repeat(d);
+        if (q.ctes) q.ctes.forEach(c => { out.push(`${ind}CTE ${c.name}`); walk(c.q, d + 1); });
+        q.cores.forEach((core, i) => {
+          if (i > 0) out.push(`${ind}${q.ops[i - 1]}`);
+          if (core.values) { out.push(`${ind}VALUES ${core.values.length} 列`); return; }
+          if (core.sub) { walk(core.sub, d + 1); return; }
+          (core.from || []).forEach((f, j) => {
+            let label = f.src.sub ? `子查詢 AS ${f.src.alias}` : (() => { const t = this.findTable(f.src.name, false); return t ? `資料表 ${t.name}${f.src.alias !== f.src.name ? ' AS ' + f.src.alias : ''}（${t.rows.length} 列）` : this.findView(f.src.name) ? `檢視 ${f.src.name}` : `CTE ${f.src.name}`; })();
+            out.push(`${ind}${j === 0 ? 'SCAN' : (f.join.toUpperCase() + ' JOIN（巢狀迴圈）SCAN')} ${label}${f.on ? ' ON 條件' : f.using ? ' USING ' + f.using.join(',') : ''}`);
+            if (f.src.sub) walk(f.src.sub, d + 1);
+          });
+          if (core.where) out.push(`${ind}FILTER WHERE`);
+          if (core.groupBy) out.push(`${ind}GROUP BY ${core.groupBy.length} 個鍵（雜湊分組）`);
+          else if (core.cols.some(c => c.e && hasAgg(c.e))) out.push(`${ind}AGGREGATE 全表`);
+          if (core.having) out.push(`${ind}FILTER HAVING`);
+          const w = []; core.cols.forEach(c => c.e && collectWin(c.e, w)); if (w.length) out.push(`${ind}WINDOW ${w.length} 個視窗函數`);
+          if (core.distinct) out.push(`${ind}DISTINCT（暫存雜湊）`);
+        });
+        if (q.orderBy) out.push(`${ind}SORT ORDER BY ${q.orderBy.length} 個鍵`);
+        if (q.limit) out.push(`${ind}LIMIT`);
+      };
+      if (st.type === 'select') walk(st, 0);
+      else if (st.type === 'insert') { out.push(`INSERT INTO ${st.table}`); if (st.q) walk(st.q, 1); }
+      else if (st.type === 'update' || st.type === 'delete') { const t = this.findTable(st.table, false); out.push(`${st.type.toUpperCase()} SCAN ${st.table}（${t ? t.rows.length : '?'} 列）${st.where ? ' + FILTER WHERE' : ''}`); }
+      else out.push(`${st.type}`);
+      out.push('※ 內建引擎為全表掃描，索引只做為結構記錄，不影響執行計畫');
+      return out;
+    }
+
+    schema() {
+      return {
+        tables: Object.values(this.s.tables).map(t => ({
+          name: t.name, rows: t.rows.length,
+          columns: t.columns.map(c => ({ name: c.name, type: c.type, pk: !!c.pk, notnull: !!c.notnull })),
+          indexes: Object.values(this.s.indexes).filter(i => i.table === t.name).map(i => `${i.name}(${i.cols.join(',')})${i.unique ? ' UNIQUE' : ''}`),
+        })),
+        views: Object.values(this.s.views).map(v => ({ name: v.name, sql: v.sql })),
+      };
+    }
+    dump() {
+      const q = (n) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : '"' + n.replace(/"/g, '""') + '"';
+      const lit = (v) => v === null ? 'NULL' : isNum(v) ? String(v) : "'" + String(v).replace(/'/g, "''") + "'";
+      const out = ['BEGIN TRANSACTION;'];
+      for (const t of Object.values(this.s.tables)) {
+        const defs = t.columns.map(c => `  ${q(c.name)}${c.type ? ' ' + c.type : ''}${c.pk && t.pkCols.length === 1 ? ' PRIMARY KEY' : ''}${c.autoinc ? ' AUTOINCREMENT' : ''}${c.notnull ? ' NOT NULL' : ''}${c.unique ? ' UNIQUE' : ''}`);
+        if (t.pkCols.length > 1) defs.push(`  PRIMARY KEY (${t.pkCols.map(q).join(', ')})`);
+        out.push(`CREATE TABLE ${q(t.name)} (\n${defs.join(',\n')}\n);`);
+        for (const r of t.rows) out.push(`INSERT INTO ${q(t.name)} VALUES (${r.map(lit).join(', ')});`);
+      }
+      for (const i of Object.values(this.s.indexes)) out.push(`CREATE ${i.unique ? 'UNIQUE ' : ''}INDEX ${q(i.name)} ON ${q(i.table)} (${i.cols.map(q).join(', ')});`);
+      for (const v of Object.values(this.s.views)) out.push(`CREATE VIEW ${q(v.name)} AS ${v.sql};`);
+      out.push('COMMIT;'); return out.join('\n');
+    }
+  }
+  function orderCmp(a, b, o) {
+    if (o.nulls && (a === null) !== (b === null)) return (a === null) === (o.nulls === 'first') ? -1 : 1;
+    const c = cmpVals(a, b); return o.desc ? -c : c;
+  }
+  function isIntLike(v) { return (isNum(v) && Number.isInteger(v)) || (typeof v === 'string' && /^\s*[+-]?\d+\s*$/.test(v)); }
+  function fixFloat(x) { return Number.isInteger(x) ? x : parseFloat(x.toPrecision(15)); }
+  function norm(v) { if (v === undefined) return null; if (typeof v === 'boolean') return v ? 1 : 0; if (typeof v === 'number' && !isFinite(v)) return null; return v; }
+  function hasAgg(n) {
+    if (!n || typeof n !== 'object') return false;
+    if (n.k === 'sub' || n.k === 'exists') return false;
+    if (n.k === 'in' && n.q) return hasAgg(n.l);
+    if (n.k === 'fn' && !n.over && AGG.has(n.name) && (n.star || n.args.length === 1 || n.name === 'GROUP_CONCAT' || n.name === 'COUNT' || n.name === 'STRING_AGG')) return true;
+    if (n.k === 'fn' && n.over) return n.args.some(hasAgg) || n.over.part.some(hasAgg) || n.over.order.some(o => hasAgg(o.e));
+    for (const k in n) { const v = n[k]; if (Array.isArray(v)) { for (const x of v) if (Array.isArray(x) ? x.some(hasAgg) : hasAgg(x)) return true; } else if (v && typeof v === 'object' && v.k && hasAgg(v)) return true; }
+    return false;
+  }
+  function collectWin(n, out) {
+    if (!n || typeof n !== 'object' || n.k === 'sub' || n.k === 'exists') return;
+    if (n.k === 'fn' && n.over) { out.push(n); return; }
+    for (const k in n) { const v = n[k]; if (Array.isArray(v)) v.forEach(x => Array.isArray(x) ? x.forEach(y => collectWin(y, out)) : collectWin(x, out)); else if (v && typeof v === 'object' && v.k) collectWin(v, out); }
+  }
+
+  /* 對外：拆敘述（給 SQLite 模式或其他用途） */
+  function splitStatements(sql) {
+    const out = []; let cur = '', i = 0, depthBegin = 0;
+    while (i < sql.length) {
+      const c = sql[i];
+      if (c === "'" || c === '"' || c === '`') { const e = sql.indexOf(c, i + 1); const j = e < 0 ? sql.length : e + 1; cur += sql.slice(i, j); i = j; continue; }
+      if (c === '-' && sql[i + 1] === '-') { const e = sql.indexOf('\n', i); const j = e < 0 ? sql.length : e; cur += sql.slice(i, j); i = j; continue; }
+      if (c === '/' && sql[i + 1] === '*') { const e = sql.indexOf('*/', i + 2); const j = e < 0 ? sql.length : e + 2; cur += sql.slice(i, j); i = j; continue; }
+      if (/[A-Za-z]/.test(c) && !/[A-Za-z0-9_]/.test(sql[i - 1] || '')) {
+        const w = /^[A-Za-z]+/.exec(sql.slice(i))[0].toUpperCase();
+        if (w === 'BEGIN' && /CREATE\s+TRIGGER/i.test(cur)) depthBegin++;
+        if (w === 'END' && depthBegin) depthBegin--;
+        cur += sql.slice(i, i + w.length); i += w.length; continue;
+      }
+      if (c === ';' && !depthBegin) { if (cur.trim()) out.push(cur.trim()); cur = ''; i++; continue; }
+      cur += c; i++;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+
+  return { Database, tokenize, splitStatements, cmpVals, SqlError };
+})();
+if (typeof module !== 'undefined') module.exports = MiniSQL;
+</script>
+<script>/* ===================== SQL Lab 應用程式 ===================== */
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const h = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const fmtTime = (t) => { const d = new Date(t); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
+const fmtMs = (ms) => ms < 1 ? '<1 ms' : ms < 1000 ? ms.toFixed(1) + ' ms' : (ms / 1000).toFixed(2) + ' s';
+const fmtSize = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
+const debounce = (f, ms) => { let t; const run = (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; run.cancel = () => clearTimeout(t); return run; };
+
+/* ---------- IndexedDB ---------- */
+const Store = (() => {
+  const STORES = ['workspaces', 'history', 'snippets', 'testcases', 'testruns', 'settings'];
+  let db;
+  const open = () => new Promise((res, rej) => {
+    const rq = indexedDB.open('sql-lab', 1);
+    rq.onupgradeneeded = () => { const d = rq.result; STORES.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: s === 'settings' ? 'key' : 'id' }); }); };
+    rq.onsuccess = () => { db = rq.result; res(); }; rq.onerror = () => rej(rq.error);
+  });
+  const tx = (s, mode, fn) => new Promise((res, rej) => {
+    const t = db.transaction(s, mode); const st = t.objectStore(s); let out; const r = fn(st);
+    if (r) r.onsuccess = () => { out = r.result; };
+    t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+  return {
+    open, STORES,
+    all: (s) => tx(s, 'readonly', st => st.getAll()),
+    get: (s, k) => tx(s, 'readonly', st => st.get(k)),
+    put: (s, v) => tx(s, 'readwrite', st => st.put(v)),
+    del: (s, k) => tx(s, 'readwrite', st => st.delete(k)),
+    clear: (s) => tx(s, 'readwrite', st => st.clear()),
+    async getSetting(k, d) { const r = await this.get('settings', k); return r ? r.value : d; },
+    setSetting(k, v) { return this.put('settings', { key: k, value: v }); },
+  };
+})();
+
+/* ---------- 引擎包裝 ---------- */
+let SQLJS = null;
+class MiniEngine {
+  constructor(data) { this.kind = 'mini'; this.db = new MiniSQL.Database(data || null); }
+  exec(sql) { return this.db.exec(sql); }
+  schema() { return this.db.schema(); }
+  export() { return this.db.export(); }
+  clone() { return new MiniEngine(this.db.export()); }
+  explain(sql) { const r = this.db.exec('EXPLAIN ' + sql.trim().replace(/;\s*$/, '')); return r.error ? { error: r.error } : r.results[0]; }
+  dump() { return this.db.dump(); }
+}
+class SqliteEngine {
+  constructor(bytes) { this.kind = 'sqlite'; this.db = bytes ? new SQLJS.Database(bytes) : new SQLJS.Database(); }
+  exec(sql) {
+    const results = [];
+    for (const s of MiniSQL.splitStatements(sql)) {
+      if (!s.replace(/--[^\n]*|\/\*[\s\S]*?\*\//g, '').trim()) continue;
+      const t0 = performance.now(); let st;
+      try {
+        st = this.db.prepare(s); const cols = st.getColumnNames(); const rows = [];
+        while (st.step()) rows.push(st.get().map(v => v instanceof Uint8Array ? `<BLOB ${v.length} bytes>` : v));
+        st.free(); st = null;
+        if (cols.length) results.push({ sql: s, columns: cols, values: rows, ms: performance.now() - t0 });
+        else { const n = this.db.getRowsModified(); results.push({ sql: s, message: /^\s*(INSERT|UPDATE|DELETE|REPLACE)/i.test(s) ? `影響 ${n} 筆` : '執行完成', changes: n, ms: performance.now() - t0 }); }
+      } catch (e) { if (st) st.free(); return { results, error: e.message, failedSql: s }; }
+    }
+    return { results };
+  }
+  q(sql) { const r = this.db.exec(sql); return r[0] ? r[0].values : []; }
+  schema() {
+    const qi = n => '"' + n.replace(/"/g, '""') + '"';
+    const tables = this.q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").map(([name]) => ({
+      name, rows: this.q(`SELECT COUNT(*) FROM ${qi(name)}`)[0][0],
+      columns: this.q(`PRAGMA table_info(${qi(name)})`).map(r => ({ name: r[1], type: r[2], notnull: !!r[3], pk: !!r[5] })),
+      indexes: this.q(`SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='${name.replace(/'/g, "''")}' AND sql IS NOT NULL`).map(r => r[0]),
+    }));
+    const views = this.q("SELECT name, sql FROM sqlite_master WHERE type='view' ORDER BY name").map(([name, sql]) => ({ name, sql }));
+    return { tables, views };
+  }
+  export() { return this.db.export(); }
+  clone() { return new SqliteEngine(this.db.export()); }
+  explain(sql) { const r = this.exec('EXPLAIN QUERY PLAN ' + MiniSQL.splitStatements(sql)[0]); return r.error ? { error: r.error } : r.results[0]; }
+  dump() {
+    const lit = v => v === null ? 'NULL' : typeof v === 'number' ? String(v) : v instanceof Uint8Array ? "X'" + [...v].map(b => b.toString(16).padStart(2, '0')).join('') + "'" : "'" + String(v).replace(/'/g, "''") + "'";
+    const out = ['BEGIN TRANSACTION;'];
+    for (const [name, sql] of this.q("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
+      out.push(sql + ';');
+      const r = this.db.exec(`SELECT * FROM "${name.replace(/"/g, '""')}"`)[0];
+      if (r) r.values.forEach(v => out.push(`INSERT INTO "${name}" VALUES (${v.map(lit).join(', ')});`));
+    }
+    this.q("SELECT sql FROM sqlite_master WHERE type IN ('index','view','trigger') AND sql IS NOT NULL").forEach(([s]) => out.push(s + ';'));
+    out.push('COMMIT;'); return out.join('\n');
+  }
+}
+async function loadSqlJs(jsText, wasmBytes) {
+  const prev = window.initSqlJs;
+  const s = document.createElement('script'); s.textContent = jsText + '\n;window.__initSqlJs = typeof initSqlJs !== "undefined" ? initSqlJs : (window.initSqlJs || null);';
+  document.head.appendChild(s);
+  const init = window.__initSqlJs || window.initSqlJs || prev;
+  if (!init) throw new Error('檔案內找不到 initSqlJs，請確認選的是 sql-wasm.js');
+  SQLJS = await init({ wasmBinary: wasmBytes });
+  const v = new SQLJS.Database(); const ver = v.exec('select sqlite_version()')[0].values[0][0]; v.close();
+  return ver;
+}
+/* ---------- 從 CDN 載入官方 sql.js ---------- */
+const SQLJS_VERSION = '1.10.3';
+const CDNS = [
+  ['jsdelivr', 'jsDelivr', v => `https://cdn.jsdelivr.net/npm/sql.js@${v}/dist/`],
+  ['cdnjs', 'cdnjs（Cloudflare）', v => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/${v}/`],
+  ['unpkg', 'unpkg', v => `https://unpkg.com/sql.js@${v}/dist/`],
+];
+async function fetchSqlJsFromCdn(prefer, version, onStatus) {
+  const order = [...CDNS.filter(c => c[0] === prefer), ...CDNS.filter(c => c[0] !== prefer)];
+  const errs = [];
+  for (const [key, label, base] of order) {
+    const url = base(version);
+    try {
+      onStatus && onStatus(`正在從 ${label} 下載 sql.js ${version}…`);
+      const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 30000);
+      const [jr, wr] = await Promise.all([fetch(url + 'sql-wasm.js', { signal: ctl.signal, cache: 'no-cache' }), fetch(url + 'sql-wasm.wasm', { signal: ctl.signal, cache: 'no-cache' })]);
+      clearTimeout(timer);
+      if (!jr.ok || !wr.ok) throw new Error(`HTTP ${jr.status}/${wr.status}`);
+      const js = await jr.text(), wasm = await wr.arrayBuffer();
+      const head = new Uint8Array(wasm, 0, 4);
+      if (!(head[0] === 0 && head[1] === 0x61 && head[2] === 0x73 && head[3] === 0x6d)) throw new Error('下載的 wasm 檔格式不正確');
+      return { js, wasm, source: label, url, version };
+    } catch (e) { errs.push(`${label}：${e.name === 'AbortError' ? '逾時' : e.message}`); }
+  }
+  throw new Error('所有 CDN 都無法連線（' + errs.join('；') + '）');
+}
+async function installSqlJsFromCdn(prefer, version, onStatus) {
+  const lib = await fetchSqlJsFromCdn(prefer, version, onStatus);
+  onStatus && onStatus('正在初始化 SQLite…');
+  App.sqliteVersion = await loadSqlJs(lib.js, new Uint8Array(lib.wasm));
+  await Store.setSetting('sqljs', { js: lib.js, wasm: lib.wasm, source: lib.source, url: lib.url, version: lib.version, at: Date.now() });
+  return lib;
+}
+
+function makeEngine(ws) {
+  if (ws.engine === 'sqlite') { if (!SQLJS) return null; return new SqliteEngine(ws.data ? new Uint8Array(ws.data) : null); }
+  return new MiniEngine(ws.data || null);
+}
+
+/* ---------- SQL 高亮與格式化 ---------- */
+const KW = new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL LIKE GLOB BETWEEN AS ON JOIN INNER LEFT RIGHT FULL OUTER CROSS NATURAL USING GROUP BY ORDER HAVING LIMIT OFFSET UNION ALL INTERSECT EXCEPT DISTINCT INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE VIEW INDEX UNIQUE PRIMARY KEY FOREIGN REFERENCES DROP ALTER ADD COLUMN RENAME TO IF EXISTS DEFAULT CHECK CONSTRAINT CASE WHEN THEN ELSE END CAST WITH RECURSIVE ASC DESC NULLS FIRST LAST BEGIN COMMIT ROLLBACK TRANSACTION EXPLAIN QUERY PLAN REPLACE OVER PARTITION ROWS RANGE UNBOUNDED PRECEDING FOLLOWING CURRENT ROW AUTOINCREMENT TRUE FALSE INTEGER TEXT REAL NUMERIC BLOB VARCHAR CHAR DECIMAL DATE DATETIME INT TOP ESCAPE FILTER TRIGGER TEMP IGNORE CONFLICT DO NOTHING RETURNING PRAGMA').split(' '));
+function lexDisplay(s) {
+  const re = /(--[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:[^']|'')*'?)|("(?:[^"])*"?|`[^`]*`?|\[[^\]\n]*\]?)|(\b\d+\.?\d*(?:[eE][+-]?\d+)?\b|\.\d+\b)|([A-Za-z_\u0080-\uffff][\w$\u0080-\uffff]*)|(\s+)|([\s\S])/g;
+  const out = []; let m;
+  while ((m = re.exec(s))) {
+    const v = m[0];
+    out.push({ v, t: m[1] ? 'c' : m[2] ? 's' : m[3] ? 'q' : m[4] ? 'n' : m[5] ? 'w' : m[6] ? 'ws' : 'o' });
+  }
+  return out;
+}
+function highlight(s) {
+  const toks = lexDisplay(s); let out = '';
+  toks.forEach((t, i) => {
+    const v = h(t.v);
+    if (t.t === 'c') out += `<span class="hc">${v}</span>`;
+    else if (t.t === 's') out += `<span class="hs">${v}</span>`;
+    else if (t.t === 'n') out += `<span class="hn">${v}</span>`;
+    else if (t.t === 'w') {
+      const nx = toks[i + 1];
+      if (KW.has(t.v.toUpperCase())) out += `<span class="hk">${v}</span>`;
+      else if (nx && nx.v === '(') out += `<span class="hf">${v}</span>`;
+      else out += v;
+    } else out += v;
+  });
+  return out + '\n';
+}
+function formatSQL(sql, upper = true) {
+  const toks = lexDisplay(sql).filter(t => t.t !== 'ws');
+  const CLAUSE = ['SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'UNION', 'UNION ALL', 'INTERSECT', 'EXCEPT', 'VALUES', 'SET', 'INSERT INTO', 'UPDATE', 'DELETE FROM', 'WITH', 'RETURNING'];
+  let out = '', depth = 0; const st = [{ lvl: 0, sub: true, clause: null }]; let between = false;
+  const top = () => st[st.length - 1];
+  const nl = (lvl) => { out = out.replace(/[ \t]+$/, ''); if (out && !out.endsWith('\n')) out += '\n'; out += '  '.repeat(Math.max(0, lvl)); };
+  const sp = () => { if (out && !/[\s(.]$/.test(out)) out += ' '; };
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i]; const U = t.v.toUpperCase(); const nx = toks[i + 1]; const NU = nx ? nx.v.toUpperCase() : '';
+    const f = top(); const L = f.lvl;
+    if (t.t === 'c') { if (t.v.startsWith('--')) { sp(); out += t.v; nl(L + (f.clause ? 1 : 0)); } else { sp(); out += t.v; } continue; }
+    if (t.v === ';') { out = out.replace(/\s+$/, '') + ';\n\n'; st.length = 1; st[0].clause = null; continue; }
+    if (t.v === '(') {
+      const isSub = NU === 'SELECT' || NU === 'WITH';
+      const prev = toks[i - 1]; const fnCall = prev && prev.t === 'w' && !KW.has(prev.v.toUpperCase());
+      if (!fnCall) sp(); out += '(';
+      st.push({ lvl: isSub ? L + 1 + (f.clause ? 1 : 0) : L, sub: isSub, clause: null }); depth++;
+      continue;
+    }
+    if (t.v === ')') { const p = st.length > 1 ? st.pop() : f; depth--; if (p.sub) nl(p.lvl - 1 + (top().clause ? 1 : 0)); out = out.replace(/[ \t]+$/, ''); out += ')'; continue; }
+    if (t.v === ',') { out = out.replace(/[ \t]+$/, '') + ','; if (f.sub && (f.clause === 'SELECT' || f.clause === 'SET' || f.clause === 'GROUP BY' || f.clause === 'ORDER BY' || f.clause === 'WITH')) nl(L + 1); else out += ' '; continue; }
+    if (t.v === '.') { out = out.replace(/[ \t]+$/, '') + '.'; continue; }
+    if (t.t === 'w' && !(toks[i - 1] && toks[i - 1].v === '.')) {
+      let kw = U, adv = 0;
+      if ((U === 'GROUP' || U === 'ORDER' || U === 'PARTITION') && NU === 'BY') { kw = U + ' BY'; adv = 1; }
+      else if (U === 'UNION' && NU === 'ALL') { kw = 'UNION ALL'; adv = 1; }
+      else if (U === 'INSERT' && NU === 'INTO') { kw = 'INSERT INTO'; adv = 1; }
+      else if (U === 'DELETE' && NU === 'FROM') { kw = 'DELETE FROM'; adv = 1; }
+      if (f.sub && CLAUSE.includes(kw) && !(kw === 'SET' && f.clause !== 'UPDATE' && f.clause !== null)) {
+        const isUnion = /UNION|INTERSECT|EXCEPT/.test(kw);
+        nl(L); out += upper ? kw : kw.toLowerCase(); i += adv;
+        f.clause = kw;
+        if (isUnion) { nl(L); f.clause = null; }
+        else if (kw === 'SELECT' && !['DISTINCT', 'ALL'].includes(NU)) nl(L + 1);
+        else if (kw === 'SELECT') { out += ' ' + (upper ? NU : NU.toLowerCase()); i++; nl(L + 1); }
+        else out += ' ';
+        continue;
+      }
+      if (f.sub && /^(LEFT|RIGHT|INNER|CROSS|FULL|JOIN|NATURAL)$/.test(U) && (toks[i - 1] ? !/^(LEFT|RIGHT|INNER|CROSS|FULL|OUTER|NATURAL)$/i.test(toks[i - 1].v) : true) && f.clause === 'FROM') {
+        nl(L + 1); out += upper ? U : U.toLowerCase(); continue;
+      }
+      if (U === 'BETWEEN') between = true;
+      if (f.sub && (U === 'AND' || U === 'OR') && ['WHERE', 'HAVING', 'FROM'].includes(f.clause)) {
+        if (U === 'AND' && between) { between = false; sp(); out += upper ? U : U.toLowerCase(); continue; }
+        nl(L + 2); out += upper ? U : U.toLowerCase(); continue;
+      }
+      if (U === 'ON' && f.clause === 'FROM') { nl(L + 2); out += upper ? 'ON' : 'on'; continue; }
+      sp(); out += KW.has(U) ? (upper ? U : t.v.toLowerCase()) : t.v; continue;
+    }
+    if (t.t === 'o' && out.endsWith('(') ) { out += t.v; continue; }
+    sp(); out += t.v;
+  }
+  return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+}
+
+/* ---------- 方言提示 ---------- */
+const HINTS = [
+  [/\bSELECT\s+TOP\s+\(?\d+/i, 'TOP n 是 SQL Server 語法，SQLite 請改用結尾的 LIMIT n'],
+  [/\bNVL\s*\(/i, 'NVL() 是 Oracle 函數，SQLite 請用 IFNULL() 或 COALESCE()'],
+  [/\bNVL2\s*\(/i, 'NVL2() 請改寫為 CASE WHEN x IS NOT NULL THEN a ELSE b END'],
+  [/\bSYSDATE\b|\bSYSTIMESTAMP\b/i, "SYSDATE 是 Oracle 語法，SQLite 請用 date('now') 或 CURRENT_TIMESTAMP"],
+  [/\bGETDATE\s*\(\)/i, "GETDATE() 是 SQL Server 語法，SQLite 請用 datetime('now','localtime')"],
+  [/\bROWNUM\b/i, 'ROWNUM 是 Oracle 語法，請改用 LIMIT 或 ROW_NUMBER() OVER (...)'],
+  [/\bFROM\s+DUAL\b/i, 'SQLite 沒有 DUAL，可直接省略 FROM（例：SELECT 1+1）'],
+  [/\bTO_CHAR\s*\(/i, "TO_CHAR() 請改用 strftime('%Y-%m-%d', x) 或 printf()"],
+  [/\bTO_DATE\s*\(/i, "TO_DATE() 請改用 date(x)，日期字串格式建議為 'YYYY-MM-DD'"],
+  [/\bTO_NUMBER\s*\(/i, 'TO_NUMBER() 請改用 CAST(x AS NUMERIC)'],
+  [/\bDECODE\s*\(/i, 'DECODE() 是 Oracle 函數，請改寫為 CASE x WHEN ... THEN ... END'],
+  [/\bMINUS\b/i, 'MINUS 是 Oracle 語法，SQLite 請用 EXCEPT'],
+  [/\bISNULL\s*\(/i, 'ISNULL(a,b) 是 SQL Server 語法，SQLite 請用 IFNULL(a,b)'],
+  [/\bLEN\s*\(/i, 'LEN() 是 SQL Server 函數，SQLite 請用 LENGTH()'],
+  [/\bDATEADD\s*\(/i, "DATEADD() 請改用 date(x, '+N day')"],
+  [/\bDATEDIFF\s*\(/i, '日期相減請改用 julianday(a) - julianday(b)'],
+  [/\bCONVERT\s*\(/i, 'CONVERT() 請改用 CAST(x AS 型別)'],
+  [/\(\+\)/, 'Oracle 的 (+) 外部連結請改寫為 LEFT JOIN ... ON'],
+  [/\bWITH\s*\(\s*NOLOCK\s*\)/i, 'WITH (NOLOCK) 在 SQLite 無意義，請移除'],
+  [/\bFETCH\s+FIRST\s+\d+\s+ROWS?\s+ONLY\b/i, 'FETCH FIRST n ROWS ONLY 請改用 LIMIT n'],
+  [/\bMERGE\s+INTO\b/i, 'MERGE INTO 請改用 INSERT ... ON CONFLICT DO UPDATE（SQLite 引擎）或 INSERT OR REPLACE'],
+  [/\bCONNECT\s+BY\b/i, '階層查詢 CONNECT BY 請改用 WITH RECURSIVE'],
+  [/\bIDENTITY\s*\(/i, 'IDENTITY 請改用 INTEGER PRIMARY KEY AUTOINCREMENT'],
+  [/\bNVARCHAR2?\b|\bVARCHAR2\b/i, 'VARCHAR2/NVARCHAR 在 SQLite 皆視為 TEXT，長度限制不會生效'],
+  [/\bSUBSTRING\s*\([^)]*\bFROM\b/i, 'SUBSTRING(x FROM a FOR b) 請改用 SUBSTR(x, a, b)'],
+];
+const dialectHints = (sql) => { const s = sql.replace(/--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/g, ''); return HINTS.filter(([re]) => re.test(s)).map(x => x[1]); };
+
+/* ---------- UI 小工具 ---------- */
+function toast(msg, bad = false) {
+  const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), bad ? 5000 : 2600);
+}
+function modal(title, body, buttons = [{ label: '關閉' }]) {
+  const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal"><header>${h(title)}</header><div class="mb"></div><div class="mf"></div></div>`;
+  const mb = $('.mb', bg); if (typeof body === 'string') mb.innerHTML = body; else mb.appendChild(body);
+  const close = () => { bg.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  buttons.forEach(b => {
+    const el = document.createElement('button'); el.className = 'btn ' + (b.cls || ''); el.textContent = b.label;
+    el.onclick = async () => { if (b.onClick) { const r = await b.onClick(bg); if (r === false) return; } close(); };
+    $('.mf', bg).appendChild(el);
+  });
+  bg.addEventListener('mousedown', e => { if (e.target === bg) close(); });
+  document.body.appendChild(bg);
+  const f = $('input,textarea,select', mb); if (f) setTimeout(() => f.focus(), 30);
+  return bg;
+}
+function ask(title, label, value = '') {
+  return new Promise(res => {
+    let done = false;
+    const m = modal(title, `<div class="field"><label>${h(label)}</label><input type="text" style="width:100%" value="${h(value)}"></div>`, [
+      { label: '取消', onClick: () => { done = true; res(null); } },
+      { label: '確定', cls: 'pri', onClick: (bg) => { done = true; res($('input', bg).value.trim()); } },
+    ]);
+    $('input', m).addEventListener('keydown', e => { if (e.key === 'Enter') { done = true; res(e.target.value.trim()); m.remove(); } });
+    new MutationObserver((_, o) => { if (!document.body.contains(m)) { o.disconnect(); if (!done) res(null); } }).observe(document.body, { childList: true });
+  });
+}
+function download(name, data, type = 'application/octet-stream') {
+  const b = data instanceof Blob ? data : new Blob([data], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function pickFile(accept, multiple = false) {
+  return new Promise(res => { const i = document.createElement('input'); i.type = 'file'; i.accept = accept; i.multiple = multiple; i.onchange = () => res(multiple ? [...i.files] : i.files[0]); i.click(); });
+}
+const csvCell = (v) => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const toCSV = (cols, rows) => '\ufeff' + [cols, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+function parseCSV(text, delim) {
+  if (!delim) { const first = text.split(/\r?\n/, 1)[0]; const c = { ',': 0, '\t': 0, ';': 0, '|': 0 }; for (const ch of first) if (ch in c) c[ch]++; delim = Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; }
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; continue; }
+    if (c === '"' && cur === '') { q = true; continue; }
+    if (c === delim) { row.push(cur); cur = ''; continue; }
+    if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; continue; }
+    cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return { rows: rows.filter(r => !(r.length === 1 && r[0] === '')), delim };
+}
+const bytesToB64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const b64ToBytes = (b) => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+const qid = (n) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : '"' + n.replace(/"/g, '""') + '"';
+const sqlLit = (v) => v === null ? 'NULL' : typeof v === 'number' ? String(v) : "'" + String(v).replace(/'/g, "''") + "'";
+
+
+/* ---------- 繁體中文編碼偵測與解碼 ---------- */
+const ENCODINGS = [
+  ['auto', '自動偵測'],
+  ['utf-8', 'UTF-8（含／不含 BOM）'],
+  ['big5', 'Big5／CP950（繁中 Windows、Excel 預設）'],
+  ['big5-hkscs', 'Big5-HKSCS（香港增補字集）'],
+  ['utf-16le', 'UTF-16 LE（Excel「Unicode 文字」）'],
+  ['utf-16be', 'UTF-16 BE'],
+  ['gb18030', 'GB18030／GBK（含繁體字）'],
+];
+const ENC_LABEL = Object.fromEntries(ENCODINGS);
+const COMMON_TC = '的一是不了人我在有他這中大來上國個到說們為子和你地出道也時年得就那要下以生會自著去之過家學對可她裡後小麼心多天而能好都然沒日於起還發成事只作當想看文無開手十用主行方又如前所本見經頭面公同三已老從動兩長知民樣現分將外但身些與高意進把法此實回二理美點月明其種聲全工己話兒者向情部正名定女問力機給等幾很業最間新什打便位因重被走電四第門相次東政海口使教西再平真聽世氣信北少關並內加化由卻代員軍産入先山五太水萬市眼體別處總才場師書比住員帳號金額日期客戶銀行存款放款利率資料部門單位合計備註編號姓名地址電話類別狀態說明數量價格';
+const COMMON_SC = '这个们来说时为国过还发后对学会么里经头进两样现长东问开关间给听车边马门难让爱认';
+const TC_SET = new Set(COMMON_TC), SC_SET = new Set(COMMON_SC);
+function decodeText(buf, enc) {
+  const u8 = new Uint8Array(buf);
+  // BOM 優先
+  if (enc === 'auto' || enc === 'utf-8' || enc.startsWith('utf-16')) {
+    if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF && (enc === 'auto' || enc === 'utf-8')) return { text: new TextDecoder('utf-8').decode(u8.subarray(3)), enc: 'utf-8', bom: true, bad: 0 };
+    if (u8[0] === 0xFF && u8[1] === 0xFE && enc !== 'utf-16be') return { text: new TextDecoder('utf-16le').decode(u8.subarray(2)), enc: 'utf-16le', bom: true, bad: 0 };
+    if (u8[0] === 0xFE && u8[1] === 0xFF && enc !== 'utf-16le') return { text: new TextDecoder('utf-16be').decode(u8.subarray(2)), enc: 'utf-16be', bom: true, bad: 0 };
+  }
+  const dec = (e) => { const t = new TextDecoder(e).decode(u8); return { text: t.charCodeAt(0) === 0xFEFF ? t.slice(1) : t, enc: e, bom: false, bad: (t.match(/\uFFFD/g) || []).length }; };
+  if (enc !== 'auto') return dec(enc);
+  // 無 BOM 的 UTF-16：偶數或奇數位置大量 0x00
+  const n = Math.min(u8.length, 4000); let ze = 0, zo = 0;
+  for (let i = 0; i < n; i++) if (u8[i] === 0) (i % 2 ? zo++ : ze++);
+  if (n >= 4 && zo > n * 0.2 && ze < n * 0.02) return { ...dec('utf-16le'), guessed: true };
+  if (n >= 4 && ze > n * 0.2 && zo < n * 0.02) return { ...dec('utf-16be'), guessed: true };
+  // 合法 UTF-8（純 ASCII 也歸為 UTF-8）
+  try { const t = new TextDecoder('utf-8', { fatal: true }).decode(u8); return { text: t, enc: 'utf-8', bom: false, bad: 0, guessed: true }; } catch (e) { /* 非 UTF-8 */ }
+  // 在 Big5 / Big5-HKSCS / GB18030 之間評分
+  const score = (r) => {
+    let s = -r.bad * 50, cjk = 0;
+    for (const ch of r.text.slice(0, 20000)) {
+      const c = ch.codePointAt(0);
+      if (TC_SET.has(ch)) s += 3; if (SC_SET.has(ch)) s += 1;
+      if (c >= 0x4E00 && c <= 0x9FFF) cjk++;
+      else if ((c >= 0xE000 && c <= 0xF8FF) || (c >= 0x3400 && c <= 0x4DBF) || c >= 0x20000) s -= 2; // 造字區／罕用擴充區
+    }
+    return s + cjk * 0.1;
+  };
+  const cands = ['big5', 'gb18030'].map(e => { const r = dec(e); r.score = score(r); return r; });
+  cands.sort((a, b) => b.score - a.score);
+  const best = cands[0];
+  return { ...best, guessed: true, alt: cands[1].enc };
+}
+
+/* ---------- 程式碼編輯器 ---------- */
+function CodeEditor(host, { value = '', onChange, onRun, onRunCurrent, onFormat, mini = false } = {}) {
+  host.innerHTML = `<div class="code${mini ? ' mini' : ''}"><div class="gutter"></div><div class="area"><pre></pre><textarea spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div></div>`;
+  const ta = $('textarea', host), pre = $('pre', host), gut = $('.gutter', host);
+  const render = () => {
+    pre.innerHTML = highlight(ta.value);
+    const n = ta.value.split('\n').length; let g = ''; for (let i = 1; i <= n; i++) g += i + '\n'; gut.textContent = g;
+    sync();
+  };
+  const sync = () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; gut.scrollTop = ta.scrollTop; };
+  ta.value = value; render();
+  ta.addEventListener('input', () => { render(); onChange && onChange(ta.value); });
+  ta.addEventListener('scroll', sync);
+  const replaceSel = (text, selStart, selEnd) => {
+    ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end');
+    if (selStart !== undefined) ta.setSelectionRange(selStart, selEnd);
+    render(); onChange && onChange(ta.value);
+  };
+  ta.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key === 'Enter') { e.preventDefault(); (e.shiftKey ? onRunCurrent : onRun) && (e.shiftKey ? onRunCurrent() : onRun()); return; }
+    if (e.key === 'F5' && onRun) { e.preventDefault(); onRun(); return; }
+    if (mod && e.shiftKey && (e.key === 'F' || e.key === 'f') && onFormat) { e.preventDefault(); onFormat(); return; }
+    if (e.key === 'Tab') {
+      e.preventDefault(); const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value;
+      if (s === en && !e.shiftKey) { replaceSel('  '); return; }
+      const ls = v.lastIndexOf('\n', s - 1) + 1; const block = v.slice(ls, en);
+      const nb = e.shiftKey ? block.replace(/^ {1,2}/gm, '') : block.replace(/^/gm, '  ');
+      ta.setRangeText(nb, ls, en, 'select'); render(); onChange && onChange(ta.value); return;
+    }
+    if (mod && e.key === '/') {
+      e.preventDefault(); const s = ta.selectionStart, en = ta.selectionEnd, v = ta.value;
+      const ls = v.lastIndexOf('\n', s - 1) + 1; let le = v.indexOf('\n', en === s ? en : en - 1); if (le < 0) le = v.length;
+      const block = v.slice(ls, le); const all = block.split('\n').every(l => /^\s*--/.test(l) || !l.trim());
+      const nb = all ? block.replace(/^(\s*)-- ?/gm, '$1') : block.replace(/^/gm, '-- ');
+      ta.setRangeText(nb, ls, le, 'select'); render(); onChange && onChange(ta.value); return;
+    }
+    if (e.key === 'Enter' && !mod) {
+      e.preventDefault(); const v = ta.value, s = ta.selectionStart; const ls = v.lastIndexOf('\n', s - 1) + 1;
+      const ind = /^[ \t]*/.exec(v.slice(ls, s))[0]; replaceSel('\n' + ind); return;
+    }
+    const pairs = { '(': ')', "'": "'" };
+    if (pairs[e.key] && ta.selectionStart !== ta.selectionEnd) { e.preventDefault(); const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd); replaceSel(e.key + sel + pairs[e.key]); }
+  });
+  return {
+    get: () => ta.value,
+    set: (v) => { ta.value = v; render(); onChange && onChange(v); },
+    selection: () => ta.value.slice(ta.selectionStart, ta.selectionEnd),
+    cursor: () => ta.selectionStart,
+    insert: (t) => { ta.focus(); replaceSel(t); },
+    focus: () => ta.focus(),
+    el: ta,
+  };
+}
+function statementAt(text, pos) {
+  let start = 0, i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === "'" || c === '"') { const e = text.indexOf(c, i + 1); i = e < 0 ? text.length : e + 1; continue; }
+    if (c === '-' && text[i + 1] === '-') { const e = text.indexOf('\n', i); i = e < 0 ? text.length : e; continue; }
+    if (c === '/' && text[i + 1] === '*') { const e = text.indexOf('*/', i + 2); i = e < 0 ? text.length : e + 2; continue; }
+    if (c === ';') { if (pos <= i) return text.slice(start, i + 1); start = i + 1; }
+    i++;
+  }
+  const last = text.slice(start);
+  if (!last.trim() && start > 0) { const prev = text.slice(0, start - 1); const p2 = prev.lastIndexOf(';'); return text.slice(p2 + 1, start); }
+  return last;
+}
+
+/* ---------- 結果表格 ---------- */
+function renderTable(cols, rows, opts = {}) {
+  const max = opts.max || App.settings.maxRows; const shown = rows.slice(0, max);
+  const isN = v => typeof v === 'number';
+  let html = `<table class="dt"><thead><tr><th class="rn">#</th>${cols.map((c, i) => `<th data-i="${i}" title="點擊排序">${h(c)}</th>`).join('')}</tr></thead><tbody>`;
+  shown.forEach((r, ri) => {
+    html += `<tr><td class="rn">${ri + 1}</td>${r.map(v => v === null ? '<td class="null">NULL</td>' : `<td class="${isN(v) ? 'num' : ''}" title="${h(String(v).slice(0, 2000))}">${h(String(v).slice(0, 500))}</td>`).join('')}</tr>`;
+  });
+  html += '</tbody></table>';
+  if (rows.length > max) html += `<div class="msgs"><div class="msg warn">僅顯示前 ${max} 筆（共 ${rows.length} 筆），完整資料請使用「匯出 CSV」。</div></div>`;
+  return html;
+}
+function bindSort(host, cols, rows, rerender) {
+  let state = { i: -1, d: 1 };
+  host.addEventListener('click', (e) => {
+    const th = e.target.closest('th[data-i]'); if (!th) return;
+    const i = +th.dataset.i; state = { i, d: state.i === i ? -state.d : 1 };
+    const sorted = rows.slice().sort((a, b) => MiniSQL.cmpVals(a[i], b[i]) * state.d);
+    rerender(sorted, state);
+  });
+}
+
+/* ---------- App 狀態 ---------- */
+const App = {
+  ws: null, engine: null, workspaces: [], settings: { cdn: 'jsdelivr', cdnAuto: true, sqljsVer: '1.10.3', theme: 'light', fontSize: 14, maxRows: 1000, upper: true, sideOpen: true, sideW: 260, edHeight: 300 },
+  editorText: '', lastRun: null, sqliteVersion: null,
+  async init() {
+    await Store.open();
+    const s = await Store.getSetting('prefs'); if (s) Object.assign(this.settings, s);
+    this.applyPrefs();
+    const lib = await Store.getSetting('sqljs');
+    if (lib) { try { this.sqliteVersion = await loadSqlJs(lib.js, new Uint8Array(lib.wasm)); } catch (e) { console.warn(e); toast('SQLite 引擎載入失敗：' + e.message, true); } }
+    else if (this.settings.cdnAuto !== false && navigator.onLine !== false) {
+      try { await installSqlJsFromCdn(this.settings.cdn || 'jsdelivr', this.settings.sqljsVer || SQLJS_VERSION); toast('已從 CDN 載入 SQLite ' + this.sqliteVersion + '，並快取於瀏覽器供後續使用'); }
+      catch (e) { console.warn(e); }
+    }
+    this.workspaces = (await Store.all('workspaces')).sort((a, b) => a.created - b.created);
+    if (!this.workspaces.length) { const ws = await this.createWorkspace('範例工作區', 'mini', true); this.workspaces = [ws]; }
+    const lastId = await Store.getSetting('lastWs');
+    await this.openWorkspace(this.workspaces.find(w => w.id === lastId) ? lastId : this.workspaces[0].id, true);
+    window.addEventListener('hashchange', () => Router.go());
+    window.addEventListener('beforeunload', (e) => { if (this.dirty) { this.saveNow(); e.preventDefault(); e.returnValue = ''; } });
+    Router.go();
+  },
+  applyPrefs() {
+    this.settings.theme = window.SQLSpaToolsTheme.getTheme();
+    document.documentElement.dataset.theme = this.settings.theme === 'dark' ? 'dark' : 'light';
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      toggle.textContent = isDark ? '☀️ 淺色模式' : '🌙 深色模式';
+      toggle.title = isDark ? '切換至淺色模式' : '切換至深色模式';
+    }
+    document.documentElement.style.setProperty('--fs', this.settings.fontSize + 'px');
+  },
+  savePrefs() { this.settings.theme = window.SQLSpaToolsTheme.getTheme(); this.applyPrefs(); return Store.setSetting('prefs', this.settings); },
+  async createWorkspace(name, engine, sample) {
+    const ws = { id: uid(), name, engine, data: null, created: Date.now(), updated: Date.now() };
+    const e = engine === 'sqlite' ? new SqliteEngine() : new MiniEngine();
+    if (sample) e.exec(SAMPLE_SQL);
+    ws.data = engine === 'sqlite' ? e.export().buffer : e.export();
+    await Store.put('workspaces', ws);
+    await Store.setSetting('editor:' + ws.id, sample ? SAMPLE_QUERY : '-- 在這裡輸入 SQL，Ctrl+Enter 執行\n');
+    return ws;
+  },
+  async openWorkspace(id, silent) {
+    if (this.dirty) await this.saveNow();
+    // 先把目前工作區的編輯內容寫回去，再切換；否則 debounce 會用新的 ws id 寫入舊內容。
+    if (this.ws && this.ws.id !== id) {
+      this.saveEditor.cancel();
+      if (this.editorText != null) await Store.setSetting('editor:' + this.ws.id, this.editorText);
+    }
+    const ws = await Store.get('workspaces', id);
+    const eng = makeEngine(ws);
+    if (!eng) { toast('這個工作區需要 SQLite 引擎，請先到「設定」載入 sql.js', true); if (!this.engine) { this.ws = ws; this.engine = new MiniEngine(); } renderHeader(); return; }
+    this.ws = ws; this.engine = eng; this.dirty = false; this.lastRun = null;
+    this.editorText = await Store.getSetting('editor:' + id, '');
+    await Store.setSetting('lastWs', id);
+    renderHeader();
+    if (!silent) { toast('已切換到：' + ws.name); Router.go(); }
+  },
+  markDirty() { this.dirty = true; renderHeader(); this.saveSoon(); },
+  saveSoon: debounce(() => App.saveNow(), 1500),
+  async saveNow() {
+    if (!this.ws || !this.dirty) return;
+    const d = this.engine.export(); this.ws.data = this.engine.kind === 'sqlite' ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d;
+    this.ws.updated = Date.now(); this.dirty = false;
+    await Store.put('workspaces', this.ws); renderHeader();
+  },
+  saveEditor: debounce((text, wsId) => Store.setSetting('editor:' + (wsId || App.ws.id), text), 600),
+  async run(sql, source = 'editor') {
+    if (!sql.trim()) { toast('沒有可執行的 SQL'); return null; }
+    const t0 = performance.now();
+    const r = this.engine.exec(sql); r.ms = performance.now() - t0; r.hints = dialectHints(sql);
+    if (r.results.some(x => !x.columns) || /\b(INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE)\b/i.test(sql)) this.markDirty();
+    const rows = r.results.filter(x => x.columns).reduce((a, x) => a + x.values.length, 0);
+    await Store.put('history', { id: uid(), wsId: this.ws.id, wsName: this.ws.name, sql: sql.trim(), ok: !r.error, error: r.error || null, ms: r.ms, rows, stmts: r.results.length, at: Date.now(), source });
+    pruneHistory();
+    return r;
+  },
+};
+const pruneHistory = debounce(async () => {
+  const all = (await Store.all('history')).sort((a, b) => b.at - a.at);
+  for (const x of all.slice(1000)) await Store.del('history', x.id);
+}, 3000);
+
+function renderHeader() {
+  const sel = $('#wsSel'); if (!sel) return;
+  sel.innerHTML = App.workspaces.map(w => `<option value="${w.id}" ${App.ws && w.id === App.ws.id ? 'selected' : ''}>${h(w.name)}</option>`).join('');
+  const eng = App.engine ? App.engine.kind : 'mini';
+  $('#engBadge').className = 'badge ' + (eng === 'sqlite' ? 'ok' : '');
+  $('#engBadge').textContent = eng === 'sqlite' ? `SQLite ${App.sqliteVersion || ''}` : '內建引擎';
+  $('#engBadge').title = eng === 'sqlite' ? '使用 sql.js（真正的 SQLite）' : '內建純 JavaScript SQL 引擎（SQLite 方言子集）';
+  $('#saveBadge').className = 'badge ' + (App.dirty ? 'warn' : '');
+  $('#saveBadge').textContent = App.dirty ? '● 未儲存' : '✓ 已儲存';
+}
+
+/* ---------- 路由 ---------- */
+const ROUTES = [
+  ['editor', '⌨', '編輯器'], ['schema', '▦', '結構'], ['import', '⇪', '匯入'], ['snippets', '✂', '片段'],
+  ['history', '⟲', '歷史'], ['tests', '✔', '測試'], ['settings', '⚙', '設定'],
+];
+const Router = {
+  cur: null,
+  go() {
+    const r = (location.hash.replace(/^#\/?/, '').split('?')[0]) || 'editor';
+    const name = ROUTES.some(x => x[0] === r) ? r : 'editor';
+    this.cur = name;
+    $$('nav a').forEach(a => a.classList.toggle('active', a.dataset.r === name));
+    const main = $('main'); main.innerHTML = ''; main.scrollTop = 0;
+    Views[name](main);
+  },
+  nav(r) { if (location.hash === '#/' + r) this.go(); else location.hash = '#/' + r; },
+};
+
+/* ======================= Views ======================= */
+const Views = {};
+
+/* ---------- 編輯器 ---------- */
+Views.editor = (main) => {
+  main.style.overflow = 'hidden';
+  main.innerHTML = `<div class="ed-page ${App.settings.sideOpen ? '' : 'noside'}" style="--sideW:${App.settings.sideW || 260}px">
+    <aside class="side" id="sideTree"></aside><div class="vsplit" id="vsplit" title="拖曳調整寬度，雙擊還原"></div>
+    <section class="work">
+      <div class="toolbar">
+        <button class="btn pri" id="bRun" title="Ctrl+Enter / F5">▶ 執行</button>
+        <button class="btn" id="bRunCur" title="Ctrl+Shift+Enter">▷ 執行游標所在敘述</button>
+        <button class="btn" id="bExplain">執行計畫</button>
+        <button class="btn" id="bFmt" title="Ctrl+Shift+F">格式化</button>
+        <button class="btn" id="bCase">大小寫</button>
+        <span style="width:1px;height:22px;background:var(--theme-border)"></span>
+        <button class="btn" id="bSnip">存為片段</button>
+        <button class="btn" id="bTest">存為測試案例</button>
+        <button class="btn" id="bOpen">開啟 .sql</button>
+        <button class="btn" id="bSaveSql">下載 .sql</button>
+        <span class="sp" style="flex:1"></span>
+        <button class="btn sm" id="bSide">${App.settings.sideOpen ? '◀ 收合結構' : '▶ 顯示結構'}</button>
+      </div>
+      <div class="ed-wrap" id="edWrap" style="height:${App.settings.edHeight}px"></div>
+      <div class="splitter" id="split"></div>
+      <div class="results" id="res"><div class="empty">執行結果會顯示在這裡<br><span class="small">快捷鍵：<kbd>Ctrl</kbd>+<kbd>Enter</kbd> 執行（有選取時只執行選取） · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> 執行游標所在敘述 · <kbd>Ctrl</kbd>+<kbd>/</kbd> 註解</span></div></div>
+    </section></div>`;
+  const ed = CodeEditor($('#edWrap'), {
+    value: App.editorText,
+    onChange: (v) => { App.editorText = v; App.saveEditor(v, App.ws.id); },
+    onRun: () => runMain(), onRunCurrent: () => runCurrent(), onFormat: () => doFormat(),
+  });
+  const runMain = async () => { const sql = ed.selection().trim() ? ed.selection() : ed.get(); const r = await App.run(sql); if (r) { App.lastRun = r; showResults(r); renderTree(); } };
+  const runCurrent = async () => { const sql = statementAt(ed.get(), ed.cursor()); const r = await App.run(sql); if (r) { App.lastRun = r; showResults(r); renderTree(); } };
+  const doFormat = () => {
+    const sel = ed.selection();
+    if (sel.trim()) ed.insert(formatSQL(sel, App.settings.upper).trimEnd()); else ed.set(formatSQL(ed.get(), App.settings.upper));
+  };
+  $('#bRun').onclick = runMain; $('#bRunCur').onclick = runCurrent; $('#bFmt').onclick = doFormat;
+  $('#bCase').onclick = () => { App.settings.upper = !App.settings.upper; App.savePrefs(); doFormat(); toast(App.settings.upper ? '關鍵字：大寫' : '關鍵字：小寫'); };
+  $('#bExplain').onclick = () => {
+    const sql = ed.selection().trim() || statementAt(ed.get(), ed.cursor());
+    const r = App.engine.explain(sql);
+    const res = $('#res');
+    if (r.error) { res.innerHTML = `<div class="msgs"><div class="msg err">${h(r.error)}</div></div>`; return; }
+    res.innerHTML = `<div class="tabs"><div class="tab active">執行計畫</div></div><div class="tabbody"><div class="resbar"><code>${h(sql.trim().slice(0, 160))}</code></div>${renderTable(r.columns, r.values)}</div>`;
+  };
+  $('#bSnip').onclick = () => editSnippet({ sql: ed.selection().trim() || ed.get().trim() });
+  $('#bTest').onclick = async () => {
+    const sql = ed.selection().trim() || statementAt(ed.get(), ed.cursor()).trim();
+    const name = await ask('存為測試案例', '測試案例名稱', '新測試案例'); if (!name) return;
+    const tc = newTestCase({ name, querySql: sql });
+    const r = runTestCase(tc); if (r.actual) tc.expected = r.actual;
+    await Store.put('testcases', tc); toast('已建立測試案例，並以目前結果作為預期值');
+    location.hash = '#/tests?id=' + tc.id;
+  };
+  $('#bOpen').onclick = async () => { const f = await pickFile('.sql,.txt'); if (!f) return; ed.set(await f.text()); toast('已載入 ' + f.name); };
+  $('#bSaveSql').onclick = () => download((App.ws.name || 'query') + '.sql', ed.get(), 'text/plain;charset=utf-8');
+  $('#bSide').onclick = () => { App.settings.sideOpen = !App.settings.sideOpen; App.savePrefs(); Router.go(); };
+  // 左側資料表欄寬拖曳
+  $('#vsplit').addEventListener('mousedown', (e) => {
+    const page = $('.ed-page'), sx = e.clientX, sw = $('#sideTree').offsetWidth, bar = e.currentTarget; e.preventDefault(); bar.classList.add('drag');
+    const mv = (ev) => { const w = Math.max(160, Math.min(Math.floor(page.clientWidth * 0.6), sw + ev.clientX - sx)); page.style.setProperty('--sideW', w + 'px'); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); bar.classList.remove('drag'); App.settings.sideW = $('#sideTree').offsetWidth; App.savePrefs(); };
+    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+  });
+  $('#vsplit').addEventListener('dblclick', () => { App.settings.sideW = 260; $('.ed-page').style.setProperty('--sideW', '260px'); App.savePrefs(); });
+  // splitter
+  $('#split').addEventListener('mousedown', (e) => {
+    const startY = e.clientY, startH = $('#edWrap').offsetHeight; e.preventDefault();
+    const mv = (ev) => { $('#edWrap').style.height = Math.max(80, Math.min(window.innerHeight - 200, startH + ev.clientY - startY)) + 'px'; };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); App.settings.edHeight = $('#edWrap').offsetHeight; App.savePrefs(); };
+    document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+  });
+  const closeMenu = () => { const m = $('#treeMenu'); if (m) m.remove(); $$('.tree .t.sel').forEach(x => x.classList.remove('sel')); };
+  const getCols = (name, s) => {
+    const t = s.tables.find(x => x.name === name); if (t) return t.columns.map(c => c.name);
+    const r = App.engine.exec(`SELECT * FROM ${qid(name)} LIMIT 0;`); const x = r.results && r.results[0];
+    return x && x.columns ? x.columns : [];
+  };
+  const showMenu = (el, x, y, s) => {
+    closeMenu(); el.classList.add('sel');
+    const name = el.dataset.t, isView = el.dataset.k === 'v', q = qid(name);
+    const items = [
+      ['✎', '插入名稱到編輯區', () => ed.insert(q)],
+      ['▤', '插入 SELECT * FROM …', () => ed.insert(`SELECT * FROM ${q};`)],
+      ['☰', '插入 SELECT（列出全部欄位）', () => { const cols = getCols(name, s); ed.insert(`SELECT ${cols.length ? cols.map(qid).join(',\n       ') : '*'}\nFROM ${q};`); }],
+      ['∑', '插入 SELECT COUNT(*)', () => ed.insert(`SELECT COUNT(*) FROM ${q};`)],
+      ...(isView ? [] : [['＋', '插入 INSERT 範本', () => { const t = s.tables.find(z => z.name === name); ed.insert(`INSERT INTO ${q} (${t.columns.map(c => qid(c.name)).join(', ')})\nVALUES (${t.columns.map(c => /INT|REAL|NUM|DEC|FLO|DOU/.test(c.type) ? '0' : "''").join(', ')});`); }]]),
+      null,
+      ['❐', '複製名稱到剪貼簿', async () => { try { await navigator.clipboard.writeText(name); toast('已複製：' + name); } catch (e) { toast('複製失敗：' + e.message, true); } }],
+      ...(isView ? [] : [['▾', el.nextElementSibling && !el.nextElementSibling.hidden ? '收合欄位' : '展開欄位', () => { const u = el.nextElementSibling; if (u) { u.hidden = !u.hidden; $('.car', el).textContent = u.hidden ? '▸' : '▾'; } }]]),
+      ['▶', '查詢前 100 筆', async () => { const r = await App.run(`SELECT * FROM ${q} LIMIT 100;`); App.lastRun = r; showResults(r); }, '雙擊'],
+    ];
+    const m = document.createElement('div'); m.className = 'ctxmenu'; m.id = 'treeMenu';
+    m.innerHTML = `<div class="mh" title="${h(name)}">${isView ? '◫ 檢視' : '▦ 資料表'}：${h(name)}</div>` + items.map((it, i) => it ? `<div class="mi" data-i="${i}"><i>${it[0]}</i>${h(it[1])}${it[3] ? `<kbd>${it[3]}</kbd>` : ''}</div>` : '<div class="sep"></div>').join('');
+    document.body.appendChild(m);
+    const w = m.offsetWidth, hh = m.offsetHeight;
+    m.style.left = Math.max(4, Math.min(x, innerWidth - w - 6)) + 'px';
+    m.style.top = Math.max(4, Math.min(y, innerHeight - hh - 6)) + 'px';
+    $$('.mi', m).forEach(d => d.onclick = (e) => { e.stopPropagation(); const it = items[+d.dataset.i]; closeMenu(); it[2](); });
+  };
+  if (!window.__treeMenuBound) {
+    window.__treeMenuBound = true;
+    document.addEventListener('mousedown', e => { const m = $('#treeMenu'); if (m && !m.contains(e.target) && !e.target.closest('.tree .t')) { m.remove(); $$('.tree .t.sel').forEach(x => x.classList.remove('sel')); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = $('#treeMenu'); if (m) { m.remove(); $$('.tree .t.sel').forEach(x => x.classList.remove('sel')); } } });
+    window.addEventListener('hashchange', () => { const m = $('#treeMenu'); if (m) m.remove(); });
+    window.addEventListener('resize', () => { const m = $('#treeMenu'); if (m) m.remove(); });
+  }
+  const renderTree = () => {
+    const s = App.engine.schema(); const side = $('#sideTree'); if (!side) return;
+    side.innerHTML = `<h4>資料表 <span>${s.tables.length}</span></h4><ul class="tree">${s.tables.map(t => `<li><div class="t" data-k="t" data-t="${h(t.name)}" title="${h(t.name)}（${t.rows} 列）"><span class="car" title="展開／收合欄位">▸</span><span class="ic">▦</span><span class="nm">${h(t.name)}</span><span class="cnt">${t.rows}</span></div><ul hidden>${t.columns.map(c => `<li data-c="${h(c.name)}" title="${h(c.name)} ${h(c.type)}">${c.pk ? '<b>PK</b> ' : ''}${h(c.name)} <span class="muted">${h(c.type.toLowerCase())}</span></li>`).join('')}</ul></li>`).join('') || '<li class="muted small" style="padding:4px 8px">尚無資料表</li>'}</ul>
+      ${s.views.length ? `<h4>檢視 <span>${s.views.length}</span></h4><ul class="tree">${s.views.map(v => `<li><div class="t" data-k="v" data-t="${h(v.name)}" title="${h(v.name)}"><span class="car"></span><span class="ic">◫</span><span class="nm">${h(v.name)}</span></div></li>`).join('')}</ul>` : ''}
+      <div class="small muted" style="padding:6px 12px">單擊名稱開啟選單（插入到編輯區等）<br>▸ 展開欄位 · 雙擊查詢前 100 筆<br>點欄位插入名稱</div>`;
+    $$('.t', side).forEach(el => {
+      let timer = null;
+      const car = $('.car', el);
+      car.onclick = (e) => { e.stopPropagation(); const u = el.nextElementSibling; if (u) { u.hidden = !u.hidden; car.textContent = u.hidden ? '▸' : '▾'; } };
+      car.ondblclick = (e) => e.stopPropagation();
+      el.onclick = (e) => { clearTimeout(timer); const x = e.clientX, y = e.clientY; timer = setTimeout(() => showMenu(el, x + 4, y + 4, s), 230); };
+      el.oncontextmenu = (e) => { e.preventDefault(); clearTimeout(timer); showMenu(el, e.clientX, e.clientY, s); };
+      el.ondblclick = async () => { clearTimeout(timer); closeMenu(); const sql = `SELECT * FROM ${qid(el.dataset.t)} LIMIT 100;`; const r = await App.run(sql); App.lastRun = r; showResults(r); };
+    });
+    $$('li[data-c]', side).forEach(el => { el.onclick = () => ed.insert(qid(el.dataset.c)); });
+  };
+  renderTree();
+  if (App.lastRun) showResults(App.lastRun);
+  ed.focus();
+};
+
+function showResults(r) {
+  const res = $('#res'); if (!res) return;
+  const sets = r.results.filter(x => x.columns);
+  const tabs = sets.map((x, i) => ({ key: 'r' + i, label: `結果 ${i + 1}`, n: x.values.length, x }));
+  const msgs = r.results.length - sets.length;
+  tabs.push({ key: 'msg', label: '訊息', n: r.error ? '!' : (r.hints.length ? r.hints.length + '⚠' : ''), err: !!r.error });
+  let active = r.error && !sets.length ? 'msg' : (tabs[0].key);
+  const draw = () => {
+    res.innerHTML = `<div class="tabs">${tabs.map(t => `<div class="tab ${t.key === active ? 'active' : ''} ${t.err ? 'err' : ''}" data-k="${t.key}">${h(t.label)}<span class="n">${t.n !== undefined && t.n !== '' ? t.n : ''}</span></div>`).join('')}
+      <div style="margin-left:auto;font-size:12px;color:var(--theme-muted);align-self:center;padding:0 8px">${r.results.length} 個敘述 · ${fmtMs(r.ms)}${msgs ? ` · ${msgs} 個非查詢敘述` : ''}</div></div><div class="tabbody" id="tb"></div>`;
+    $$('.tab', res).forEach(t => t.onclick = () => { active = t.dataset.k; draw(); });
+    const tb = $('#tb'); const t = tabs.find(x => x.key === active);
+    if (t.key === 'msg') {
+      tb.innerHTML = `<div class="msgs">${r.results.map(x => `<div class="msg ok">✓ ${h(x.message || `回傳 ${x.values.length} 筆`)} <code>· ${fmtMs(x.ms)}</code><br><code>${h(x.sql.slice(0, 300))}</code></div>`).join('')}
+        ${r.error ? `<div class="msg err">✗ ${h(r.error)}${r.failedSql ? `<br><code>${h(r.failedSql.slice(0, 300))}</code>` : ''}</div>` : ''}
+        ${r.hints.map(m => `<div class="msg warn">⚠ 方言提示：${h(m)}</div>`).join('')}</div>`;
+    } else {
+      const x = t.x; let rows = x.values;
+      const paint = (rs) => {
+        tb.innerHTML = `<div class="resbar"><span>${x.values.length} 筆 · ${x.columns.length} 欄 · ${fmtMs(x.ms)}</span><span style="flex:1"></span>
+          <button class="btn sm" data-a="csv">匯出 CSV</button><button class="btn sm" data-a="copy">複製（Tab 分隔）</button><button class="btn sm" data-a="ins">複製為 INSERT</button></div>${renderTable(x.columns, rs)}`;
+        $('[data-a=csv]', tb).onclick = () => download(`result_${Date.now()}.csv`, toCSV(x.columns, rs), 'text/csv;charset=utf-8');
+        $('[data-a=copy]', tb).onclick = async () => { await navigator.clipboard.writeText([x.columns, ...rs].map(r => r.map(v => v === null ? '' : String(v).replace(/[\t\n]/g, ' ')).join('\t')).join('\n')); toast('已複製，可直接貼到 Excel'); };
+        $('[data-a=ins]', tb).onclick = async () => { const tn = await ask('複製為 INSERT', '目標資料表名稱', 'my_table'); if (!tn) return; await navigator.clipboard.writeText(rs.map(r => `INSERT INTO ${qid(tn)} (${x.columns.map(qid).join(', ')}) VALUES (${r.map(sqlLit).join(', ')});`).join('\n')); toast(`已複製 ${rs.length} 筆 INSERT`); };
+      };
+      paint(rows);
+      bindSort(tb, x.columns, x.values, (sorted) => { rows = sorted; paint(rows); });
+    }
+  };
+  draw();
+}
+
+/* ---------- 結構 ---------- */
+Views.schema = (main) => {
+  main.style.overflow = 'auto';
+  const s = App.engine.schema();
+  main.innerHTML = `<div class="page"><h2>資料庫結構</h2><div class="sub">工作區「${h(App.ws.name)}」共 ${s.tables.length} 個資料表、${s.views.length} 個檢視</div>
+    <div class="toolbar" style="margin-bottom:14px"><button class="btn" id="sDump">下載 SQL Dump</button><button class="btn" id="sDdl">複製全部 DDL</button></div>
+    <div id="sList"></div><div id="sPrev"></div></div>`;
+  $('#sList').innerHTML = s.tables.map(t => `<div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">▦ ${h(t.name)} <span class="badge">${t.rows} 列</span></h3>
+      <div class="toolbar"><button class="btn sm" data-p="${h(t.name)}">預覽</button><button class="btn sm" data-sel="${h(t.name)}">產生 SELECT</button><button class="btn sm" data-ins="${h(t.name)}">產生 INSERT 範本</button><button class="btn sm" data-csv="${h(t.name)}">匯出 CSV</button><button class="btn sm danger" data-drop="${h(t.name)}">刪除</button></div></div>
+      <table class="plain" style="margin-top:8px"><tr><th>欄位</th><th>型別</th><th>主鍵</th><th>NOT NULL</th></tr>${t.columns.map(c => `<tr><td><code>${h(c.name)}</code></td><td>${h(c.type) || '<span class="muted">（無）</span>'}</td><td>${c.pk ? 'PK' : ''}</td><td>${c.notnull ? '✓' : ''}</td></tr>`).join('')}</table>
+      ${t.indexes.length ? `<div class="small muted" style="margin-top:6px">索引：${t.indexes.map(h).join('、')}</div>` : ''}</div>`).join('')
+    + s.views.map(v => `<div class="card"><h3>◫ 檢視 ${h(v.name)}</h3><pre style="font-family:var(--theme-font-mono);font-size:12px;white-space:pre-wrap;margin:0">${h(v.sql)}</pre></div>`).join('')
+    || '<div class="empty">尚無資料表，可到「匯入」載入 CSV，或在編輯器執行 CREATE TABLE。</div>';
+  const toEditor = (sql) => { App.editorText = (App.editorText.trimEnd() + '\n\n' + sql + '\n').trimStart(); App.saveEditor(App.editorText, App.ws.id); Router.nav('editor'); };
+  $$('[data-p]').forEach(b => b.onclick = () => {
+    const r = App.engine.exec(`SELECT * FROM ${qid(b.dataset.p)} LIMIT 100`); const x = r.results[0];
+    $('#sPrev').innerHTML = x ? `<div class="card"><h3>預覽：${h(b.dataset.p)}（前 100 筆）</h3><div class="box">${renderTable(x.columns, x.values)}</div></div>` : `<div class="msg err">${h(r.error)}</div>`;
+    $('#sPrev').scrollIntoView({ behavior: 'smooth' });
+  });
+  $$('[data-sel]').forEach(b => b.onclick = () => { const t = s.tables.find(x => x.name === b.dataset.sel); toEditor(`SELECT ${t.columns.map(c => qid(c.name)).join(', ')}\nFROM ${qid(t.name)}\nLIMIT 100;`); });
+  $$('[data-ins]').forEach(b => b.onclick = () => { const t = s.tables.find(x => x.name === b.dataset.ins); toEditor(`INSERT INTO ${qid(t.name)} (${t.columns.map(c => qid(c.name)).join(', ')})\nVALUES (${t.columns.map(c => /INT|REAL|NUM|DEC|FLO|DOU/.test(c.type) ? '0' : "''").join(', ')});`); });
+  $$('[data-csv]').forEach(b => b.onclick = () => { const r = App.engine.exec(`SELECT * FROM ${qid(b.dataset.csv)}`).results[0]; download(b.dataset.csv + '.csv', toCSV(r.columns, r.values), 'text/csv;charset=utf-8'); });
+  $$('[data-drop]').forEach(b => b.onclick = async () => { if (!confirm(`確定刪除資料表「${b.dataset.drop}」？`)) return; const r = await App.run(`DROP TABLE ${qid(b.dataset.drop)};`, 'schema'); if (r.error) toast(r.error, true); else { toast('已刪除'); Router.go(); } });
+  $('#sDump').onclick = () => download(App.ws.name + '_dump.sql', App.engine.dump(), 'text/plain;charset=utf-8');
+  $('#sDdl').onclick = async () => { await navigator.clipboard.writeText(App.engine.dump().split('\n').filter(l => !/^INSERT /.test(l)).join('\n')); toast('已複製 DDL'); };
+};
+
+/* ---------- 匯入 ---------- */
+Views.import = (main) => {
+  main.style.overflow = 'auto';
+  main.innerHTML = `<div class="page"><h2>匯入資料</h2><div class="sub">把 CSV / TSV 檔轉成資料表，或執行 .sql 腳本。Excel 檔請先「另存為 CSV」。<br>支援編碼：UTF-8（含／不含 BOM）、Big5／CP950、Big5-HKSCS、UTF-16 LE／BE、GB18030，預設自動偵測。</div>
+    <div class="drop" id="drop"><div style="font-size:30px">⇪</div><b>拖曳檔案到這裡</b>，或點擊選擇<div class="small">支援 .csv .tsv .txt .sql</div></div>
+    <div id="imp" style="margin-top:16px"></div></div>`;
+  const drop = $('#drop');
+  drop.onclick = async () => { const f = await pickFile('.csv,.tsv,.txt,.sql'); if (f) handle(f); };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) handle(f); };
+  async function handle(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.sql$/i.test(file.name)) {
+      const text = decodeText(buf, 'auto').text;
+      $('#imp').innerHTML = `<div class="card"><h3>SQL 腳本：${h(file.name)}</h3><div class="small muted">${fmtSize(buf.byteLength)} · 約 ${MiniSQL.splitStatements(text).length} 個敘述</div>
+        <pre style="font-family:var(--theme-font-mono);font-size:12px;max-height:240px;overflow:auto;background:var(--theme-surface-alt);padding:10px;border-radius:6px">${h(text.slice(0, 5000))}${text.length > 5000 ? '\n…' : ''}</pre>
+        <div class="toolbar"><button class="btn pri" id="runSql">在目前工作區執行</button><button class="btn" id="toEd">載入到編輯器</button></div><div id="sqlOut"></div></div>`;
+      $('#runSql').onclick = async () => { const r = await App.run(text, 'import'); $('#sqlOut').innerHTML = r.error ? `<div class="msg err">執行到第 ${r.results.length + 1} 個敘述時發生錯誤：${h(r.error)}</div>` : `<div class="msg ok">完成，共執行 ${r.results.length} 個敘述（${fmtMs(r.ms)}）</div>`; };
+      $('#toEd').onclick = () => { App.editorText = text; App.saveEditor(text, App.ws.id); Router.nav('editor'); };
+      return;
+    }
+    let enc = 'auto', delim = '', header = true, info;
+    const base = file.name.replace(/\.[^.]+$/, '').replace(/[^\w\u4e00-\u9fff]+/g, '_').replace(/^(\d)/, 't_$1') || 'imported';
+    let tableName = base, mode = 'create', types = null, parsed;
+    const decode = () => { info = decodeText(buf, enc); parsed = parseCSV(info.text, delim || undefined); };
+    const infer = (vals) => {
+      const v = vals.filter(x => x !== ''); if (!v.length) return 'TEXT';
+      if (v.every(x => /^[+-]?\d{1,15}$/.test(x) && !/^0\d/.test(x))) return 'INTEGER';
+      if (v.every(x => /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(x) && !/^0\d/.test(x))) return 'REAL';
+      return 'TEXT';
+    };
+    const draw = () => {
+      decode();
+      const rows = parsed.rows; const width = Math.max(...rows.slice(0, 50).map(r => r.length), 0);
+      const cols = header && rows[0] ? rows[0].map((c, i) => (c || '').trim() || `col${i + 1}`) : Array.from({ length: width }, (_, i) => `col${i + 1}`);
+      while (cols.length < width) cols.push(`col${cols.length + 1}`);
+      const seen = {}; cols.forEach((c, i) => { const k = c.toUpperCase(); if (seen[k]) cols[i] = c + '_' + (++seen[k]); else seen[k] = 1; });
+      const data = header ? rows.slice(1) : rows;
+      if (!types || types.length !== cols.length) types = cols.map((_, i) => infer(data.slice(0, 2000).map(r => (r[i] ?? '').trim())));
+      const exists = App.engine.schema().tables.some(t => t.name.toUpperCase() === tableName.toUpperCase());
+      $('#imp').innerHTML = `<div class="card"><h3>CSV：${h(file.name)} <span class="badge">${data.length} 筆 · ${cols.length} 欄</span></h3>
+        <div class="row" style="margin-bottom:10px">
+          <label>編碼 <select id="iEnc">${ENCODINGS.map(([v, l]) => `<option value="${v}">${h(l)}</option>`).join('')}</select></label>
+          <span class="badge ${info.bad ? 'bad' : 'ok'}" title="${info.bad ? '有無法解碼的字元，請改選其他編碼' : '解碼正常'}">${enc === 'auto' ? '偵測為' : '使用'}：${h(ENC_LABEL[info.enc] || info.enc)}${info.bom ? '（BOM）' : ''}${info.bad ? `，${info.bad} 個亂碼字元` : ''}</span>
+          <label>分隔符號 <select id="iDel"><option value="">自動（${parsed.delim === '\t' ? 'Tab' : h(parsed.delim)}）</option><option value=",">逗號 ,</option><option value="\t">Tab</option><option value=";">分號 ;</option><option value="|">直線 |</option></select></label>
+          <label class="chk"><input type="checkbox" id="iHdr" ${header ? 'checked' : ''}>第一列是欄位名稱</label>
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <label>資料表名稱 <input type="text" id="iName" value="${h(tableName)}"></label>
+          <label>模式 <select id="iMode"><option value="create">建立新表</option><option value="replace">取代（刪除後重建）</option><option value="append">附加到既有資料表</option></select></label>
+          ${exists ? '<span class="badge warn">資料表已存在</span>' : ''}
+        </div>
+        <div class="box" style="max-height:360px"><table class="dt"><thead><tr><th class="rn">#</th>${cols.map((c, i) => `<th style="cursor:default">${h(c)}<br><select data-ti="${i}" style="padding:1px 4px;font-size:11px;margin-top:3px">${['TEXT', 'INTEGER', 'REAL', 'NUMERIC'].map(t => `<option ${types[i] === t ? 'selected' : ''}>${t}</option>`).join('')}</select></th>`).join('')}</tr></thead>
+        <tbody>${data.slice(0, 50).map((r, ri) => `<tr><td class="rn">${ri + 1}</td>${cols.map((_, i) => `<td>${h(r[i] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+        <div class="small muted" style="margin:6px 0 10px">預覽前 50 筆；空字串會匯入為 NULL。${enc === 'auto' && info.alt ? `若預覽出現亂碼，請把編碼改成「${h(ENC_LABEL[info.alt])}」或其他選項。` : ''}</div>
+        <button class="btn pri" id="iGo">匯入 ${data.length} 筆</button> <span id="iMsg"></span></div>`;
+      $('#iEnc').value = enc; $('#iDel').value = delim; $('#iMode').value = mode;
+      $('#iEnc').onchange = e => { enc = e.target.value; types = null; draw(); };
+      $('#iDel').onchange = e => { delim = e.target.value; types = null; draw(); };
+      $('#iHdr').onchange = e => { header = e.target.checked; types = null; draw(); };
+      $('#iName').onchange = e => { tableName = e.target.value.trim() || base; draw(); };
+      $('#iMode').onchange = e => { mode = e.target.value; };
+      $$('[data-ti]').forEach(s => s.onchange = () => { types[+s.dataset.ti] = s.value; });
+      $('#iGo').onclick = async () => {
+        const tn = qid(tableName); let sql = '';
+        if (mode === 'replace') sql += `DROP TABLE IF EXISTS ${tn};\n`;
+        if (mode !== 'append') sql += `CREATE TABLE ${tn} (\n${cols.map((c, i) => `  ${qid(c)} ${types[i]}`).join(',\n')}\n);\n`;
+        const conv = (v, t) => { if (v === undefined || v === '') return 'NULL'; const s = v.trim(); if ((t === 'INTEGER' || t === 'REAL' || t === 'NUMERIC') && /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return s; return sqlLit(v); };
+        const B = 500;
+        for (let i = 0; i < data.length; i += B) sql += `INSERT INTO ${tn} (${cols.map(qid).join(', ')}) VALUES\n${data.slice(i, i + B).map(r => '(' + cols.map((_, j) => conv(r[j], types[j])).join(', ') + ')').join(',\n')};\n`;
+        $('#iMsg').textContent = '匯入中…';
+        await new Promise(r => setTimeout(r, 20));
+        const r = await App.run(sql, 'import');
+        if (r.error) $('#iMsg').innerHTML = `<span style="color:var(--theme-danger)">失敗：${h(r.error)}</span>`;
+        else { $('#iMsg').innerHTML = `<span style="color:var(--theme-success)">✓ 已匯入 ${data.length} 筆到 ${h(tableName)}（${fmtMs(r.ms)}）</span>`; toast('匯入完成'); }
+      };
+    };
+    draw();
+  }
+};
+
+/* ---------- 片段 ---------- */
+async function editSnippet(sn = {}) {
+  const body = document.createElement('div');
+  body.innerHTML = `<div class="field"><label>標題</label><input type="text" id="snT" style="width:100%" value="${h(sn.title || '')}"></div>
+    <div class="field"><label>標籤（以逗號分隔）</label><input type="text" id="snG" style="width:100%" value="${h((sn.tags || []).join(', '))}"></div>
+    <div class="field"><label>說明</label><input type="text" id="snD" style="width:100%" value="${h(sn.desc || '')}"></div>
+    <div class="field"><label>SQL</label><div id="snE"></div></div>`;
+  let ed;
+  modal(sn.id ? '編輯片段' : '新增片段', body, [
+    { label: '取消' },
+    { label: '儲存', cls: 'pri', onClick: async () => {
+      const title = $('#snT').value.trim(); if (!title) { toast('請輸入標題', true); return false; }
+      await Store.put('snippets', { id: sn.id || uid(), title, desc: $('#snD').value.trim(), tags: $('#snG').value.split(/[,，]/).map(s => s.trim()).filter(Boolean), sql: ed.get(), at: sn.at || Date.now(), updated: Date.now() });
+      toast('片段已儲存'); if (Router.cur === 'snippets') Router.go();
+    } },
+  ]);
+  ed = CodeEditor($('#snE'), { value: sn.sql || '', mini: true });
+  $('.code', body).style.height = '220px';
+}
+Views.snippets = async (main) => {
+  main.style.overflow = 'auto';
+  main.innerHTML = `<div class="page"><h2>常用片段</h2><div class="sub">保存常用 SQL，加上標籤方便搜尋，一鍵帶入編輯器。</div>
+    <div class="toolbar" style="margin-bottom:12px"><input type="search" id="q" placeholder="搜尋標題、SQL、標籤…" style="width:300px"><select id="tg"><option value="">全部標籤</option></select>
+    <button class="btn pri" id="add">＋ 新增片段</button><button class="btn" id="exp">匯出</button><button class="btn" id="impS">匯入</button></div><div id="list"></div></div>`;
+  const all = (await Store.all('snippets')).sort((a, b) => (b.updated || b.at) - (a.updated || a.at));
+  const tags = [...new Set(all.flatMap(s => s.tags || []))].sort();
+  $('#tg').innerHTML += tags.map(t => `<option>${h(t)}</option>`).join('');
+  const draw = () => {
+    const q = $('#q').value.toLowerCase(), tg = $('#tg').value;
+    const list = all.filter(s => (!tg || (s.tags || []).includes(tg)) && (!q || (s.title + ' ' + s.sql + ' ' + (s.tags || []).join(' ') + ' ' + (s.desc || '')).toLowerCase().includes(q)));
+    $('#list').innerHTML = list.map(s => `<div class="list-item"><div class="row"><b>${h(s.title)}</b>${(s.tags || []).map(t => `<span class="tag" data-tag="${h(t)}">${h(t)}</span>`).join('')}<span style="flex:1"></span>
+      <button class="btn sm pri" data-use="${s.id}">帶入編輯器</button><button class="btn sm" data-run="${s.id}">執行</button><button class="btn sm" data-edit="${s.id}">編輯</button><button class="btn sm danger" data-del="${s.id}">刪除</button></div>
+      ${s.desc ? `<div class="small muted">${h(s.desc)}</div>` : ''}<pre>${h(s.sql)}</pre></div>`).join('') || '<div class="empty">沒有片段。在編輯器按「存為片段」，或點「新增片段」。</div>';
+    const find = id => all.find(s => s.id === id);
+    $$('[data-use]').forEach(b => b.onclick = () => { App.editorText = (App.editorText.trimEnd() + '\n\n' + find(b.dataset.use).sql).trimStart(); App.saveEditor(App.editorText, App.ws.id); Router.nav('editor'); });
+    $$('[data-run]').forEach(b => b.onclick = async () => { const r = await App.run(find(b.dataset.run).sql, 'snippet'); App.lastRun = r; Router.nav('editor'); });
+    $$('[data-edit]').forEach(b => b.onclick = () => editSnippet(find(b.dataset.edit)));
+    $$('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('刪除此片段？')) return; await Store.del('snippets', b.dataset.del); Router.go(); });
+    $$('[data-tag]').forEach(b => b.onclick = () => { $('#tg').value = b.dataset.tag; draw(); });
+  };
+  $('#q').oninput = draw; $('#tg').onchange = draw; document.getElementById('add').onclick = () => editSnippet();
+  $('#exp').onclick = () => download('snippets.json', JSON.stringify(all, null, 2), 'application/json');
+  $('#impS').onclick = async () => { const f = await pickFile('.json'); if (!f) return; try { const arr = JSON.parse(await f.text()); for (const s of arr) if (s.sql && s.title) await Store.put('snippets', { ...s, id: s.id || uid() }); toast(`已匯入 ${arr.length} 個片段`); Router.go(); } catch (e) { toast('匯入失敗：' + e.message, true); } };
+  draw();
+};
+
+/* ---------- 歷史 ---------- */
+Views.history = async (main) => {
+  main.style.overflow = 'auto';
+  main.innerHTML = `<div class="page"><h2>查詢歷史</h2><div class="sub">自動記錄每次執行（保留最近 1000 筆）。</div>
+    <div class="toolbar" style="margin-bottom:12px"><input type="search" id="q" placeholder="搜尋 SQL…" style="width:280px">
+    <select id="st"><option value="">全部狀態</option><option value="ok">成功</option><option value="err">失敗</option></select>
+    <label class="chk"><input type="checkbox" id="cur" checked>只看目前工作區</label><span style="flex:1"></span><button class="btn danger" id="clr">清除歷史</button></div><div id="list"></div></div>`;
+  const all = (await Store.all('history')).sort((a, b) => b.at - a.at);
+  const draw = () => {
+    const q = $('#q').value.toLowerCase(), st = $('#st').value, cur = $('#cur').checked;
+    const list = all.filter(x => (!cur || x.wsId === App.ws.id) && (!st || (st === 'ok') === x.ok) && (!q || x.sql.toLowerCase().includes(q))).slice(0, 300);
+    $('#list').innerHTML = list.map(x => `<div class="list-item"><div class="row small"><span class="status ${x.ok ? 'pass' : 'fail'}">${x.ok ? '成功' : '失敗'}</span><span class="muted">${fmtTime(x.at)} · ${fmtMs(x.ms)} · ${x.rows} 筆 · ${h(x.wsName || '')}</span><span style="flex:1"></span>
+      <button class="btn sm" data-load="${x.id}">載入</button><button class="btn sm" data-re="${x.id}">重新執行</button><button class="btn sm" data-snip="${x.id}">存為片段</button></div>
+      ${x.error ? `<div class="small" style="color:var(--theme-danger);margin-top:4px">${h(x.error)}</div>` : ''}<pre>${h(x.sql.slice(0, 1500))}</pre></div>`).join('') || '<div class="empty">沒有紀錄</div>';
+    const find = id => all.find(x => x.id === id);
+    $$('[data-load]').forEach(b => b.onclick = () => { App.editorText = find(b.dataset.load).sql; App.saveEditor(App.editorText, App.ws.id); Router.nav('editor'); });
+    $$('[data-re]').forEach(b => b.onclick = async () => { const r = await App.run(find(b.dataset.re).sql, 'history'); App.lastRun = r; Router.nav('editor'); });
+    $$('[data-snip]').forEach(b => b.onclick = () => editSnippet({ sql: find(b.dataset.snip).sql }));
+  };
+  $('#q').oninput = draw; $('#st').onchange = draw; $('#cur').onchange = draw;
+  $('#clr').onclick = async () => { if (!confirm('確定清除全部查詢歷史？')) return; await Store.clear('history'); Router.go(); };
+  draw();
+};
+
+/* ---------- 測試 ---------- */
+function newTestCase(o = {}) {
+  return { id: uid(), suite: '預設套件', name: '新測試案例', base: 'workspace', setupSql: '', querySql: '', expected: null,
+    options: { ignoreOrder: false, ignoreCase: false, trim: true, tol: 0, checkCols: true }, created: Date.now(), ...o };
+}
+function runTestCase(tc) {
+  const t0 = performance.now();
+  const eng = tc.base === 'empty' ? (App.engine.kind === 'sqlite' ? new SqliteEngine() : new MiniEngine()) : App.engine.clone();
+  if (tc.setupSql && tc.setupSql.trim()) { const s = eng.exec(tc.setupSql); if (s.error) return { status: 'error', msg: '前置 SQL 錯誤：' + s.error, ms: performance.now() - t0 }; }
+  if (!tc.querySql.trim()) return { status: 'error', msg: '尚未填寫待測 SQL', ms: 0 };
+  const r = eng.exec(tc.querySql);
+  if (r.error) return { status: 'error', msg: '待測 SQL 錯誤：' + r.error, ms: performance.now() - t0 };
+  const sets = r.results.filter(x => x.columns); const last = sets[sets.length - 1];
+  const actual = last ? { columns: last.columns, values: last.values } : { columns: ['changes'], values: [[r.results.reduce((a, x) => a + (x.changes || 0), 0)]] };
+  const ms = performance.now() - t0;
+  if (!tc.expected) return { status: 'none', msg: '尚未設定預期結果', actual, ms };
+  const d = compareResults(tc.expected, actual, tc.options);
+  return { status: d.pass ? 'pass' : 'fail', msg: d.summary, diff: d, actual, ms };
+}
+function compareResults(exp, act, o) {
+  const norm = (v) => { if (v === null || v === undefined) return null; if (typeof v === 'string') { let s = v; if (o.trim) s = s.trim(); if (o.ignoreCase) s = s.toLowerCase(); return s; } return v; };
+  const eq = (a, b) => {
+    a = norm(a); b = norm(b); if (a === null || b === null) return a === b;
+    const na = typeof a === 'number' || /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(a), nb = typeof b === 'number' || /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(b);
+    if (na && nb) return Math.abs(Number(a) - Number(b)) <= (Number(o.tol) || 0) + 1e-12;
+    return String(a) === String(b);
+  };
+  const rowEq = (a, b) => a.length === b.length && a.every((v, i) => eq(v, b[i]));
+  const colsOk = !o.checkCols || (exp.columns.length === act.columns.length && exp.columns.every((c, i) => String(c).toLowerCase() === String(act.columns[i]).toLowerCase()));
+  const rows = []; let missing = 0, extra = 0, changed = 0;
+  if (o.ignoreOrder) {
+    const used = new Array(act.values.length).fill(false);
+    exp.values.forEach(er => { const j = act.values.findIndex((ar, k) => !used[k] && rowEq(er, ar)); if (j >= 0) { used[j] = true; rows.push({ t: 'same', r: act.values[j] }); } else { rows.push({ t: 'missing', r: er }); missing++; } });
+    act.values.forEach((ar, k) => { if (!used[k]) { rows.push({ t: 'extra', r: ar }); extra++; } });
+  } else {
+    const n = Math.max(exp.values.length, act.values.length);
+    for (let i = 0; i < n; i++) {
+      const er = exp.values[i], ar = act.values[i];
+      if (er && ar) { if (rowEq(er, ar)) rows.push({ t: 'same', r: ar }); else { rows.push({ t: 'changed', r: ar, e: er, cells: ar.map((v, j) => !eq(v, er[j])) }); changed++; } }
+      else if (er) { rows.push({ t: 'missing', r: er }); missing++; } else { rows.push({ t: 'extra', r: ar }); extra++; }
+    }
+  }
+  const pass = colsOk && !missing && !extra && !changed;
+  const parts = []; if (!colsOk) parts.push('欄位不同'); if (missing) parts.push(`缺少 ${missing} 列`); if (extra) parts.push(`多出 ${extra} 列`); if (changed) parts.push(`${changed} 列值不同`);
+  return { pass, colsOk, rows, summary: pass ? `通過（${act.values.length} 列）` : parts.join('、') };
+}
+function renderDiff(exp, act, d) {
+  let html = '';
+  if (!d.colsOk) html += `<div class="msg err">欄位不同：預期 [${exp.columns.map(h).join(', ')}]，實際 [${act.columns.map(h).join(', ')}]</div>`;
+  html += `<table class="dt"><thead><tr><th class="rn">比對</th>${act.columns.map(c => `<th style="cursor:default">${h(c)}</th>`).join('')}</tr></thead><tbody>`;
+  const cell = v => v === null || v === undefined ? '<span class="muted"><i>NULL</i></span>' : h(String(v));
+  d.rows.slice(0, 2000).forEach(x => {
+    const mark = { same: '＝', missing: '－ 缺少', extra: '＋ 多出', changed: '≠ 不同' }[x.t];
+    html += `<tr class="d-${x.t}"><td class="rn" style="text-align:left">${mark}</td>${x.r.map((v, j) => x.t === 'changed' && x.cells[j] ? `<td class="d-changed"><s>${cell(x.e[j])}</s>${cell(v)}</td>` : `<td>${cell(v)}</td>`).join('')}</tr>`;
+  });
+  return html + '</tbody></table>';
+}
+Views.tests = async (main) => {
+  main.style.overflow = 'hidden';
+  const selId = new URLSearchParams(location.hash.split('?')[1] || '').get('id');
+  let cases = (await Store.all('testcases')).sort((a, b) => a.created - b.created);
+  let cur = cases.find(c => c.id === selId) || null; let lastResults = {};
+  main.innerHTML = `<div class="tests"><aside class="side"><div class="toolbar" style="padding:10px"><button class="btn pri sm" id="tAdd">＋ 新案例</button><button class="btn sm" id="tAll">▶ 全部執行</button><button class="btn sm" id="tRuns">執行紀錄</button></div>
+    <div class="toolbar" style="padding:0 10px 8px"><button class="btn sm" id="tExp">匯出</button><button class="btn sm" id="tImp">匯入</button></div><div id="tList"></div></aside><section class="detail" id="tDet"></section></div>`;
+  const drawList = () => {
+    const suites = [...new Set(cases.map(c => c.suite || '預設套件'))];
+    $('#tList').innerHTML = suites.map(s => `<div class="suite-h">${h(s)}<button class="btn sm" data-suite="${h(s)}">▶ 執行套件</button></div>${cases.filter(c => (c.suite || '預設套件') === s).map(c => {
+      const r = lastResults[c.id]; return `<div class="tc ${cur && cur.id === c.id ? 'active' : ''}" data-id="${c.id}"><span class="status ${r ? r.status : 'none'}">${r ? { pass: '通過', fail: '失敗', error: '錯誤', none: '未設' }[r.status] : '—'}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(c.name)}</span></div>`;
+    }).join('')}`).join('') || '<div class="empty small">尚無測試案例</div>';
+    $$('.tc').forEach(el => el.onclick = () => { cur = cases.find(c => c.id === el.dataset.id); drawList(); drawDetail(); });
+    $$('[data-suite]').forEach(b => b.onclick = () => runMany(cases.filter(c => (c.suite || '預設套件') === b.dataset.suite), b.dataset.suite));
+  };
+  const save = async () => { cur.updated = Date.now(); await Store.put('testcases', cur); const i = cases.findIndex(c => c.id === cur.id); if (i < 0) cases.push(cur); else cases[i] = cur; };
+  let setupEd, queryEd;
+  const drawDetail = () => {
+    const det = $('#tDet');
+    if (!cur) { det.innerHTML = `<div class="empty"><h3>SQL 測試案例</h3>每個案例都在<b>工作區的複本</b>（或空白資料庫）上執行，不會改動原本的資料。<br>流程：前置 SQL（建表／塞資料）→ 待測 SQL → 和預期結果比對。<br><br><button class="btn pri" id="tAdd2">＋ 建立第一個案例</button></div>`; const b = $('#tAdd2'); if (b) b.onclick = addCase; return; }
+    const o = cur.options;
+    det.innerHTML = `<div class="row" style="margin-bottom:12px"><input type="text" id="cName" value="${h(cur.name)}" style="font-size:16px;font-weight:600;flex:1;min-width:200px">
+        <input type="text" id="cSuite" value="${h(cur.suite)}" placeholder="套件名稱" list="suiteList" style="width:160px"><datalist id="suiteList">${[...new Set(cases.map(c => c.suite))].map(s => `<option value="${h(s)}">`).join('')}</datalist>
+        <button class="btn pri" id="cRun">▶ 執行</button><button class="btn" id="cSet">以實際結果設為預期</button><button class="btn" id="cDup">複製</button><button class="btn danger" id="cDel">刪除</button></div>
+      <div class="row small" style="margin-bottom:12px">
+        <label>基底資料 <select id="cBase"><option value="workspace">目前工作區的複本</option><option value="empty">空白資料庫</option></select></label>
+        <label class="chk"><input type="checkbox" id="oOrd" ${o.ignoreOrder ? 'checked' : ''}>忽略列順序</label>
+        <label class="chk"><input type="checkbox" id="oCase" ${o.ignoreCase ? 'checked' : ''}>忽略大小寫</label>
+        <label class="chk"><input type="checkbox" id="oTrim" ${o.trim ? 'checked' : ''}>忽略前後空白</label>
+        <label class="chk"><input type="checkbox" id="oCols" ${o.checkCols ? 'checked' : ''}>比對欄位名稱</label>
+        <label>數值容許誤差 <input type="number" id="oTol" value="${o.tol}" step="any" style="width:90px"></label></div>
+      <div class="grid2"><div class="field"><label>① 前置 SQL（可留空：建表、塞測試資料）</label><div id="eSetup"></div></div>
+        <div class="field"><label>② 待測 SQL（以最後一個查詢結果比對）</label><div id="eQuery"></div></div></div>
+      <div class="field"><label>③ 預期結果 ${cur.expected ? `<span class="muted">（${cur.expected.values.length} 列 × ${cur.expected.columns.length} 欄）</span>` : ''} <button class="btn sm" id="cEditExp">以 CSV 編輯</button> ${cur.expected ? '<button class="btn sm danger" id="cClrExp">清除</button>' : ''}</label>
+        <div class="box" id="expBox">${cur.expected ? renderTable(cur.expected.columns, cur.expected.values, { max: 500 }) : '<div class="empty small">尚未設定。先執行，再按「以實際結果設為預期」，或用 CSV 手動輸入。</div>'}</div></div>
+      <div class="field"><label>④ 執行結果</label><div id="runOut"><div class="muted small">尚未執行</div></div></div>`;
+    $('#cBase').value = cur.base || 'workspace';
+    setupEd = CodeEditor($('#eSetup'), { value: cur.setupSql, mini: true, onChange: v => { cur.setupSql = v; saveSoon(); }, onRun: () => doRun() });
+    queryEd = CodeEditor($('#eQuery'), { value: cur.querySql, mini: true, onChange: v => { cur.querySql = v; saveSoon(); }, onRun: () => doRun() });
+    $$('#tDet .code.mini').forEach(c => c.style.height = '170px');
+    $('#cName').onchange = e => { cur.name = e.target.value.trim() || '未命名'; save().then(drawList); };
+    $('#cSuite').onchange = e => { cur.suite = e.target.value.trim() || '預設套件'; save().then(drawList); };
+    $('#cBase').onchange = e => { cur.base = e.target.value; save(); };
+    const optBind = (id, k, num) => { $('#' + id).onchange = e => { cur.options[k] = num ? Number(e.target.value) : e.target.checked; save(); }; };
+    optBind('oOrd', 'ignoreOrder'); optBind('oCase', 'ignoreCase'); optBind('oTrim', 'trim'); optBind('oCols', 'checkCols'); optBind('oTol', 'tol', true);
+    $('#cRun').onclick = () => doRun();
+    $('#cSet').onclick = async () => { const r = runTestCase(cur); if (!r.actual) { toast(r.msg, true); return; } cur.expected = r.actual; await save(); toast('已設為預期結果'); drawDetail(); doRun(); };
+    $('#cDup').onclick = async () => { cur = { ...JSON.parse(JSON.stringify(cur)), id: uid(), name: cur.name + '（複本）', created: Date.now() }; await save(); drawList(); drawDetail(); };
+    $('#cDel').onclick = async () => { if (!confirm(`刪除測試案例「${cur.name}」？`)) return; await Store.del('testcases', cur.id); cases = cases.filter(c => c.id !== cur.id); cur = null; drawList(); drawDetail(); };
+    if ($('#cClrExp')) $('#cClrExp').onclick = async () => { cur.expected = null; await save(); drawDetail(); };
+    $('#cEditExp').onclick = () => {
+      const csv = cur.expected ? [cur.expected.columns, ...cur.expected.values].map(r => r.map(v => v === null ? '\\N' : csvCell(v)).join(',')).join('\n') : '';
+      modal('以 CSV 編輯預期結果', `<div class="small muted" style="margin-bottom:6px">第一列為欄位名稱；以 <code>\\N</code> 表示 NULL；看起來是數字的值會轉成數字。</div><textarea class="plain" id="csvE" rows="14">${h(csv)}</textarea>`, [
+        { label: '取消' },
+        { label: '套用', cls: 'pri', onClick: async (bg) => {
+          const { rows } = parseCSV($('#csvE', bg).value, ','); if (!rows.length) { cur.expected = null; } else {
+            const conv = v => v === '\\N' ? null : /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(v.trim()) && !/^0\d/.test(v.trim()) ? Number(v) : v;
+            cur.expected = { columns: rows[0], values: rows.slice(1).map(r => rows[0].map((_, i) => conv(r[i] ?? '\\N'))) };
+          }
+          await save(); drawDetail();
+        } },
+      ]);
+    };
+  };
+  const saveSoon = debounce(() => save(), 500);
+  const doRun = () => {
+    const r = runTestCase(cur); lastResults[cur.id] = r; drawList();
+    const out = $('#runOut'); if (!out) return;
+    let html = `<div class="row" style="margin-bottom:8px"><span class="status ${r.status}">${{ pass: '通過', fail: '失敗', error: '錯誤', none: '未設預期' }[r.status]}</span><span>${h(r.msg)}</span><span class="muted small">${fmtMs(r.ms)}</span></div>`;
+    if (r.diff) html += `<div class="box">${renderDiff(cur.expected, r.actual, r.diff)}</div><div class="small muted" style="margin-top:4px">紅色＝預期有但實際缺少；綠色＝實際多出；黃色格子＝值不同（刪除線為預期值）</div>`;
+    else if (r.actual) html += `<div class="box">${renderTable(r.actual.columns, r.actual.values, { max: 500 })}</div>`;
+    out.innerHTML = html;
+  };
+  const runMany = async (list, label) => {
+    if (!list.length) { toast('沒有測試案例'); return; }
+    const results = list.map(c => { const r = runTestCase(c); lastResults[c.id] = r; return { id: c.id, name: c.name, suite: c.suite, status: r.status, msg: r.msg, ms: r.ms }; });
+    const pass = results.filter(r => r.status === 'pass').length;
+    const run = { id: uid(), label, wsName: App.ws.name, at: Date.now(), results, pass, fail: results.length - pass };
+    await Store.put('testruns', run); drawList(); showRun(run);
+  };
+  const showRun = (run) => {
+    $('#tDet').innerHTML = `<h2 style="margin:0 0 4px">測試報告：${h(run.label)}</h2><div class="muted small" style="margin-bottom:12px">${fmtTime(run.at)} · 工作區「${h(run.wsName)}」</div>
+      <div class="row" style="margin-bottom:12px"><span class="status pass" style="font-size:14px">通過 ${run.pass}</span><span class="status fail" style="font-size:14px">未通過 ${run.fail}</span><span class="muted">通過率 ${Math.round(run.pass / run.results.length * 100)}%</span><span style="flex:1"></span><button class="btn sm" id="rCsv">匯出報告 CSV</button></div>
+      <table class="plain"><tr><th>結果</th><th>套件</th><th>案例</th><th>說明</th><th>耗時</th></tr>${run.results.map(r => `<tr><td><span class="status ${r.status}">${{ pass: '通過', fail: '失敗', error: '錯誤', none: '未設' }[r.status]}</span></td><td>${h(r.suite)}</td><td><a href="#/tests?id=${r.id}">${h(r.name)}</a></td><td>${h(r.msg)}</td><td>${fmtMs(r.ms)}</td></tr>`).join('')}</table>`;
+    $('#rCsv').onclick = () => download(`test_report_${Date.now()}.csv`, toCSV(['結果', '套件', '案例', '說明', '耗時ms'], run.results.map(r => [r.status, r.suite, r.name, r.msg, r.ms.toFixed(1)])), 'text/csv;charset=utf-8');
+  };
+  const addCase = async () => { cur = newTestCase({ suite: cur ? cur.suite : '預設套件' }); await save(); drawList(); drawDetail(); $('#cName').select(); };
+  $('#tAdd').onclick = addCase;
+  $('#tAll').onclick = () => runMany(cases, '全部案例');
+  $('#tRuns').onclick = async () => {
+    const runs = (await Store.all('testruns')).sort((a, b) => b.at - a.at).slice(0, 50); cur = null; drawList();
+    $('#tDet').innerHTML = `<h2 style="margin:0 0 12px">執行紀錄</h2>${runs.length ? `<table class="plain"><tr><th>時間</th><th>範圍</th><th>工作區</th><th>通過</th><th>未通過</th><th></th></tr>${runs.map(r => `<tr><td>${fmtTime(r.at)}</td><td>${h(r.label)}</td><td>${h(r.wsName)}</td><td style="color:var(--theme-success)">${r.pass}</td><td style="color:var(--theme-danger)">${r.fail}</td><td><button class="btn sm" data-run="${r.id}">檢視</button></td></tr>`).join('')}</table><div style="margin-top:10px"><button class="btn sm danger" id="clrRuns">清除紀錄</button></div>` : '<div class="empty">尚無紀錄</div>'}`;
+    $$('[data-run]').forEach(b => b.onclick = () => showRun(runs.find(r => r.id === b.dataset.run)));
+    const c = $('#clrRuns'); if (c) c.onclick = async () => { await Store.clear('testruns'); $('#tRuns').click(); };
+  };
+  $('#tExp').onclick = () => download('sql-tests.json', JSON.stringify(cases, null, 2), 'application/json');
+  $('#tImp').onclick = async () => { const f = await pickFile('.json'); if (!f) return; try { const arr = JSON.parse(await f.text()); for (const c of arr) await Store.put('testcases', { ...newTestCase(), ...c, id: c.id || uid() }); toast(`已匯入 ${arr.length} 個案例`); Router.go(); } catch (e) { toast('匯入失敗：' + e.message, true); } };
+  drawList(); drawDetail();
+  if (cur) doRun();
+};
+
+/* ---------- 設定 ---------- */
+Views.settings = async (main) => {
+  main.style.overflow = 'auto';
+  const wss = (await Store.all('workspaces')).sort((a, b) => a.created - b.created);
+  const size = w => w.data ? (typeof w.data === 'string' ? new Blob([w.data]).size : w.data.byteLength) : 0;
+  const lib = await Store.getSetting('sqljs');
+  main.innerHTML = `<div class="page"><h2>設定與資料管理</h2><div class="sub">所有資料只存在這台電腦的瀏覽器（IndexedDB）。檔案換位置或換瀏覽器後，請用「備份／還原」搬移資料。</div>
+    <div class="card"><h3>工作區</h3><table class="plain"><tr><th>名稱</th><th>引擎</th><th>大小</th><th>最後更新</th><th></th></tr>
+      ${wss.map(w => `<tr><td>${w.id === App.ws.id ? '<b>● ' + h(w.name) + '</b>' : h(w.name)}</td><td>${w.engine === 'sqlite' ? 'SQLite' : '內建'}</td><td>${fmtSize(size(w))}</td><td>${fmtTime(w.updated)}</td>
+      <td class="toolbar">${w.id !== App.ws.id ? `<button class="btn sm pri" data-open="${w.id}">開啟</button>` : ''}<button class="btn sm" data-ren="${w.id}">更名</button><button class="btn sm" data-dup="${w.id}">複製</button><button class="btn sm" data-exp="${w.id}">匯出</button>${w.engine === 'mini' && SQLJS ? `<button class="btn sm" data-conv="${w.id}">轉為 SQLite</button>` : ''}${wss.length > 1 ? `<button class="btn sm danger" data-del="${w.id}">刪除</button>` : ''}</td></tr>`).join('')}</table>
+      <div class="toolbar" style="margin-top:10px"><button class="btn pri" id="wNew">＋ 新增工作區</button><button class="btn" id="wImp">匯入工作區檔（.json / .sqlite / .db）</button></div></div>
+    <div class="card"><h3>執行引擎</h3>
+      <p class="small" style="margin-top:0"><b>內建引擎</b>：純 JavaScript，開檔即用，支援常用的 SQLite 語法（JOIN、子查詢、CTE／遞迴、GROUP BY、視窗函數、UNION、檢視、交易、日期函數等），適合邏輯驗證與教學。<br>
+      <b>SQLite 引擎</b>：從 CDN 載入官方 sql.js（SQLite 編譯成 WebAssembly），可支援觸發器、ON CONFLICT、真實索引與執行計畫。下載一次後會快取在瀏覽器（IndexedDB），後續可直接重用。</p>
+      <div class="row" style="margin-bottom:8px">${SQLJS ? `<span class="badge ok">已載入 SQLite ${h(App.sqliteVersion || '')}</span>` : '<span class="badge">未載入</span>'}
+        ${lib ? `<span class="small muted">sql.js ${h(lib.version || '（手動載入）')} · 來源：${h(lib.source || '本機檔案')} · ${fmtSize(lib.wasm.byteLength + lib.js.length)}${lib.at ? ' · ' + fmtTime(lib.at) : ''}</span>` : ''}</div>
+      <div class="row">
+        <label>CDN <select id="cdnSel">${CDNS.map(([k, l]) => `<option value="${k}">${h(l)}</option>`).join('')}</select></label>
+        <label>版本 <input type="text" id="cdnVer" value="${h(App.settings.sqljsVer || SQLJS_VERSION)}" style="width:80px"></label>
+        <button class="btn pri" id="cdnLoad">${SQLJS ? '重新從 CDN 下載' : '從 CDN 載入 SQLite'}</button>
+        ${SQLJS ? '<button class="btn sm danger" id="libDel">移除快取</button>' : ''}
+        <span id="cdnMsg" class="small"></span></div>
+      <div class="row" style="margin-top:8px"><label class="chk"><input type="checkbox" id="cdnAuto" ${App.settings.cdnAuto !== false ? 'checked' : ''}>開啟網頁時若尚未快取，自動從 CDN 載入</label></div>
+      <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">無法連上 CDN？改用本機檔案載入</summary>
+        <div class="row" style="margin-top:8px"><button class="btn" id="libLoad">選擇 sql-wasm.js 與 sql-wasm.wasm</button>
+        <span class="small muted">在可上網的電腦下載 ${CDNS.map(([, l, b]) => h(b(App.settings.sqljsVer || SQLJS_VERSION))).slice(0, 1).join('')} 底下這兩個檔案，同時選取即可。</span></div></details>
+      <div class="small muted" style="margin-top:8px">預設會依序嘗試 jsDelivr → cdnjs → unpkg，前一個連不上時自動改用下一個。若公司網路封鎖外部 CDN，請改用本機檔案載入。</div></div>
+    <div class="card"><h3>外觀與行為</h3><div class="row">
+      <label>主題 <select id="pTheme"><option value="light">淺色</option><option value="dark">深色</option></select></label>
+      <label>編輯器字級 <input type="number" id="pFs" min="10" max="24" value="${App.settings.fontSize}" style="width:70px"></label>
+      <label>結果最多顯示 <input type="number" id="pMax" min="100" max="50000" step="100" value="${App.settings.maxRows}" style="width:90px"> 筆</label>
+      <label class="chk"><input type="checkbox" id="pUp" ${App.settings.upper ? 'checked' : ''}>格式化時關鍵字轉大寫</label></div></div>
+    <div class="card"><h3>備份與還原</h3><p class="small muted" style="margin-top:0">備份檔包含全部工作區、片段、測試案例、歷史與設定（不含 SQLite 引擎檔）。</p>
+      <div class="toolbar"><button class="btn pri" id="bkAll">下載完整備份</button><button class="btn" id="rsAll">從備份還原</button><span style="flex:1"></span><button class="btn danger" id="wipe">清除全部資料</button></div></div>
+    <div class="card"><h3>快捷鍵</h3><table class="plain small"><tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>F5</kbd></td><td>執行（有選取時只執行選取範圍）</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>執行游標所在的敘述</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>格式化</td></tr><tr><td><kbd>Ctrl</kbd>+<kbd>/</kbd></td><td>切換註解</td></tr><tr><td><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>縮排／取消縮排</td></tr></table></div></div>`;
+  $('#pTheme').value = App.settings.theme;
+  $('#pTheme').onchange = e => { window.SQLSpaToolsTheme.setTheme(e.target.value); App.savePrefs(); };
+  $('#pFs').onchange = e => { App.settings.fontSize = Math.max(10, Math.min(24, +e.target.value || 14)); App.savePrefs(); };
+  $('#pMax').onchange = e => { App.settings.maxRows = Math.max(100, +e.target.value || 1000); App.savePrefs(); };
+  $('#pUp').onchange = e => { App.settings.upper = e.target.checked; App.savePrefs(); };
+  const refreshWs = async () => { App.workspaces = (await Store.all('workspaces')).sort((a, b) => a.created - b.created); renderHeader(); Router.go(); };
+  $$('[data-open]').forEach(b => b.onclick = () => App.openWorkspace(b.dataset.open));
+  $$('[data-ren]').forEach(b => b.onclick = async () => { const w = wss.find(x => x.id === b.dataset.ren); const n = await ask('工作區更名', '新名稱', w.name); if (!n) return; w.name = n; await Store.put('workspaces', w); if (w.id === App.ws.id) App.ws.name = n; refreshWs(); });
+  $$('[data-dup]').forEach(b => b.onclick = async () => { if (b.dataset.dup === App.ws.id) await App.saveNow(); const w = await Store.get('workspaces', b.dataset.dup); const n = { ...w, id: uid(), name: w.name + '（複本）', created: Date.now(), updated: Date.now() }; await Store.put('workspaces', n); await Store.setSetting('editor:' + n.id, await Store.getSetting('editor:' + w.id, '')); refreshWs(); });
+  $$('[data-exp]').forEach(b => b.onclick = async () => { if (b.dataset.exp === App.ws.id) await App.saveNow(); const w = await Store.get('workspaces', b.dataset.exp); if (w.engine === 'sqlite') download(w.name + '.sqlite', new Uint8Array(w.data)); else download(w.name + '.sqllab.json', JSON.stringify({ format: 'sql-lab-mini', name: w.name, data: JSON.parse(w.data) }), 'application/json'); });
+  $$('[data-conv]').forEach(b => b.onclick = async () => {
+    if (b.dataset.conv === App.ws.id) await App.saveNow(); const w = await Store.get('workspaces', b.dataset.conv);
+    const e = new SqliteEngine(); const r = e.exec(new MiniEngine(w.data).dump()); if (r.error) { toast('轉換失敗：' + r.error, true); return; }
+    const d = e.export(); const n = { id: uid(), name: w.name + '（SQLite）', engine: 'sqlite', data: d.buffer, created: Date.now(), updated: Date.now() };
+    await Store.put('workspaces', n); toast('已建立 SQLite 版工作區'); refreshWs();
+  });
+  $$('[data-del]').forEach(b => b.onclick = async () => { const w = wss.find(x => x.id === b.dataset.del); if (!confirm(`確定刪除工作區「${w.name}」？此動作無法復原。`)) return; await Store.del('workspaces', w.id); if (w.id === App.ws.id) { App.dirty = false; const other = wss.find(x => x.id !== w.id); App.workspaces = App.workspaces.filter(x => x.id !== w.id); await App.openWorkspace(other.id, true); } refreshWs(); });
+  $('#wNew').onclick = () => {
+    modal('新增工作區', `<div class="field"><label>名稱</label><input type="text" id="nwName" style="width:100%" value="新工作區"></div>
+      <div class="field"><label>引擎</label><select id="nwEng"><option value="mini">內建引擎</option>${SQLJS ? '<option value="sqlite">SQLite（sql.js）</option>' : ''}</select></div>
+      <label class="chk"><input type="checkbox" id="nwSample">建立範例資料表（部門／員工／帳戶／交易）</label>`, [
+      { label: '取消' },
+      { label: '建立', cls: 'pri', onClick: async () => { const ws = await App.createWorkspace($('#nwName').value.trim() || '新工作區', $('#nwEng').value, $('#nwSample').checked); App.workspaces.push(ws); await App.openWorkspace(ws.id); } },
+    ]);
+  };
+  $('#wImp').onclick = async () => {
+    const f = await pickFile('.json,.sqlite,.db,.sqlite3'); if (!f) return;
+    try {
+      let ws;
+      if (/\.json$/i.test(f.name)) { const j = JSON.parse(await f.text()); if (j.format !== 'sql-lab-mini') throw new Error('不是 SQL Lab 工作區檔'); ws = { id: uid(), name: j.name, engine: 'mini', data: JSON.stringify(j.data), created: Date.now(), updated: Date.now() }; new MiniEngine(ws.data); }
+      else {
+        if (!SQLJS) throw new Error('匯入 .sqlite 需要先載入 SQLite 引擎');
+        const buf = await f.arrayBuffer(); new SqliteEngine(new Uint8Array(buf)).schema();
+        ws = { id: uid(), name: f.name.replace(/\.[^.]+$/, ''), engine: 'sqlite', data: buf, created: Date.now(), updated: Date.now() };
+      }
+      await Store.put('workspaces', ws); App.workspaces.push(ws); toast('已匯入工作區：' + ws.name); await App.openWorkspace(ws.id, true); refreshWs();
+    } catch (e) { toast('匯入失敗：' + e.message, true); }
+  };
+  $('#cdnSel').value = App.settings.cdn || 'jsdelivr';
+  $('#cdnSel').onchange = e => { App.settings.cdn = e.target.value; App.savePrefs(); };
+  $('#cdnVer').onchange = e => { App.settings.sqljsVer = e.target.value.trim() || SQLJS_VERSION; App.savePrefs(); };
+  $('#cdnAuto').onchange = e => { App.settings.cdnAuto = e.target.checked; App.savePrefs(); };
+  $('#cdnLoad').onclick = async () => {
+    if (SQLJS && !confirm('目前已載入 SQLite。重新下載後需重新整理頁面才會換成新版本，繼續？')) return;
+    const btn = $('#cdnLoad'), msg = $('#cdnMsg'); btn.disabled = true; msg.style.color = '';
+    try {
+      const had = !!SQLJS; const ver = $('#cdnVer').value.trim() || SQLJS_VERSION;
+      if (had) { const l = await fetchSqlJsFromCdn($('#cdnSel').value, ver, t => msg.textContent = t); await Store.setSetting('sqljs', { js: l.js, wasm: l.wasm, source: l.source, url: l.url, version: l.version, at: Date.now() }); toast('已下載，重新載入頁面中…'); setTimeout(() => location.reload(), 700); return; }
+      const l = await installSqlJsFromCdn($('#cdnSel').value, ver, t => msg.textContent = t);
+      toast(`SQLite ${App.sqliteVersion} 已載入（來源：${l.source}）`);
+      if (App.ws.engine === 'sqlite') await App.openWorkspace(App.ws.id, true);
+      renderHeader(); Router.go();
+    } catch (e) { msg.style.color = 'var(--theme-danger)'; msg.textContent = '載入失敗：' + e.message; btn.disabled = false; }
+  };
+  $('#libLoad').onclick = async () => {
+    const files = await pickFile('.js,.wasm', true); if (!files || !files.length) return;
+    const js = files.find(f => /\.js$/i.test(f.name)), wasm = files.find(f => /\.wasm$/i.test(f.name));
+    if (!js || !wasm) { toast('請同時選取 sql-wasm.js 和 sql-wasm.wasm 兩個檔案', true); return; }
+    try {
+      const jsText = await js.text(), wb = await wasm.arrayBuffer();
+      App.sqliteVersion = await loadSqlJs(jsText, new Uint8Array(wb));
+      await Store.setSetting('sqljs', { js: jsText, wasm: wb }); toast('SQLite 引擎已載入：' + App.sqliteVersion);
+      if (App.ws.engine === 'sqlite') await App.openWorkspace(App.ws.id, true);
+      renderHeader(); Router.go();
+    } catch (e) { toast('載入失敗：' + e.message, true); }
+  };
+  if ($('#libDel')) $('#libDel').onclick = async () => { if (!confirm('移除快取後會重新整理頁面；若已勾選自動載入，會再從 CDN 下載。確定移除？')) return; await Store.del('settings', 'sqljs'); location.reload(); };
+  $('#bkAll').onclick = async () => {
+    await App.saveNow(); const out = { format: 'sql-lab-backup', version: 1, at: Date.now() };
+    for (const s of Store.STORES) {
+      let rows = await Store.all(s); if (s === 'settings') rows = rows.filter(r => r.key !== 'sqljs');
+      if (s === 'workspaces') rows = rows.map(w => w.engine === 'sqlite' ? { ...w, data: w.data ? bytesToB64(new Uint8Array(w.data)) : null, b64: true } : w);
+      out[s] = rows;
+    }
+    const d = new Date(); download(`sql-lab-backup-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.json`, JSON.stringify(out), 'application/json');
+  };
+  $('#rsAll').onclick = async () => {
+    const f = await pickFile('.json'); if (!f) return;
+    try {
+      const j = JSON.parse(await f.text()); if (j.format !== 'sql-lab-backup') throw new Error('不是 SQL Lab 備份檔');
+      if (!confirm('還原會「合併」備份內容（相同 ID 會被覆蓋）。繼續？')) return;
+      for (const s of Store.STORES) for (const r of (j[s] || [])) { if (s === 'workspaces' && r.b64) { r.data = r.data ? b64ToBytes(r.data).buffer : null; delete r.b64; } await Store.put(s, r); }
+      toast('還原完成，重新載入中…'); setTimeout(() => location.reload(), 800);
+    } catch (e) { toast('還原失敗：' + e.message, true); }
+  };
+  $('#wipe').onclick = async () => { if (!confirm('將刪除全部工作區、片段、測試與歷史，且無法復原。確定？')) return; if (!confirm('再次確認：真的要清除全部資料？')) return; App.dirty = false; for (const s of Store.STORES) await Store.clear(s); location.reload(); };
+};
+
+/* ---------- 範例資料 ---------- */
+const SAMPLE_SQL = `
+CREATE TABLE dept (dept_id INTEGER PRIMARY KEY, dept_name TEXT NOT NULL, location TEXT);
+CREATE TABLE emp (emp_id INTEGER PRIMARY KEY, emp_name TEXT NOT NULL, dept_id INTEGER, title TEXT, salary REAL, hire_date TEXT, manager_id INTEGER);
+CREATE TABLE account (acct_no TEXT PRIMARY KEY, cust_name TEXT NOT NULL, acct_type TEXT, branch TEXT, open_date TEXT, balance REAL DEFAULT 0);
+CREATE TABLE txn (txn_id INTEGER PRIMARY KEY, acct_no TEXT NOT NULL, txn_date TEXT, txn_type TEXT, amount REAL, memo TEXT);
+INSERT INTO dept VALUES (10,'風險管理部','台北'),(20,'資訊部','台北'),(30,'授信部','台中'),(40,'稽核室','高雄');
+INSERT INTO emp VALUES
+ (1,'XXX',10,'經理',98000,'2015-03-01',NULL),(2,'XXX',10,'領組',76000,'2018-07-16',1),(3,'XXX',10,'專員',58000,'2021-02-01',2),
+ (4,'XXX',20,'經理',102000,'2014-09-10',NULL),(5,'XXX',20,'工程師',72000,'2019-05-20',4),(6,'XXX',20,'工程師',69000,'2020-11-02',4),
+ (7,'XXX',30,'經理',95000,'2016-01-04',NULL),(8,'XXX',30,'專員',61000,'2022-08-15',7),(9,'XXX',NULL,'約聘',42000,'2024-03-01',NULL);
+INSERT INTO account VALUES
+ ('001-01-000001','台灣電子股份有限公司','活期','館前',  '2019-04-01',5200000),('001-01-000002','XXX','活期','館前','2020-06-12',356000),
+ ('001-02-000003','好運貿易有限公司','定期','信義','2021-01-20',12000000),('001-01-000004','XXX','活期','信義','2022-09-30',48000),
+ ('001-03-000005','大安建設股份有限公司','支票','大安','2018-12-05',870000),('001-01-000006','XXX','活期','大安','2023-05-18',0);
+INSERT INTO txn (acct_no, txn_date, txn_type, amount, memo) VALUES
+ ('001-01-000001','2026-09-01','存入',1500000,'貨款'),('001-01-000001','2026-09-05','提出',-800000,'薪資轉帳'),('001-01-000001','2026-09-20','提出',-350000,'貨款支付'),
+ ('001-01-000002','2026-09-02','存入',50000,'薪資'),('001-01-000002','2026-09-15','提出',-12000,'信用卡繳款'),('001-02-000003','2026-09-10','存入',2000000,'定存轉入'),
+ ('001-01-000004','2026-09-11','存入',3000,'利息'),('001-03-000005','2026-09-21','提出',-420000,'支票兌現'),('001-03-000005','2026-09-28','存入',600000,'工程款'),
+ ('001-01-000002','2026-10-01','存入',50000,'薪資'),('001-01-000001','2026-10-03','存入',900000,'貨款');
+CREATE VIEW v_dept_summary AS SELECT d.dept_name, COUNT(e.emp_id) AS headcount, ROUND(AVG(e.salary),0) AS avg_salary FROM dept d LEFT JOIN emp e ON e.dept_id = d.dept_id GROUP BY d.dept_name;
+`;
+const SAMPLE_QUERY = `-- 歡迎使用 SQL Lab！Ctrl+Enter 執行全部，或選取一段只執行選取範圍
+-- 左側是資料表清單：單擊展開欄位，雙擊預覽資料
+
+-- 1) 各部門人數與平均薪資（檢視）
+SELECT * FROM v_dept_summary ORDER BY headcount DESC;
+
+-- 2) 部門內薪資排名（視窗函數）
+SELECT d.dept_name, e.emp_name, e.salary,
+       RANK() OVER (PARTITION BY e.dept_id ORDER BY e.salary DESC) AS rnk
+FROM emp e JOIN dept d ON d.dept_id = e.dept_id
+ORDER BY d.dept_name, rnk;
+
+-- 3) 各帳戶 9 月淨流量與累計
+WITH m AS (
+  SELECT acct_no, SUM(amount) AS net_flow, COUNT(*) AS cnt
+  FROM txn
+  WHERE txn_date BETWEEN '2026-09-01' AND '2026-09-30'
+  GROUP BY acct_no
+)
+SELECT a.acct_no, a.cust_name, IFNULL(m.net_flow, 0) AS net_flow, IFNULL(m.cnt, 0) AS cnt,
+       SUM(IFNULL(m.net_flow, 0)) OVER (ORDER BY a.acct_no) AS running_total
+FROM account a LEFT JOIN m ON m.acct_no = a.acct_no
+ORDER BY a.acct_no;
+`;
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.body.innerHTML = `<div id="app"><header><div class="logo"><i>SQL</i><h1>SQL SPA Tools｜SQL Lab</h1><span class="small muted" style="font-weight:400">SQL 測試工具</span></div>
+    <select id="wsSel" title="切換工作區" style="max-width:220px"></select><span id="engBadge" class="badge"></span><span id="saveBadge" class="badge"></span>
+    <span class="sp"></span><button class="btn sm" id="hSave" title="立即儲存">儲存</button></header>
+    <div class="body"><nav>${ROUTES.map(([r, i, l]) => `<a href="#/${r}" data-r="${r}"><span>${i}</span>${l}</a>`).join('')}</nav><main></main></div></div><a class="home-link" href="index.html">回首頁</a><button id="themeToggle" class="theme-toggle" type="button">🌙 深色模式</button><div id="toasts"></div>`;
+  $('#wsSel').onchange = e => App.openWorkspace(e.target.value);
+  $('#hSave').onclick = async () => { App.dirty = true; await App.saveNow(); toast('已儲存'); };
+  window.addEventListener('sql-spa-tools-theme-change', event => {
+    if (event.detail?.theme === 'dark' || event.detail?.theme === 'light') App.settings.theme = event.detail.theme;
+  });
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); $('#hSave').click(); } });
+  App.init().catch(e => { console.error(e); document.body.innerHTML = `<div class="empty"><h3>啟動失敗</h3>${h(e.message)}<br><br>若瀏覽器停用了 IndexedDB（例如私密瀏覽模式），請改用一般視窗開啟。</div>`; });
+});
+window.SQLLab = { App, formatSQL, MiniSQL };
+})();
+</script>
+</body></html>

@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<title>SQL SPA Tools｜Oracle SQL Formatter</title>
+<style>
+:root{
+  --bg:#e8e8e8; --panel:#f5f5f5; --card:#ffffff; --line:#d4d4d4; --text:#2f2f2f; --muted:#868686;
+  --pri:#8a8a8a; --pri-d:#727272; --acc:#9f9f9f; --ok:#9d9d9d; --warn:#acacac; --err:#8a8a8a; --info:#999999;
+  --add:#e8e8e8; --del:#e2e2e2; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.5 var(--theme-font-sans)}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.5px}
+header h1 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:8px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s}
+button:hover:not(:disabled){border-color:var(--pri);color:var(--pri-d)}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+button.pri:hover:not(:disabled){background:var(--pri-d);color:#fff}
+button.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+button.sm{padding:3px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:340px 1fr;gap:12px;padding:12px;height:calc(100% - 58px - 34px)}
+aside{display:flex;flex-direction:column;gap:12px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--pri-d);letter-spacing:.5px}
+.opts{display:grid;grid-template-columns:96px 1fr;gap:6px 8px;align-items:center;font-size:13px}
+.opts label.chk{grid-column:1/3;display:flex;gap:6px;align-items:center}
+input[type=text],select,textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--card);color:var(--text);width:100%}
+#filesCard{flex:1;display:flex;flex-direction:column;min-height:0}
+.filebar{display:flex;gap:6px;margin-bottom:6px}
+.filebar select{width:110px}
+#rootInfo{font-size:12px;color:var(--muted);margin-bottom:6px;word-break:break-all}
+#fileList{flex:1;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.fi{display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid #ececec;cursor:pointer;font-size:12.5px}
+.fi:hover{background:#f1f1f1}
+.fi.sel{background:#ebebeb}
+.fi .p{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--theme-font-mono)}
+.b{font-size:11px;padding:0 6px;border-radius:9px;color:#fff;white-space:nowrap}
+.b.changed{background:var(--acc)}.b.same{background:var(--ok)}.b.failed{background:var(--err)}.b.skip{background:var(--muted)}
+.b.written{background:var(--pri)}.b.pl{background:var(--info)}.b.iss{background:var(--warn)}.b.isse{background:var(--err)}.b.new{background:#b7b7b7}
+section{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.tabs{display:flex;gap:4px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+.tab{padding:6px 14px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted)}
+.tab.on{background:var(--card);border-color:var(--line);color:var(--text);font-weight:600;margin-bottom:-1px}
+.pane{display:none;flex:1;min-height:0;overflow:auto;padding:12px;background:var(--card);border-radius:0 0 12px 12px}
+.pane.on{display:block}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:96px}
+.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--muted)}
+.stat.e b{color:var(--err)}.stat.w b{color:#8e8e8e}.stat.i b{color:var(--info)}
+.dhead{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.dhead .fn{font-family:var(--theme-font-mono);font-weight:600}
+.msg{padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px}
+.msg.err{background:var(--del);color:#535353}.msg.ok{background:var(--add)}.msg.info{background:#eaeaea}
+table.diff{width:100%;border-collapse:collapse;font:12.5px/1.45 var(--theme-font-mono);table-layout:fixed}
+table.diff td{padding:0 6px;vertical-align:top;white-space:pre-wrap;word-break:break-all}
+table.diff td.ln{width:46px;text-align:right;color:#aaaaaa;background:#f8f8f8;user-select:none}
+table.diff td.c{border-right:1px solid var(--line)}
+td.del{background:var(--del)}td.add{background:var(--add)}td.emp{background:#f4f4f4}
+table.grid{width:100%;border-collapse:collapse;font-size:13px}
+table.grid th,table.grid td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+table.grid th{background:var(--panel);position:sticky;top:-12px;z-index:1}
+table.grid td.m{font-family:var(--theme-font-mono);font-size:12px}
+tr.clk{cursor:pointer}tr.clk:hover{background:#f1f1f1}
+.lv{font-size:11px;padding:0 6px;border-radius:9px;color:#fff;white-space:nowrap}.lv.error{background:var(--err)}.lv.warn{background:var(--warn)}.lv.info{background:var(--info)}
+.qt{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:calc(100% - 44px)}
+.qt textarea{height:100%;min-height:360px;font:12.5px/1.45 var(--theme-font-mono);resize:none}
+#qIssues{margin-top:10px}
+#log{font:12px/1.6 var(--theme-font-mono);white-space:pre-wrap}
+footer{height:34px;display:flex;align-items:center;gap:12px;padding:0 20px;background:var(--panel);border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+#prog{width:260px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--pri);transition:width .1s}
+.empty{color:var(--muted);text-align:center;padding:60px 0}
+.hint{font-size:12px;color:var(--muted)}
+.hbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.hbar select{width:auto}
+details.rules{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
+details.rules summary{padding:8px 12px;cursor:pointer;font-weight:600;color:var(--pri-d)}
+details.rules .in{padding:0 12px 12px}
+details.rules table.grid th{position:static}
+details.rules select{width:auto;padding:2px 4px}
+code{font-family:var(--theme-font-mono);background:#ebebeb;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>SQL SPA Tools｜Oracle SQL Formatter</h1>
+  <div class="toolbar">
+    <button class="pri" id="btnPick">📁 選擇資料夾</button>
+    <button id="btnRescan" disabled>🔄 重新掃描</button>
+    <button class="acc" id="btnPreview" disabled>👁 格式化預覽</button>
+    <button class="pri" id="btnWrite" disabled>💾 寫回檔案</button>
+    <button id="btnUndo" disabled>↩ 還原本次</button>
+    <button id="btnZip" disabled>📦 匯出 ZIP</button>
+    <button id="btnReport" disabled>📄 匯出報告</button>
+  </div>
+</header>
+
+<main>
+  <aside>
+    <div class="card">
+      <h3>⚙ 格式化設定</h3>
+      <div class="opts">
+        <span>副檔名</span><input type="text" id="oExt" value=".sql,.pks,.pkb,.prc,.fnc,.vw,.trg">
+        <span>檔案編碼</span><select id="oEnc"><option value="auto">自動偵測（UTF-8 / Big5）</option><option value="utf-8">UTF-8</option><option value="big5">Big5</option></select>
+        <span>縮排</span><select id="oIndent"><option value="2">2 個空白</option><option value="4" selected>4 個空白</option></select>
+        <span>識別字</span><select id="oIdent"><option value="keep">保留原樣</option><option value="upper">全部大寫</option><option value="lower">全部小寫</option></select>
+        <span>PL/SQL 檔</span><select id="oPl"><option value="light">安全模式（僅調整大小寫）</option><option value="skip">略過不處理</option></select>
+        <label class="chk"><input type="checkbox" id="oKw" checked>SQL 關鍵字 / 資料型別大寫</label>
+        <label class="chk"><input type="checkbox" id="oFn" checked>內建函數大寫（NVL、DECODE…）</label>
+        <label class="chk"><input type="checkbox" id="oSel" checked>SELECT / SET 欄位逐行排列</label>
+        <label class="chk"><input type="checkbox" id="oBak" checked>寫回前建立備份（_sqlfmt_backup）</label>
+      </div>
+    </div>
+    <div class="card" id="filesCard">
+      <h3>📂 檔案清單</h3>
+      <div id="rootInfo">尚未選擇資料夾</div>
+      <div class="filebar">
+        <input type="text" id="fFilter" placeholder="篩選路徑…">
+        <select id="fStatus"><option value="">全部</option><option value="changed">有變更</option><option value="failed">失敗</option><option value="error">有健檢錯誤</option><option value="issue">有健檢問題</option><option value="plsql">PL/SQL</option></select>
+      </div>
+      <div class="filebar">
+        <button id="btnAll" style="flex:1">全選</button><button id="btnNone" style="flex:1">全不選</button>
+      </div>
+      <div id="fileList"><div class="empty">請先選擇資料夾</div></div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="tabs">
+      <div class="tab on" data-p="pDiff">差異預覽</div>
+      <div class="tab" data-p="pHealth">SQL 健檢</div>
+      <div class="tab" data-p="pQuick">快速測試</div>
+      <div class="tab" data-p="pLog">執行紀錄</div>
+    </div>
+    <div class="pane on" id="pDiff">
+      <div class="stats" id="stats"></div>
+      <div id="diffBox"><div class="empty">選擇資料夾後按「格式化預覽」，再點選左側檔案查看差異</div></div>
+    </div>
+    <div class="pane" id="pHealth">
+      <details class="rules" id="rulesBox">
+        <summary>🛠 健檢規則設定（<span id="ruleCount"></span>）</summary>
+        <div class="in">
+          <div class="hbar">
+            <button class="sm" id="rAll">全部啟用</button><button class="sm" id="rNone">全部停用</button><button class="sm" id="rReset">恢復預設</button>
+            <span class="hint">忽略寫法：行尾或上一行加 <code>-- sqlfmt:ignore NOT_IN,SELECT_STAR</code>（不寫規則代碼＝忽略該行全部）；整個檔案忽略用 <code>-- sqlfmt:ignore-file 規則代碼</code></span>
+          </div>
+          <table class="grid" id="ruleTable"></table>
+        </div>
+      </details>
+      <div class="hbar">
+        <span>篩選：</span>
+        <select id="hLevel"><option value="">全部等級</option><option value="error">錯誤</option><option value="warn">注意</option><option value="info">提示</option></select>
+        <select id="hRule"><option value="">全部規則</option></select>
+        <span class="hint" id="hCount"></span>
+      </div>
+      <div id="healthBox"><div class="empty">尚無資料</div></div>
+    </div>
+    <div class="pane" id="pQuick">
+      <div class="dhead"><button class="acc" id="btnQuick">▶ 格式化＋健檢</button><span id="quickMsg" class="hint">貼上 SQL 立即測試目前設定</span></div>
+      <div class="qt"><textarea id="qIn" placeholder="在此貼上 SQL…">select a.id,nvl(b.name,'') nm,case when a.x=1 then 'Y' else 'N' end flag
+from emp a inner join dept b on a.deptno=b.deptno left join area c on b.area_id=c.id
+where a.sal between 100 and 200 and c.flag='Y' and trunc(a.tx_dt)=trunc(sysdate)
+and rownum<=10 order by 1;</textarea><textarea id="qOut" readonly></textarea></div>
+      <div id="qIssues"></div>
+    </div>
+    <div class="pane" id="pLog"><div id="log"></div></div>
+  </section>
+</main>
+
+<footer><div id="prog"><i></i></div><span id="status">就緒</span></footer>
+<input type="file" id="dirInput" webkitdirectory multiple style="display:none">
+
+<script>
+/* ===== Oracle SQL Formatter Core (no dependencies) ===== */
+const KEYWORDS = new Set(`ADD ALL ALTER AND ANY AS ASC AUTHID BEGIN BETWEEN BODY BULK BY CASCADE CASE CHECK CLOSE COLLECT
+COLUMN COMMENT COMMIT CONNECT CONSTANT CONSTRAINT CREATE CROSS CURRENT CURSOR DECLARE DEFAULT DELETE DESC DISTINCT DROP
+EACH ELSE ELSIF END ESCAPE EXCEPTION EXCEPT EXECUTE EXISTS EXIT FETCH FIRST FOR FOREIGN FROM FULL FUNCTION GLOBAL GRANT GROUP
+HAVING IF IMMEDIATE IN INDEX INNER INSERT INTERSECT INTERVAL INTO IS JOIN KEY LAST LEFT LEVEL LIKE LOOP MATCHED MERGE
+MINUS NATURAL NEXT NOCOPY NOCYCLE NOT NULL NULLS OF OFFSET ON ONLY OPEN OR ORDER OTHERS OUT OUTER OVER PACKAGE PARTITION
+PIVOT PRIMARY PRIOR PROCEDURE RAISE REFERENCES REPLACE RETURN RETURNING ROLLBACK ROW ROWS ROWID ROWNUM ROWTYPE SAVEPOINT
+SELECT SEQUENCE SET SIBLINGS START SYNONYM SYSDATE SYSTIMESTAMP TABLE TABLESPACE TEMPORARY THEN TO TRIGGER TRUNCATE TYPE UNION
+UNIQUE UNPIVOT UPDATE USING VALUES VIEW WHEN WHERE WHILE WITH
+VARCHAR2 VARCHAR NVARCHAR2 CHAR NCHAR NUMBER INTEGER INT DATE TIMESTAMP CLOB NCLOB BLOB RAW LONG FLOAT BOOLEAN
+PLS_INTEGER BINARY_INTEGER DECIMAL`.split(/\s+/).filter(Boolean));
+
+const FUNCS = new Set(`NVL NVL2 DECODE COALESCE NULLIF TO_CHAR TO_DATE TO_NUMBER TO_TIMESTAMP TO_CLOB SUBSTR SUBSTRB INSTR
+LENGTH LENGTHB TRIM LTRIM RTRIM UPPER LOWER INITCAP ROUND TRUNC MOD ABS CEIL FLOOR SIGN POWER SQRT EXP LN LOG SUM COUNT
+AVG MIN MAX ROW_NUMBER RANK DENSE_RANK LAG LEAD LISTAGG FIRST_VALUE LAST_VALUE RATIO_TO_REPORT ADD_MONTHS MONTHS_BETWEEN
+LAST_DAY NEXT_DAY CAST EXTRACT GREATEST LEAST LPAD RPAD CONCAT REGEXP_LIKE REGEXP_SUBSTR REGEXP_REPLACE REGEXP_INSTR
+REGEXP_COUNT SYS_GUID TRANSLATE CHR ASCII NUMTODSINTERVAL NUMTOYMINTERVAL XMLAGG XMLELEMENT WM_CONCAT STDDEV VARIANCE
+MEDIAN NTILE CUME_DIST PERCENT_RANK SYS_CONTEXT USERENV`.split(/\s+/).filter(Boolean));
+
+const SPACE_PAREN = new Set(`AND OR NOT IN EXISTS AS ON FROM JOIN USING VALUES INTO WHERE SELECT THEN ELSE WHEN IS RETURN
+UNION ALL ANY MINUS INTERSECT EXCEPT BY OVER WITH SET HAVING PIVOT UNPIVOT FOR KEY CHECK UNIQUE INSERT`.split(/\s+/).filter(Boolean));
+const VALUE_KW = new Set(['SYSDATE','SYSTIMESTAMP','ROWNUM','ROWID','LEVEL','NULL']);
+const SQLPLUS = new Set(['PROMPT','SPOOL','REM','REMARK','WHENEVER','DEFINE','UNDEFINE','EXEC','EXECUTE','SHOW','COLUMN',
+  'TTITLE','BTITLE','PAUSE','SET','DESC','DESCRIBE','VARIABLE','VAR','PRINT','ACCEPT','CLEAR','BREAK','COMPUTE','HOST','CONN','CONNECT']);
+const SQLPLUS_SET_OPTS = new Set(['DEFINE','DEF','SERVEROUTPUT','ECHO','FEEDBACK','VERIFY','HEADING','PAGESIZE','LINESIZE','TERMOUT',
+  'TIMING','SQLBLANKLINES','SCAN','TRIMSPOOL','TRIMOUT','ESCAPE','AUTOCOMMIT','LONG','NUMWIDTH','COLSEP','NEWPAGE','WRAP','TAB',
+  'SQLTERMINATOR','ARRAYSIZE','AUTOTRACE','MARKUP','HEAD','PAGES','LINES','FEED','TERM','VER','SERVEROUT']);
+function isSqlplusAt(sig, i) {
+  const t = sig[i]; if (!t) return false;
+  if (t.text === '@' || t.text === '@@') return true;
+  if (t.type !== 'word') return false;
+  const U = t.text.toUpperCase(), n = sig[i + 1];
+  if (U === 'SET') return !!(n && n.type === 'word' && SQLPLUS_SET_OPTS.has(n.text.toUpperCase()));
+  if (U === 'CONNECT' || U === 'CONN') return !(n && n.type === 'word' && n.text.toUpperCase() === 'BY');
+  if (U === 'DESC') return !!(n && n.type === 'word');
+  return SQLPLUS.has(U);
+}
+const JOINW = new Set(['LEFT','RIGHT','FULL','INNER','CROSS','NATURAL','OUTER','JOIN']);
+
+const isWS = c => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v' || c === '\u3000' || c === '\u00a0';
+const isWordStart = c => !!c && /[A-Za-z_\u0080-\uFFFF]/.test(c) && !isWS(c);
+const isWordChar = c => !!c && /[A-Za-z0-9_$#\u0080-\uFFFF]/.test(c) && !isWS(c);
+
+function tokenize(s) {
+  const out = []; let i = 0, line = 1; const n = s.length;
+  const push = (type, st) => { const text = s.slice(st, i); out.push({ type, text, pos: st, line }); for (const ch of text) if (ch === '\n') line++; };
+  const quoted = () => { while (i < n) { if (s[i] === "'") { if (s[i + 1] === "'") { i += 2; continue; } i++; break; } i++; } };
+  while (i < n) {
+    const c = s[i], st = i;
+    if (isWS(c)) { while (i < n && isWS(s[i])) i++; push('ws', st); }
+    else if (c === '-' && s[i + 1] === '-') { while (i < n && s[i] !== '\n' && s[i] !== '\r') i++; push('lc', st); }
+    else if (c === '/' && s[i + 1] === '*') { const e = s.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; push('bc', st); }
+    else if (!isWordChar(s[i - 1]) && (((c === 'q' || c === 'Q') && s[i + 1] === "'") || ((c === 'n' || c === 'N') && /[qQ]/.test(s[i + 1] || '') && s[i + 2] === "'"))) {
+      const k = s[i + 1] === "'" ? i + 1 : i + 2;
+      const open = s[k + 1]; const close = { '[': ']', '(': ')', '{': '}', '<': '>' }[open] || open;
+      const e = s.indexOf(close + "'", k + 2); i = e < 0 ? n : e + 2; push('str', st);
+    }
+    else if ((c === 'n' || c === 'N') && s[i + 1] === "'" && !isWordChar(s[i - 1])) { i += 2; quoted(); push('str', st); }
+    else if (c === "'") { i++; quoted(); push('str', st); }
+    else if (c === '"') { const e = s.indexOf('"', i + 1); i = e < 0 ? n : e + 1; push('qid', st); }
+    else if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(s[i + 1] || ''))) {
+      const m = /^(\d+(\.(?!\.)\d*)?|\.\d+)([eE][+-]?\d+)?[fFdD]?/.exec(s.slice(i, i + 64)); i += m[0].length; push('num', st);
+    }
+    else if (isWordStart(c)) { while (i < n && isWordChar(s[i])) i++; push('word', st); }
+    else if (c === ':' && (isWordChar(s[i + 1]))) { i++; while (i < n && isWordChar(s[i])) i++; push('bind', st); }
+    else if (c === '&') { while (s[i] === '&') i++; if (isWordChar(s[i])) { while (i < n && isWordChar(s[i])) i++; if (s[i] === '.') i++; push('bind', st); } else push('op', st); }
+    else if (c === '(' || c === ')' || c === ',' || c === ';' || c === '.') { i++; push(c, st); }
+    else {
+      const two = s.substr(i, 2);
+      if (['<=', '>=', '<>', '!=', '^=', '||', ':=', '=>', '**', '..', '@@'].includes(two)) i += 2; else i++;
+      push('op', st);
+    }
+  }
+  return out;
+}
+
+function caseWord(w, opt) {
+  const U = w.toUpperCase();
+  if (KEYWORDS.has(U)) return opt.kwUpper ? U : w;
+  if (FUNCS.has(U)) return opt.fnUpper ? U : w;
+  if (opt.ident === 'upper') return U;
+  if (opt.ident === 'lower') return w.toLowerCase();
+  return w;
+}
+
+function isPlsql(toks) {
+  const sig = toks.filter(t => t.type === 'word');
+  for (let i = 0; i < sig.length; i++) {
+    const U = sig[i].text.toUpperCase();
+    if (U === 'BEGIN' || U === 'DECLARE') return true;
+    if (U === 'CREATE') {
+      for (let k = 1; k <= 4 && i + k < sig.length; k++) {
+        const W = sig[i + k].text.toUpperCase();
+        if (['PACKAGE', 'PROCEDURE', 'FUNCTION', 'TRIGGER', 'TYPE', 'LIBRARY', 'JAVA'].includes(W)) return true;
+        if (!['OR', 'REPLACE', 'EDITIONABLE', 'NONEDITIONABLE'].includes(W)) break;
+      }
+    }
+  }
+  return false;
+}
+
+/* PL/SQL safe mode: keep layout, change only casing + trailing spaces */
+function formatLight(src, toks, opt) {
+  let s = '', rawEnd = -1, lineStart = true;
+  const sig = toks.filter(t => t.type !== 'ws'); let si = 0;
+  for (const t of toks) {
+    if (t.type === 'ws') { if (t.text.includes('\n')) lineStart = true; s += t.text; continue; }
+    const idx = si++;
+    if (lineStart && t.pos > rawEnd && isSqlplusAt(sig, idx)) { rawEnd = src.indexOf('\n', t.pos); if (rawEnd < 0) rawEnd = src.length; }
+    lineStart = false;
+    s += (t.type === 'word' && t.pos >= rawEnd) ? caseWord(t.text, opt) : t.text;
+  }
+  return s.split(/\r?\n/).map(l => l.replace(/[ \t]+$/, '')).join(/\r\n/.test(src) ? '\r\n' : '\n');
+}
+
+function formatSqlMode(src, toks, opt) {
+  const IND = ' '.repeat(opt.indent);
+  const eol = /\r\n/.test(src) ? '\r\n' : '\n';
+  const sig = []; let nlb = 0;
+  for (const t of toks) {
+    if (t.type === 'ws') { const c = (t.text.match(/\n/g) || []).length; nlb += c; if (sig.length) sig[sig.length - 1].nlAfter += c; continue; }
+    sig.push(Object.assign({}, t, { nlBefore: nlb, nlAfter: 0 })); nlb = 0;
+  }
+  const lines = []; let line = '', lineInd = 0, atStart = true, mustBreak = false, prev = null, prev2 = null, unaryNext = false;
+  const nl = ind => { if (!atStart) lines.push(line.replace(/\s+$/, '')); line = ''; lineInd = ind; atStart = true; mustBreak = false; };
+  const brk = ind => { if (!atStart) nl(ind); else { lineInd = ind; mustBreak = false; } };
+  const blank = () => { if (!atStart) nl(0); if (lines.length && lines[lines.length - 1] !== '') lines.push(''); };
+  const up = t => (t && t.type === 'word') ? t.text.toUpperCase() : null;
+  function space(t) {
+    if (!prev) return false;
+    const px = prev.text, pt = prev.type, tx = t.text;
+    if (t.type === ',' || t.type === ';' || t.type === ')' || t.type === '.' || tx === '@' || tx === '%') return false;
+    if (pt === '(' || pt === '.' || px === '@' || px === '%') return false;
+    if (t.type === '(') {
+      if (pt === 'word') return SPACE_PAREN.has(px.toUpperCase()) || !!(prev2 && prev2.type === 'word' && ['TABLE', 'INTO'].includes(prev2.text.toUpperCase()));
+      if (pt === 'qid' || pt === 'bind') return false;
+      return true;
+    }
+    return true;
+  }
+  function write(text, t) {
+    if (mustBreak) nl(lineInd);
+    const p = prev;
+    if (atStart) { line = IND.repeat(lineInd) + text; atStart = false; }
+    else line += ((unaryNext ? false : space(t)) ? ' ' : '') + text;
+    unaryNext = t.type === 'op' && (text === '-' || text === '+') &&
+      (!p || p.type === 'op' || p.type === '(' || p.type === ',' ||
+        (p.type === 'word' && KEYWORDS.has(p.text.toUpperCase()) && !VALUE_KW.has(p.text.toUpperCase())));
+    prev2 = p; prev = t;
+  }
+  const txt = t => t.type === 'word' ? caseWord(t.text, opt) : (t.type === 'lc' ? t.text.replace(/\s+$/, '') : t.text);
+  const newRoot = () => ({ type: 'root', base: 0, clause: null, between: false });
+  let stack = [newRoot()], stmtCount = 0;
+  const top = () => stack[stack.length - 1];
+  const blk = () => { for (let k = stack.length - 1; k >= 0; k--) if (stack[k].type === 'root' || stack[k].type === 'sub') return stack[k]; };
+  const reset = () => { stack = [newRoot()]; stmtCount = 0; lineInd = 0; };
+  let i = 0;
+  const pu = k => up(sig[i + k]);
+  const takeTrailingComment = () => {
+    const nx = sig[i + 1];
+    if (nx && (nx.type === 'lc' || nx.type === 'bc') && nx.nlBefore === 0) { i++; write(txt(nx), nx); if (nx.type === 'lc') mustBreak = true; }
+  };
+
+  for (i = 0; i < sig.length; i++) {
+    const t = sig[i]; const U = up(t);
+    if (stmtCount === 0 && t.nlBefore >= 2 && lines.length) blank();
+    if (t.type === 'lc' || t.type === 'bc') {
+      if (t.nlBefore > 0 && !atStart) nl(lineInd);
+      write(txt(t), t);
+      if (t.type === 'lc' || t.nlAfter > 0) mustBreak = true;
+      continue;
+    }
+    if (stmtCount === 0 && isSqlplusAt(sig, i)) {
+      let e = src.indexOf('\n', t.pos); if (e < 0) e = src.length;
+      const raw = src.slice(t.pos, e).replace(/\s+$/, '');
+      if (!atStart) nl(0); lineInd = 0;
+      write(raw, { type: 'raw', text: raw }); mustBreak = true; prev = null;
+      while (i + 1 < sig.length && sig[i + 1].pos < e) i++;
+      continue;
+    }
+    if (t.text === '/' && (i === 0 || t.nlBefore > 0) && (i === sig.length - 1 || t.nlAfter > 0)) {
+      if (!atStart) nl(0); lineInd = 0; write('/', t); nl(0); reset(); prev = null; continue;
+    }
+    const first = stmtCount === 0; stmtCount++;
+    const T = top(), B = blk(), atBlk = T === B, prevU = up(prev);
+
+    if (t.type === ';') { write(';', t); takeTrailingComment(); nl(0); reset(); prev = null; continue; }
+
+    if (t.type === '(') {
+      const n1 = pu(1);
+      if (n1 === 'SELECT' || n1 === 'WITH') { write('(', t); stack.push({ type: 'sub', base: lineInd + 1, clause: null, openInd: lineInd }); continue; }
+      if (T.type === 'root' && B.ddl && !B.ddlOpened) { B.ddlOpened = true; write('(', t); takeTrailingComment(); stack.push({ type: 'paren', ddl: true, openInd: lineInd }); nl(lineInd + 1); continue; }
+      write('(', t); stack.push({ type: 'paren', openInd: lineInd }); continue;
+    }
+    if (t.type === ')') {
+      while (stack.length > 1 && top().type === 'case') stack.pop();
+      const p = stack.length > 1 ? stack.pop() : null;
+      if (p && (p.type === 'sub' || p.ddl)) brk(p.openInd);
+      write(')', t); continue;
+    }
+    if (t.type === ',') {
+      write(',', t);
+      if (T.type === 'paren' && T.ddl) { takeTrailingComment(); nl(T.openInd + 1); continue; }
+      if (atBlk) {
+        const c = B.clause;
+        if (opt.selectBreak && (c === 'select' || c === 'set')) { takeTrailingComment(); nl(B.base + 1); }
+        else if (c === 'with') { takeTrailingComment(); nl(B.base); }
+        else if (c === 'from') { takeTrailingComment(); nl(B.base + 1); }
+      }
+      continue;
+    }
+    if (U === 'CASE') { write(txt(t), t); stack.push({ type: 'case', base: lineInd }); continue; }
+    if (T.type === 'case') {
+      if (U === 'WHEN' || U === 'ELSE') { brk(T.base + 1); write(txt(t), t); continue; }
+      if (U === 'END') { brk(T.base); write(txt(t), t); stack.pop(); continue; }
+    }
+    if (U && atBlk) {
+      const c = B.clause, base = B.base;
+      const w = () => write(txt(t), t);
+      const wNext = k => { for (let j = 0; j < k; j++) { i++; write(txt(sig[i]), sig[i]); } };
+      if (U === 'SELECT') {
+        brk(base); w(); while (['DISTINCT', 'UNIQUE', 'ALL'].includes(pu(1))) wNext(1);
+        B.clause = 'select'; B.between = false;
+        if (sig[i + 1] && sig[i + 1].text === '*' && (pu(2) === 'FROM' || !sig[i + 2])) { wNext(1); continue; }
+        if (opt.selectBreak) { takeTrailingComment(); nl(base + 1); }
+        continue;
+      }
+      if (U === 'FROM') { if (c === 'delete') { w(); continue; } brk(base); w(); B.clause = 'from'; continue; }
+      if (U === 'WHERE' || U === 'HAVING') { brk(base); w(); B.clause = 'where'; B.between = false; continue; }
+      if ((U === 'GROUP' || U === 'ORDER') && pu(1) === 'BY') { brk(base); w(); wNext(1); B.clause = 'list'; continue; }
+      if (U === 'ORDER' && pu(1) === 'SIBLINGS' && pu(2) === 'BY') { brk(base); w(); wNext(2); B.clause = 'list'; continue; }
+      if (U === 'START' && pu(1) === 'WITH') { brk(base); w(); wNext(1); B.clause = 'where'; continue; }
+      if (U === 'CONNECT' && pu(1) === 'BY') { brk(base); w(); wNext(1); B.clause = 'where'; continue; }
+      if (['UNION', 'MINUS', 'INTERSECT', 'EXCEPT'].includes(U)) { brk(base); w(); if (pu(1) === 'ALL') wNext(1); nl(base); B.clause = null; continue; }
+      if (JOINW.has(U) && U !== 'OUTER') {
+        let k = 0; while (JOINW.has(pu(k)) && pu(k) !== 'JOIN') k++;
+        if (pu(k) === 'JOIN') { brk(base); w(); wNext(k); B.clause = 'from'; continue; }
+      }
+      if (U === 'ON') {
+        if (c === 'from' || c === 'on') { brk(base + 1); w(); B.clause = 'on'; B.between = false; continue; }
+        if (B.isMerge && c === 'merge') { brk(base); w(); continue; }
+      }
+      if ((U === 'AND' || U === 'OR') && (c === 'where' || c === 'on')) {
+        if (U === 'AND' && B.between) { B.between = false; w(); continue; }
+        brk(base + 1); w(); continue;
+      }
+      if (U === 'BETWEEN') { B.between = true; w(); continue; }
+      if (U === 'INSERT') { if (prevU !== 'THEN') brk(base); w(); B.clause = 'insert'; continue; }
+      if (U === 'VALUES') { brk(base); w(); B.clause = 'values'; continue; }
+      if (U === 'UPDATE') { if (prevU === 'FOR') { w(); continue; } if (prevU !== 'THEN') brk(base); w(); B.clause = 'update'; continue; }
+      if (U === 'SET' && c === 'update') { brk(base); w(); B.clause = 'set'; if (opt.selectBreak) nl(base + 1); continue; }
+      if (U === 'DELETE') { if (prevU !== 'THEN') brk(base); w(); B.clause = 'delete'; continue; }
+      if (U === 'MERGE') { brk(base); w(); B.clause = 'merge'; B.isMerge = true; continue; }
+      if (U === 'USING' && B.isMerge) { brk(base); w(); B.clause = 'merge'; continue; }
+      if (U === 'WHEN' && B.isMerge) { brk(base); w(); B.clause = 'merge'; continue; }
+      if (U === 'WITH' && first) { w(); B.clause = 'with'; continue; }
+      if (U === 'CREATE' && first) {
+        let k = 1; while (['OR', 'REPLACE', 'GLOBAL', 'TEMPORARY', 'PRIVATE'].includes(pu(k))) k++;
+        if (pu(k) === 'TABLE') B.ddl = true;
+      }
+    }
+    write(txt(t), t);
+  }
+  if (!atStart) lines.push(line.replace(/\s+$/, ''));
+  while (lines.length && lines[lines.length - 1] === '') lines.pop();
+  let res = lines.join(eol);
+  if (/\r?\n\s*$/.test(src) || !src.trim()) res += eol;
+  return res;
+}
+
+function signature(text) {
+  return tokenize(text).filter(t => t.type !== 'ws').map(t => {
+    if (t.type === 'word') return 'w:' + t.text.toUpperCase();
+    if (t.type === 'lc') return 'c:' + t.text.replace(/\s+$/, '');
+    return t.type + ':' + t.text;
+  });
+}
+
+function formatText(src, opt) {
+  const toks = tokenize(src);
+  const pl = isPlsql(toks);
+  let out;
+  try { out = pl ? formatLight(src, toks, opt) : formatSqlMode(src, toks, opt); }
+  catch (e) { return { out: src, mode: pl ? 'plsql' : 'sql', ok: false, err: '格式化例外：' + e.message }; }
+  const a = signature(src), b = signature(out);
+  let ok = a.length === b.length, at = -1;
+  for (let k = 0; ok && k < a.length; k++) if (a[k] !== b[k]) { ok = false; at = k; }
+  if (!ok) return { out: src, mode: pl ? 'plsql' : 'sql', ok: false, err: '安全驗證失敗：格式化前後語彙不一致' + (at >= 0 ? `（第 ${at + 1} 個語彙：${a[at]} → ${b[at]}）` : '') + '，已保留原檔' };
+  return { out, mode: pl ? 'plsql' : 'sql', ok: true };
+}
+
+/* ===== SQL health check ===== */
+const RULES = [
+  { id: 'EQ_NULL',       cat: '正確性', level: 'error', name: '= NULL 比較',          desc: '以 = / != / <> 與 NULL 比較永遠不成立，應改用 IS [NOT] NULL' },
+  { id: 'ROWNUM_ORDER',  cat: '正確性', level: 'error', name: 'ROWNUM 與 ORDER BY 同層', desc: 'Oracle 先套用 ROWNUM 才排序，取不到真正的前 N 筆；請將排序放在子查詢內' },
+  { id: 'LEFT_TO_INNER', cat: '正確性', level: 'warn',  name: 'LEFT JOIN 被 WHERE 轉為 INNER', desc: 'WHERE 中篩選 LEFT JOIN 右表欄位，會使外部連接失效；條件應移至 ON' },
+  { id: 'DML_NO_WHERE',  cat: '正確性', level: 'warn',  name: 'UPDATE/DELETE 無 WHERE', desc: '未帶 WHERE 條件，將影響整張資料表' },
+  { id: 'COMMA_JOIN',    cat: '正確性', level: 'info',  name: '逗號 JOIN',             desc: 'FROM 子句以逗號連接資料表（舊式 JOIN），請確認連接條件完整' },
+  { id: 'AMP_NO_DEFINE', cat: '部署',   level: 'error', name: '& 未 SET DEFINE OFF',   desc: '字串含 &，SQL*Plus 執行時會被當成替代變數；請於檔頭加入 SET DEFINE OFF' },
+  { id: 'PLSQL_NO_SLASH',cat: '部署',   level: 'error', name: 'PL/SQL 區塊缺少 /',     desc: 'PL/SQL 區塊結尾須以單獨一行的 / 執行，否則不會編譯，後續語句亦會失效' },
+  { id: 'FULLWIDTH',     cat: '部署',   level: 'error', name: '全形符號',              desc: '程式碼（非字串、非註解）中含全形符號或全形空白' },
+  { id: 'INVISIBLE',     cat: '部署',   level: 'error', name: '不可見字元',            desc: '含零寬字元、不換行空白、檔中 BOM 或控制字元' },
+  { id: 'FUNC_ON_COL',   cat: '效能',   level: 'warn',  name: '條件欄位套用函數',      desc: 'WHERE/ON 條件欄位被函數包覆（如 TRUNC、NVL、TO_CHAR），可能無法使用索引' },
+  { id: 'SELECT_STAR',   cat: '效能',   level: 'warn',  name: 'SELECT *',              desc: '使用 SELECT *，建議明列欄位' },
+  { id: 'NOT_IN',        cat: '效能',   level: 'info',  name: 'NOT IN',                desc: 'NOT IN 遇子查詢含 NULL 會無結果，可評估改用 NOT EXISTS' },
+  { id: 'CROSS_JOIN',    cat: '效能',   level: 'warn',  name: 'CROSS JOIN',            desc: '使用 CROSS JOIN，請確認是否為預期的笛卡兒積' },
+  { id: 'WHERE_1_1',     cat: '效能',   level: 'info',  name: 'WHERE 1=1',             desc: '存在 1=1 恆真條件' },
+  { id: 'DANGER_DDL',    cat: '資安',   level: 'warn',  name: '高風險 DDL/DCL',        desc: 'DROP / TRUNCATE / ALTER / GRANT / REVOKE，請確認已經過審核' },
+  { id: 'HARDCODED_PWD', cat: '資安',   level: 'error', name: '寫死的密碼',            desc: '程式中出現 IDENTIFIED BY 或 CONNECT 帳號/密碼' },
+];
+const RULE_MAP = Object.fromEntries(RULES.map(r => [r.id, r]));
+const COL_FUNCS = new Set(['TRUNC', 'NVL', 'NVL2', 'TO_CHAR', 'TO_NUMBER', 'UPPER', 'LOWER', 'SUBSTR', 'TRIM', 'LTRIM', 'RTRIM', 'DECODE', 'COALESCE', 'REPLACE', 'LPAD', 'RPAD', 'ROUND', 'CAST']);
+const CMP_OPS = new Set(['=', '<', '>', '<=', '>=', '<>', '!=', '^=']);
+const FULLWIDTH_RE = /[\uFF01-\uFF5E\u3000\u3001\u3002\uFF5F-\uFF65]/;
+const INVISIBLE_RE = /[\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060\uFEFF\u00A0\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+
+function healthCheck(src) {
+  const toks = tokenize(src);
+  const sig = toks.filter(t => !['ws', 'lc', 'bc'].includes(t.type));
+  const srcLines = src.split(/\r?\n/);
+  const issues = [], seen = new Set();
+  const add = (line, id, extra) => {
+    const k = id + '@' + line + (id === 'DANGER_DDL' ? extra : ''); if (seen.has(k)) return; seen.add(k);
+    const r = RULE_MAP[id]; issues.push({ line, rule: id, name: r.name, level: r.level, msg: r.desc + (extra ? '（' + extra + '）' : '') });
+  };
+  const up = t => t && t.type === 'word' ? t.text.toUpperCase() : null;
+  const isSlash = t => t && t.text === '/' && (srcLines[t.line - 1] || '').trim() === '/';
+  const matchParen = i => { let d = 0; for (let k = i; k < sig.length; k++) { if (sig[k].type === '(') d++; else if (sig[k].type === ')' && --d === 0) return k; else if (sig[k].type === ';') return -1; } return -1; };
+
+  /* --- character level: fullwidth / invisible --- */
+  for (const t of toks) {
+    if (t.type === 'str' || t.type === 'lc' || t.type === 'bc' || t.type === 'qid') continue;
+    for (let k = 0; k < t.text.length; k++) {
+      const ch = t.text[k]; if (ch === '\n' || ch === '\r' || ch === '\t') continue;
+      const line = t.line + (t.text.slice(0, k).match(/\n/g) || []).length;
+      const code = 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+      if (INVISIBLE_RE.test(ch)) add(line, 'INVISIBLE', code);
+      else if (FULLWIDTH_RE.test(ch)) add(line, 'FULLWIDTH', `「${ch === '\u3000' ? '全形空白' : ch}」`);
+    }
+  }
+  for (const t of toks) if ((t.type === 'str' || t.type === 'lc' || t.type === 'bc') && /[\u200B-\u200D\u2060\uFEFF]/.test(t.text)) add(t.line, 'INVISIBLE', '位於字串或註解內');
+
+  /* --- & without SET DEFINE OFF --- */
+  const defOff = /^\s*SET\s+DEF(INE)?\s+OFF\b/im.exec(src);
+  const defPos = defOff ? defOff.index : Infinity;
+  for (const t of toks) {
+    if ((t.type === 'str' && t.text.includes('&')) || t.type === 'bind' && t.text.startsWith('&')) {
+      if (t.pos < defPos) add(t.line, 'AMP_NO_DEFINE', t.type === 'bind' ? '替代變數 ' + t.text : '');
+    }
+  }
+
+  /* --- hardcoded password via CONNECT user/pwd line --- */
+  srcLines.forEach((l, k) => { if (/^\s*(conn|connect|sqlplus)\s+[^\s\/]+\/[^\s@]+/i.test(l) && !/^\s*connect\s+by\b/i.test(l)) add(k + 1, 'HARDCODED_PWD', 'CONNECT 帳密'); });
+
+  /* --- PL/SQL block terminated by "/" --- */
+  {
+    let blockStart = null, prevSig = null;
+    const atStmtStart = i => { const p = sig[i - 1]; return !p || p.type === ';' || isSlash(p) || (p.line < sig[i].line && isSqlplusAt(sig, firstOnLine(i - 1))); };
+    const firstOnLine = i => { let k = i; while (k > 0 && sig[k - 1].line === sig[i].line) k--; return k; };
+    for (let i = 0; i < sig.length; i++) {
+      const t = sig[i], U = up(t);
+      if (isSlash(t)) { blockStart = null; continue; }
+      let isStart = false;
+      if (U === 'CREATE' && atStmtStart(i)) {
+        for (let k = 1; k <= 5 && sig[i + k]; k++) {
+          const W = up(sig[i + k]);
+          if (['PACKAGE', 'PROCEDURE', 'FUNCTION', 'TRIGGER', 'TYPE'].includes(W)) { isStart = true; break; }
+          if (!['OR', 'REPLACE', 'EDITIONABLE', 'NONEDITIONABLE'].includes(W)) break;
+        }
+        if (!isStart && blockStart) { add(blockStart.line, 'PLSQL_NO_SLASH'); blockStart = null; }
+      } else if ((U === 'DECLARE' || U === 'BEGIN') && !blockStart && atStmtStart(i)) isStart = true;
+      if (isStart) { if (blockStart) add(blockStart.line, 'PLSQL_NO_SLASH'); blockStart = t; }
+      prevSig = t;
+    }
+    if (blockStart) add(blockStart.line, 'PLSQL_NO_SLASH');
+  }
+
+  /* --- token / clause level rules --- */
+  const newCtx = () => ({ clause: null, rownum: null, order: false, left: new Map(), fromComma: false, dml: null, inSet: false });
+  let st = [newCtx()];
+  const finalize = c => { if (c.rownum && c.order) add(c.rownum.line, 'ROWNUM_ORDER'); c.rownum = null; c.order = false; };
+  for (let i = 0; i < sig.length; i++) {
+    const t = sig[i], U = up(t), n1 = up(sig[i + 1]), P = up(sig[i - 1]);
+    const ctx = st[st.length - 1];
+    if (t.type === '(') { st.push(newCtx()); continue; }
+    if (t.type === ')') { if (st.length > 1) finalize(st.pop()); continue; }
+    if (t.type === ';' || isSlash(t)) { st.forEach(finalize); st = [newCtx()]; continue; }
+
+    // = NULL
+    if (t.type === 'op' && CMP_OPS.has(t.text) && n1 === 'NULL' && !ctx.inSet) add(t.line, 'EQ_NULL', `${t.text} NULL`);
+
+    if (t.type === ',' && ctx.clause === 'from' && !ctx.fromComma) { ctx.fromComma = true; add(t.line, 'COMMA_JOIN'); }
+
+    if (!U) continue;
+    switch (U) {
+      case 'SELECT':
+        finalize(ctx); ctx.clause = 'select'; ctx.left = new Map(); ctx.fromComma = false; ctx.inSet = false;
+        if (sig[i + 1] && sig[i + 1].text === '*') add(t.line, 'SELECT_STAR');
+        break;
+      case 'FROM': if (ctx.clause === 'select') ctx.clause = 'from'; ctx.inSet = false; break;
+      case 'WHERE': ctx.clause = 'where'; ctx.inSet = false; break;
+      case 'HAVING': ctx.clause = 'having'; break;
+      case 'SET': if (P === 'DEFINE' || isSqlplusAt(sig, i)) break; ctx.inSet = true; ctx.clause = 'set'; break;
+      case 'ON': if (ctx.clause === 'from' || ctx.clause === 'on') ctx.clause = 'on'; break;
+      case 'START': case 'CONNECT': if (n1 === 'WITH' || n1 === 'BY') ctx.clause = 'where'; break;
+      case 'GROUP': if (n1 === 'BY') ctx.clause = 'group'; break;
+      case 'ORDER': if (n1 === 'BY' || n1 === 'SIBLINGS') { ctx.clause = 'order'; if (P !== 'BY' || true) { if (!(sig[i - 1] && up(sig[i - 2]) === 'OVER')) ctx.order = true; } } break;
+      case 'UNION': case 'MINUS': case 'INTERSECT': case 'EXCEPT': finalize(ctx); ctx.clause = null; break;
+      case 'ROWNUM': if (ctx.clause === 'where') ctx.rownum = ctx.rownum || t; break;
+      case 'INSERT': case 'MERGE': ctx.inSet = false; break;
+      case 'WHEN': ctx.inSet = false; break;
+      case 'CROSS': if (n1 === 'JOIN') add(t.line, 'CROSS_JOIN'); break;
+      case 'NOT': if (n1 === 'IN') add(t.line, 'NOT_IN'); break;
+    }
+    // ORDER BY inside OVER(...) lives in its own paren ctx, so it won't hit outer ctx
+    if (U === 'JOIN') {
+      ctx.clause = 'from';
+      let k = i - 1; while (up(sig[k]) === 'OUTER') k--;
+      if (up(sig[k]) === 'LEFT' || up(sig[k]) === 'RIGHT') {
+        // identify the optional side: LEFT -> right table, RIGHT -> left table (only handle LEFT)
+        if (up(sig[k]) === 'LEFT') {
+          let j = i + 1, name = null;
+          if (sig[j] && sig[j].type === '(') { j = matchParen(j); if (j < 0) continue; j++; }
+          else { while (sig[j] && (sig[j].type === 'word' || sig[j].type === 'qid')) { name = sig[j].text; if (sig[j + 1] && (sig[j + 1].type === '.' || sig[j + 1].text === '@')) j += 2; else { j++; break; } } }
+          const a = sig[j];
+          let alias = (a && (a.type === 'word' || a.type === 'qid') && !KEYWORDS.has(a.text.toUpperCase())) ? a.text : name;
+          if (alias) ctx.left.set(alias.toUpperCase().replace(/"/g, ''), t.line);
+        }
+      }
+    }
+    // WHERE 1=1
+    if ((U === 'WHERE' || U === 'AND') && sig[i + 1] && sig[i + 1].text === '1' && sig[i + 2] && sig[i + 2].text === '=' && sig[i + 3] && sig[i + 3].text === '1') add(t.line, 'WHERE_1_1');
+    // DML without WHERE
+    if ((U === 'DELETE' || U === 'UPDATE') && P !== 'FOR' && P !== 'THEN' && P !== 'BEFORE' && P !== 'AFTER' && P !== 'OR' && up(sig[i + 1]) !== 'ON' && up(sig[i + 1]) !== 'OF') {
+      let k = i + 1, d = 0, hasWhere = false;
+      for (; k < sig.length && sig[k].type !== ';' && !isSlash(sig[k]); k++) { if (sig[k].type === '(') d++; else if (sig[k].type === ')') d--; else if (d === 0 && ['WHERE', 'CURRENT'].includes(up(sig[k]))) { hasWhere = true; break; } }
+      if (!hasWhere) add(t.line, 'DML_NO_WHERE', U);
+    }
+    // LEFT JOIN right-table filtered in WHERE
+    if (ctx.clause === 'where' && ctx.left.has(U) && sig[i + 1] && sig[i + 1].type === '.' && P !== null && sig[i - 1].type !== '.') {
+      const a = sig[i + 3], b = sig[i + 4];
+      const outerMark = a && a.type === '(' && b && b.text === '+';
+      const isNull = up(a) === 'IS' && (up(b) === 'NULL');
+      if (!outerMark && !isNull) add(t.line, 'LEFT_TO_INNER', `${t.text}.${sig[i + 2] ? sig[i + 2].text : ''}`);
+    }
+    // function on column in WHERE/ON
+    if ((ctx.clause === 'where' || ctx.clause === 'on') && COL_FUNCS.has(U) && sig[i + 1] && sig[i + 1].type === '(') {
+      const p = sig[i - 1]; const pu2 = up(p);
+      const leftSide = !p || p.type === '(' || ['WHERE', 'AND', 'OR', 'NOT', 'ON', 'WITH', 'BY', 'PRIOR'].includes(pu2);
+      const a = sig[i + 2];
+      const isCol = a && (a.type === 'word' || a.type === 'qid') && !KEYWORDS.has(a.text.toUpperCase()) && !FUNCS.has(a.text.toUpperCase());
+      if (leftSide && isCol) {
+        const j = matchParen(i + 1); const nx = sig[j + 1];
+        if (j > 0 && nx && ((nx.type === 'op' && CMP_OPS.has(nx.text)) || ['LIKE', 'IN', 'BETWEEN', 'NOT'].includes(up(nx)))) add(t.line, 'FUNC_ON_COL', `${U}(${a.text}…)`);
+      }
+    }
+    // danger DDL / DCL
+    if (U === 'DROP' && ['TABLE', 'VIEW', 'INDEX', 'SEQUENCE', 'USER', 'PACKAGE', 'PROCEDURE', 'FUNCTION', 'SYNONYM', 'TRIGGER', 'TYPE', 'TABLESPACE', 'MATERIALIZED', 'PUBLIC', 'DATABASE', 'ROLE'].includes(n1) && P !== 'ON') add(t.line, 'DANGER_DDL', 'DROP ' + n1);
+    if (U === 'TRUNCATE' && n1 === 'TABLE') add(t.line, 'DANGER_DDL', 'TRUNCATE TABLE');
+    if (U === 'ALTER' && ['TABLE', 'USER', 'SYSTEM', 'DATABASE', 'TABLESPACE', 'INDEX', 'VIEW', 'SEQUENCE'].includes(n1)) add(t.line, 'DANGER_DDL', 'ALTER ' + n1);
+    if ((U === 'GRANT' || U === 'REVOKE') && !(P === 'WITH')) add(t.line, 'DANGER_DDL', U);
+    if (U === 'IDENTIFIED' && n1 === 'BY' && up(sig[i + 2]) !== 'VALUES') add(t.line, 'HARDCODED_PWD', 'IDENTIFIED BY');
+  }
+
+  /* --- ignore comments --- */
+  const fileIgn = new Set(); let fileAll = false;
+  srcLines.forEach(l => { const m = /--\s*sqlfmt:ignore-file\b([\w,\s]*)/i.exec(l); if (m) { const ids = m[1].split(/[\s,]+/).filter(Boolean).map(x => x.toUpperCase()); if (!ids.length) fileAll = true; ids.forEach(x => fileIgn.add(x)); } });
+  const lineIgn = ln => {
+    const res = new Set(); let all = false;
+    const chk = (l, onlyComment) => { if (l == null) return; if (onlyComment && !/^\s*--/.test(l)) return; const m = /--\s*sqlfmt:ignore(?!-file)\b([\w,\s]*)/i.exec(l); if (m) { const ids = m[1].split(/[\s,]+/).filter(Boolean).map(x => x.toUpperCase()); if (!ids.length) all = true; ids.forEach(x => res.add(x)); } };
+    chk(srcLines[ln - 1], false); chk(srcLines[ln - 2], true);
+    return { all, res };
+  };
+  return issues.filter(x => {
+    if (fileAll || fileIgn.has(x.rule)) return false;
+    const g = lineIgn(x.line); return !(g.all || g.res.has(x.rule));
+  }).sort((a, b) => a.line - b.line);
+}
+
+if (typeof module !== 'undefined') module.exports = { tokenize, formatText, healthCheck, isPlsql, RULES };
+
+</script>
+<script>
+/* ================= Encoding ================= */
+let B5 = null;
+function buildBig5() {
+  B5 = new Map(); const d = new TextDecoder('big5');
+  for (const [a, b] of [[0xA1, 0xF9], [0x81, 0xA0], [0xFA, 0xFE]])
+    for (let l = a; l <= b; l++) for (let t = 0x40; t <= 0xFE; t++) {
+      if (t > 0x7E && t < 0xA1) continue;
+      const ch = d.decode(new Uint8Array([l, t]));
+      if (ch && ch !== '\uFFFD' && [...ch].length === 1 && !B5.has(ch)) B5.set(ch, [l, t]);
+    }
+}
+function decodeBytes(buf, pref) {
+  let u = new Uint8Array(buf), bom = false;
+  if (u[0] === 0xEF && u[1] === 0xBB && u[2] === 0xBF) { bom = true; u = u.subarray(3); return { text: new TextDecoder('utf-8').decode(u), enc: 'utf-8', bom }; }
+  if (pref === 'big5') return { text: new TextDecoder('big5').decode(u), enc: 'big5', bom };
+  if (pref === 'utf-8') return { text: new TextDecoder('utf-8').decode(u), enc: 'utf-8', bom };
+  try { return { text: new TextDecoder('utf-8', { fatal: true }).decode(u), enc: 'utf-8', bom }; }
+  catch { return { text: new TextDecoder('big5').decode(u), enc: 'big5', bom }; }
+}
+function encodeText(text, enc, bom) {
+  if (enc === 'utf-8') {
+    const b = new TextEncoder().encode(text);
+    if (!bom) return b; const r = new Uint8Array(b.length + 3); r.set([0xEF, 0xBB, 0xBF]); r.set(b, 3); return r;
+  }
+  if (!B5) buildBig5();
+  const out = [];
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    if (cp < 0x80) { out.push(cp); continue; }
+    const m = B5.get(ch); if (!m) throw new Error(`Big5 無法編碼字元「${ch}」(U+${cp.toString(16).toUpperCase()})`);
+    out.push(m[0], m[1]);
+  }
+  const r = new Uint8Array(out);
+  if (new TextDecoder('big5').decode(r) !== text) throw new Error('Big5 回寫驗證失敗');
+  return r;
+}
+
+/* ================= ZIP (store) ================= */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function makeZip(entries) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const d = new Date(), dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  for (const e of entries) {
+    const name = enc.encode(e.path), data = e.data, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    cen.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const cenSize = cen.reduce((s, x) => s + x.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+  end.setUint32(12, cenSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+
+/* ================= App ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const S = { root: null, rootName: '', readonly: false, files: [], sel: null, undo: null, previewed: false };
+const SKIP_DIRS = new Set(['_sqlfmt_backup', '.git', '.svn', 'node_modules']);
+const LV_TEXT = { error: '錯誤', warn: '注意', info: '提示' };
+const LV_ORDER = { error: 0, warn: 1, info: 2 };
+
+/* ----- rule config ----- */
+let RCFG = {};
+function defaultRcfg() { const o = {}; RULES.forEach(r => o[r.id] = { on: true, level: r.level }); return o; }
+function loadRcfg() { RCFG = defaultRcfg(); try { const s = JSON.parse(localStorage.getItem('sqlfmt.rules') || '{}'); for (const k in s) if (RCFG[k]) Object.assign(RCFG[k], s[k]); } catch { } }
+function saveRcfg() { try { localStorage.setItem('sqlfmt.rules', JSON.stringify(RCFG)); } catch { } }
+function runHealth(text) {
+  return healthCheck(text).filter(i => RCFG[i.rule] && RCFG[i.rule].on).map(i => Object.assign(i, { level: RCFG[i.rule].level }))
+    .sort((a, b) => a.line - b.line || LV_ORDER[a.level] - LV_ORDER[b.level]);
+}
+function renderRules() {
+  let cat = '';
+  $('ruleTable').innerHTML = `<tr><th style="width:50px">啟用</th><th style="width:70px">類別</th><th style="width:150px">規則代碼</th><th style="width:190px">名稱</th><th style="width:90px">嚴重度</th><th>說明</th></tr>` +
+    RULES.map(r => { const c = RCFG[r.id]; const catCell = r.cat !== cat ? (cat = r.cat) : ''; return `<tr>
+      <td><input type="checkbox" data-r="${r.id}" class="rOn" ${c.on ? 'checked' : ''}></td><td>${catCell}</td><td class="m">${r.id}</td><td>${esc(r.name)}</td>
+      <td><select data-r="${r.id}" class="rLv">${['error', 'warn', 'info'].map(l => `<option value="${l}" ${c.level === l ? 'selected' : ''}>${LV_TEXT[l]}</option>`).join('')}</select></td>
+      <td class="hint">${esc(r.desc)}</td></tr>`; }).join('');
+  $('ruleCount').textContent = `已啟用 ${RULES.filter(r => RCFG[r.id].on).length} / ${RULES.length}`;
+  $('hRule').innerHTML = '<option value="">全部規則</option>' + RULES.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
+}
+function rulesChanged() { saveRcfg(); renderRules(); S.files.forEach(f => f.issues = runHealth(f.text)); renderHealth(); refresh(); if (S.sel) select(S.sel, true); quick(); }
+$('ruleTable').addEventListener('change', e => {
+  const id = e.target.dataset.r; if (!id) return;
+  if (e.target.classList.contains('rOn')) RCFG[id].on = e.target.checked; else RCFG[id].level = e.target.value;
+  rulesChanged();
+});
+$('rAll').onclick = () => { RULES.forEach(r => RCFG[r.id].on = true); rulesChanged(); };
+$('rNone').onclick = () => { RULES.forEach(r => RCFG[r.id].on = false); rulesChanged(); };
+$('rReset').onclick = () => { RCFG = defaultRcfg(); rulesChanged(); };
+
+/* ----- options ----- */
+function opt() {
+  return { indent: +$('oIndent').value, kwUpper: $('oKw').checked, fnUpper: $('oFn').checked, ident: $('oIdent').value,
+    selectBreak: $('oSel').checked, pl: $('oPl').value, backup: $('oBak').checked, enc: $('oEnc').value,
+    exts: $('oExt').value.split(/[,;\s]+/).filter(Boolean).map(x => (x.startsWith('.') ? x : '.' + x).toLowerCase()) };
+}
+const OPT_IDS = ['oExt', 'oEnc', 'oIndent', 'oIdent', 'oPl', 'oKw', 'oFn', 'oSel', 'oBak'];
+function saveOpt() { const o = {}; OPT_IDS.forEach(id => o[id] = $(id).type === 'checkbox' ? $(id).checked : $(id).value); try { localStorage.setItem('sqlfmt.opt', JSON.stringify(o)); } catch { } }
+function loadOpt() { try { const o = JSON.parse(localStorage.getItem('sqlfmt.opt') || '{}'); OPT_IDS.forEach(id => { if (id in o) $(id).type === 'checkbox' ? $(id).checked = o[id] : $(id).value = o[id]; }); } catch { } }
+OPT_IDS.forEach(id => $(id).addEventListener('change', () => { saveOpt(); if (S.previewed) { S.previewed = false; S.files.forEach(f => { if (f.status !== 'written') f.status = 'new'; f.out = null; }); refresh(); setStatus('設定已變更，請重新執行「格式化預覽」'); } }));
+
+function log(msg) { const t = new Date().toLocaleTimeString('zh-TW', { hour12: false }); $('log').textContent += `[${t}] ${msg}\n`; }
+function setStatus(s) { $('status').textContent = s; }
+function prog(v) { $('prog').firstElementChild.style.width = (v * 100).toFixed(1) + '%'; }
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+/* ----- scan ----- */
+async function walk(dir, prefix, exts, out) {
+  for await (const [name, h] of dir.entries()) {
+    if (h.kind === 'directory') { if (!SKIP_DIRS.has(name)) await walk(h, prefix + name + '/', exts, out); }
+    else if (exts.some(e => name.toLowerCase().endsWith(e))) out.push({ path: prefix + name, handle: h });
+  }
+}
+async function pick() {
+  if (window.showDirectoryPicker) {
+    try { S.root = await showDirectoryPicker({ mode: 'readwrite' }); }
+    catch (e) { if (e.name !== 'AbortError') alert('無法開啟資料夾：' + e.message); return; }
+    S.rootName = S.root.name; S.readonly = false; await scan();
+  } else { $('dirInput').value = ''; $('dirInput').click(); }
+}
+$('dirInput').addEventListener('change', async e => {
+  const fl = [...e.target.files]; if (!fl.length) return;
+  S.root = null; S.readonly = true; S.rootName = fl[0].webkitRelativePath.split('/')[0];
+  const exts = opt().exts;
+  const list = fl.filter(f => exts.some(x => f.name.toLowerCase().endsWith(x)) && !f.webkitRelativePath.split('/').some(seg => SKIP_DIRS.has(seg)))
+    .map(f => ({ path: f.webkitRelativePath.split('/').slice(1).join('/'), file: f }));
+  await load(list);
+  log('瀏覽器不支援直接寫回，已切換為唯讀模式，可用「匯出 ZIP」取得格式化結果');
+});
+async function scan() {
+  setStatus('掃描中…'); prog(0);
+  const list = []; await walk(S.root, '', opt().exts, list);
+  await load(list);
+}
+async function load(list) {
+  list.sort((a, b) => a.path.localeCompare(b.path, 'zh-Hant'));
+  const o = opt(); S.files = []; S.sel = null; S.undo = null; S.previewed = false;
+  for (let k = 0; k < list.length; k++) {
+    const it = list[k];
+    const file = it.file || await it.handle.getFile();
+    const buf = await file.arrayBuffer(); const dec = decodeBytes(buf, o.enc);
+    S.files.push(Object.assign(it, { size: file.size, text: dec.text, enc: dec.enc, bom: dec.bom, orig: new Uint8Array(buf),
+      issues: runHealth(dec.text), status: 'new', checked: true, out: null, mode: isPlsql(tokenize(dec.text)) ? 'plsql' : 'sql' }));
+    if (k % 20 === 0) { prog(k / list.length); setStatus(`讀取 ${k + 1}/${list.length}`); await tick(); }
+  }
+  prog(1);
+  const total = S.files.reduce((s, f) => s + f.size, 0);
+  $('rootInfo').innerHTML = `📁 <b>${esc(S.rootName)}</b>${S.readonly ? '（唯讀模式）' : ''}<br>共 ${S.files.length} 個檔案 · ${(total / 1024 / 1024).toFixed(2)} MB`;
+  const ni = S.files.reduce((s, f) => s + f.issues.length, 0);
+  log(`掃描完成：${S.rootName}，${S.files.length} 個檔案，健檢問題 ${ni} 筆`);
+  setStatus(`掃描完成，共 ${S.files.length} 個檔案`);
+  refresh(); renderHealth();
+  $('diffBox').innerHTML = '<div class="empty">按「格式化預覽」產生結果</div>';
+}
+
+/* ----- preview ----- */
+async function preview() {
+  const o = opt(); const fs = S.files.filter(f => f.checked);
+  for (let k = 0; k < fs.length; k++) {
+    const f = fs[k]; f.err = null;
+    if (f.mode === 'plsql' && o.pl === 'skip') { f.out = f.text; f.status = 'skip'; continue; }
+    const r = formatText(f.text, o);
+    f.out = r.out;
+    if (!r.ok) { f.status = 'failed'; f.err = r.err; }
+    else if (r.out === f.text) f.status = 'same';
+    else {
+      try { encodeText(r.out, f.enc, f.bom); f.status = 'changed'; }
+      catch (e) { f.status = 'failed'; f.err = e.message; f.out = f.text; }
+    }
+    if (k % 10 === 0) { prog(k / fs.length); setStatus(`格式化 ${k + 1}/${fs.length}`); await tick(); }
+  }
+  prog(1); S.previewed = true;
+  const c = cnt(); log(`預覽完成：變更 ${c.changed}、無變更 ${c.same}、失敗 ${c.failed}、略過 ${c.skip}`);
+  S.files.filter(f => f.status === 'failed').forEach(f => log(`  ✖ ${f.path}：${f.err}`));
+  setStatus('預覽完成'); refresh();
+  const first = S.files.find(f => f.status === 'changed' || f.status === 'failed'); if (first) select(first);
+}
+function cnt() { const c = { changed: 0, same: 0, failed: 0, skip: 0, written: 0 }; S.files.forEach(f => { if (f.status in c) c[f.status]++; }); return c; }
+
+/* ----- write ----- */
+async function getSubDir(root, parts, create) { let d = root; for (const p of parts) d = await d.getDirectoryHandle(p, { create }); return d; }
+async function writeBytes(handle, bytes) { const w = await handle.createWritable(); await w.write(bytes); await w.close(); }
+function sameBytes(a, b) { const x = a instanceof Uint8Array ? a : new Uint8Array(a); const y = b instanceof Uint8Array ? b : new Uint8Array(b); if (x.length !== y.length) return false; for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false; return true; }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+async function writeAll() {
+  const fs = S.files.filter(f => f.checked && f.status === 'changed');
+  if (!fs.length) { alert('沒有需要寫回的變更檔案'); return; }
+  const o = opt();
+  if (!confirm(`即將覆寫 ${fs.length} 個檔案${o.backup ? '，並先備份至 _sqlfmt_backup' : '（未啟用備份！）'}。確定執行？`)) return;
+  if ((await S.root.requestPermission({ mode: 'readwrite' })) !== 'granted') { alert('未取得寫入權限'); return; }
+  let bakDir = null; const st = stamp();
+  if (o.backup) bakDir = await getSubDir(S.root, ['_sqlfmt_backup', st], true);
+  S.undo = []; let ok = 0, ng = 0;
+  for (let k = 0; k < fs.length; k++) {
+    const f = fs[k];
+    try {
+      const bytes = encodeText(f.out, f.enc, f.bom);
+      // 避免覆蓋掃描後被其他編輯器或同步工具改過的檔案
+      const current = new Uint8Array(await (await f.handle.getFile()).arrayBuffer());
+      if (!sameBytes(current, f.orig)) throw new Error('檔案在預覽後已被外部修改，請重新掃描與預覽');
+      if (bakDir) {
+        const parts = f.path.split('/'); const nm = parts.pop();
+        const d = await getSubDir(bakDir, parts, true); await writeBytes(await d.getFileHandle(nm, { create: true }), f.orig);
+      }
+      await writeBytes(f.handle, bytes);
+      S.undo.push({ f, bytes: f.orig, text: f.text });
+      f.orig = bytes; f.text = f.out; f.status = 'written'; f.issues = runHealth(f.text); ok++;
+    } catch (e) { f.status = 'failed'; f.err = '寫入失敗：' + e.message; ng++; log(`  ✖ ${f.path}：${e.message}`); }
+    prog((k + 1) / fs.length); if (k % 10 === 0) { setStatus(`寫入 ${k + 1}/${fs.length}`); await tick(); }
+  }
+  log(`寫回完成：成功 ${ok}、失敗 ${ng}${bakDir ? `，備份位置 _sqlfmt_backup/${st}` : ''}`);
+  setStatus(`寫回完成：成功 ${ok}、失敗 ${ng}`); refresh(); renderHealth(); if (S.sel) select(S.sel);
+}
+async function undo() {
+  if (!S.undo || !S.undo.length) return;
+  if (!confirm(`將 ${S.undo.length} 個檔案還原為寫回前內容？`)) return;
+  let ok = 0;
+  for (const u of S.undo) {
+    try { await writeBytes(u.f.handle, u.bytes); u.f.orig = u.bytes; u.f.text = u.text; u.f.status = 'new'; u.f.out = null; u.f.issues = runHealth(u.text); ok++; }
+    catch (e) { log(`  ✖ 還原失敗 ${u.f.path}：${e.message}`); }
+  }
+  S.undo = null; S.previewed = false; log(`已還原 ${ok} 個檔案`); setStatus(`已還原 ${ok} 個檔案`); refresh(); renderHealth();
+}
+
+/* ----- export ----- */
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+function exportZip() {
+  const fs = S.files.filter(f => f.checked); const ent = [];
+  for (const f of fs) { const text = f.out != null ? f.out : f.text; try { ent.push({ path: S.rootName + '/' + f.path, data: encodeText(text, f.enc, f.bom) }); } catch { ent.push({ path: S.rootName + '/' + f.path, data: f.orig }); } }
+  download(makeZip(ent), `${S.rootName}_formatted_${stamp()}.zip`); log(`已匯出 ZIP：${ent.length} 個檔案`);
+}
+function exportReport() {
+  const c = cnt(), iss = S.files.flatMap(f => f.issues.map(i => ({ f, i })));
+  const lc = { error: 0, warn: 0, info: 0 }; iss.forEach(({ i }) => lc[i.level]++);
+  const byRule = {}; iss.forEach(({ i }) => byRule[i.rule] = (byRule[i.rule] || 0) + 1);
+  const rows = S.files.map(f => `<tr><td>${esc(f.path)}</td><td>${f.mode === 'plsql' ? 'PL/SQL' : 'SQL'}</td><td>${f.enc.toUpperCase()}</td><td>${stText(f.status)}</td><td>${f.issues.filter(i => i.level === 'error').length}</td><td>${f.issues.length}</td><td>${esc(f.err || '')}</td></tr>`).join('');
+  const rrows = RULES.filter(r => byRule[r.id]).map(r => `<tr><td>${r.cat}</td><td>${r.id}</td><td>${esc(r.name)}</td><td>${LV_TEXT[RCFG[r.id].level]}</td><td>${byRule[r.id]}</td></tr>`).join('');
+  const irows = iss.sort((a, b) => LV_ORDER[a.i.level] - LV_ORDER[b.i.level]).map(({ f, i }) => `<tr><td class="${i.level}">${LV_TEXT[i.level]}</td><td>${esc(f.path)}</td><td>${i.line}</td><td>${esc(i.name)}</td><td>${esc(i.msg)}</td></tr>`).join('');
+  const html = `<!DOCTYPE html><html lang="zh-Hant-TW"><head><meta charset="UTF-8"><title>SQL Formatter 報告</title><style>:root{--theme-font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Noto Sans CJK TC",system-ui,sans-serif;--theme-font-mono:"Cascadia Mono",Consolas,"SFMono-Regular",monospace}body{font:14px var(--theme-font-sans);color:#2f2f2f;background:#f4f4f4;padding:24px}h1{color:#505050}table{border-collapse:collapse;width:100%;background:#fefefe;margin-bottom:24px}th,td{border:1px solid #d1d1d1;padding:5px 8px;text-align:left;font-size:13px}th{background:#eaeaea}.s span{display:inline-block;background:#fefefe;border:1px solid #d1d1d1;border-radius:8px;padding:8px 16px;margin:0 8px 8px 0}td.error{color:#696969;font-weight:700}td.warn{color:#797979;font-weight:700}td.info{color:#757575}</style></head><body>
+<h1>Oracle SQL Formatter 報告</h1><p>資料夾：${esc(S.rootName)}　產出時間：${new Date().toLocaleString('zh-TW')}</p>
+<p class="s"><span>檔案總數 <b>${S.files.length}</b></span><span>有變更 <b>${c.changed}</b></span><span>已寫回 <b>${c.written}</b></span><span>無變更 <b>${c.same}</b></span><span>失敗 <b>${c.failed}</b></span></p>
+<p class="s"><span>健檢錯誤 <b>${lc.error}</b></span><span>注意 <b>${lc.warn}</b></span><span>提示 <b>${lc.info}</b></span></p>
+<h2>規則統計</h2><table><tr><th>類別</th><th>規則代碼</th><th>名稱</th><th>嚴重度</th><th>筆數</th></tr>${rrows || '<tr><td colspan=5>無</td></tr>'}</table>
+<h2>檔案明細</h2><table><tr><th>檔案</th><th>類型</th><th>編碼</th><th>狀態</th><th>錯誤數</th><th>問題數</th><th>說明</th></tr>${rows}</table>
+<h2>健檢明細</h2><table><tr><th>等級</th><th>檔案</th><th>行號</th><th>規則</th><th>說明</th></tr>${irows || '<tr><td colspan=5>無</td></tr>'}</table></body></html>`;
+  download(new Blob([html], { type: 'text/html;charset=utf-8' }), `SQLFormatter_Report_${stamp()}.html`);
+}
+
+/* ----- render ----- */
+const stText = s => ({ new: '未處理', changed: '有變更', same: '無變更', failed: '失敗', skip: '略過', written: '已寫回' }[s] || s);
+function refresh() {
+  const flt = $('fFilter').value.trim().toLowerCase(), st = $('fStatus').value;
+  const vis = S.files.filter(f => (!flt || f.path.toLowerCase().includes(flt)) &&
+    (!st || (st === 'issue' ? f.issues.length : st === 'error' ? f.issues.some(i => i.level === 'error') : st === 'plsql' ? f.mode === 'plsql' : f.status === st)));
+  const box = $('fileList');
+  if (!S.files.length) box.innerHTML = `<div class="empty">${S.rootName ? '沒有符合副檔名的檔案' : '請先選擇資料夾'}</div>`;
+  else box.innerHTML = vis.map(f => { const ne = f.issues.filter(i => i.level === 'error').length; return `<div class="fi${f === S.sel ? ' sel' : ''}" data-i="${S.files.indexOf(f)}">
+    <input type="checkbox" ${f.checked ? 'checked' : ''}><span class="p" title="${esc(f.path)}">${esc(f.path)}</span>
+    ${f.mode === 'plsql' ? '<span class="b pl">PL/SQL</span>' : ''}${f.issues.length ? `<span class="b ${ne ? 'isse' : 'iss'}" title="錯誤 ${ne} / 全部 ${f.issues.length}">${f.issues.length}</span>` : ''}
+    <span class="b ${f.status}">${stText(f.status)}</span></div>`; }).join('') || '<div class="empty">無符合條件的檔案</div>';
+  const c = cnt(), has = S.files.length > 0;
+  const ni = S.files.reduce((s, f) => s + f.issues.length, 0), ne = S.files.reduce((s, f) => s + f.issues.filter(i => i.level === 'error').length, 0);
+  $('stats').innerHTML = has ? [['檔案總數', S.files.length], ['已勾選', S.files.filter(f => f.checked).length], ['有變更', c.changed], ['無變更', c.same], ['失敗', c.failed], ['已寫回', c.written], ['健檢錯誤', ne, 'e'], ['健檢問題', ni, 'w']]
+    .map(([k, v, cl]) => `<div class="stat ${cl || ''}"><b>${v}</b><span>${k}</span></div>`).join('') : '';
+  $('btnRescan').disabled = !S.root; $('btnPreview').disabled = !has;
+  $('btnWrite').disabled = S.readonly || !S.root || !c.changed; $('btnUndo').disabled = !(S.undo && S.undo.length);
+  $('btnZip').disabled = !has; $('btnReport').disabled = !has;
+}
+$('fileList').addEventListener('click', e => {
+  const row = e.target.closest('.fi'); if (!row) return; const f = S.files[+row.dataset.i];
+  if (e.target.type === 'checkbox') { f.checked = e.target.checked; refresh(); return; }
+  select(f);
+});
+function issueTable(list, text, showFile) {
+  const lines = text ? text.split(/\r?\n/) : null;
+  return `<table class="grid"><tr>${showFile ? '<th>檔案</th>' : ''}<th style="width:56px">行號</th><th style="width:56px">等級</th><th style="width:170px">規則</th><th>原始內容</th><th>說明</th></tr>
+  ${list.map(({ f, i }) => { const src = ((f ? f._lines || (f._lines = f.text.split(/\r?\n/)) : lines)[i.line - 1] || '').trim();
+    return `<tr class="clk" data-i="${f ? S.files.indexOf(f) : ''}" data-l="${i.line}">${showFile ? `<td class="m">${esc(f.path)}</td>` : ''}<td>${i.line}</td><td><span class="lv ${i.level}">${LV_TEXT[i.level]}</span></td><td>${esc(i.name)}<br><span class="hint">${i.rule}</span></td><td class="m">${esc(src.slice(0, 140))}</td><td>${esc(i.msg)}</td></tr>`; }).join('')}</table>`;
+}
+function select(f, keepTab) {
+  S.sel = f; refresh(); if (!keepTab) showTab('pDiff');
+  const head = `<div class="dhead"><span class="fn">${esc(f.path)}</span><span class="b ${f.status}">${stText(f.status)}</span>
+    <span class="hint">${f.mode === 'plsql' ? 'PL/SQL（安全模式：僅調整大小寫）' : 'SQL'} · ${f.enc.toUpperCase()}${f.bom ? ' BOM' : ''} · ${(f.size / 1024).toFixed(1)} KB</span></div>`;
+  let body = '';
+  if (f.err) body += `<div class="msg err">${esc(f.err)}</div>`;
+  if (f.issues.length) { f._lines = null; body += `<details style="margin-bottom:8px"><summary class="hint" style="cursor:pointer">本檔健檢問題 ${f.issues.length} 筆（錯誤 ${f.issues.filter(i => i.level === 'error').length}）</summary>${issueTable(f.issues.map(i => ({ f, i })), null, false)}</details>`; }
+  if (f.out == null) body += `<div class="msg info">尚未格式化，請按「格式化預覽」。以下為原始內容：</div>` + diffTable(f.text, f.text, f.issues);
+  else if (f.status === 'written') body += `<div class="msg ok">已寫回檔案。</div>` + diffTable(f.text, f.text, f.issues);
+  else if (f.out === f.text) body += `<div class="msg ok">格式化後內容與原檔相同。</div>` + diffTable(f.text, f.text, f.issues);
+  else body += diffTable(f.text, f.out, f.issues);
+  $('diffBox').innerHTML = head + body;
+}
+function diffTable(a0, b0, issues) {
+  const a = a0.split(/\r?\n/), b = b0.split(/\r?\n/), n = a.length, m = b.length, rows = [];
+  const mark = {}; (issues || []).forEach(i => { const lv = mark[i.line]; if (!lv || LV_ORDER[i.level] < LV_ORDER[lv]) mark[i.line] = i.level; });
+  const lnCell = (ln, left) => { const lv = left && ln && mark[ln]; return `<td class="ln" id="${left && ln ? 'L' + ln : ''}" ${lv ? `style="box-shadow:inset 3px 0 0 var(--${lv === 'error' ? 'err' : lv === 'warn' ? 'warn' : 'info'})"` : ''}>${ln ?? ''}</td>`; };
+  const cell = (ln, txt, cls, left) => `${lnCell(ln, left)}<td class="c ${cls}">${txt == null ? '' : esc(txt) || ' '}</td>`;
+  if (a0 === b0) { a.forEach((l, i) => rows.push(`<tr>${cell(i + 1, l, '', true)}${cell(i + 1, l, '')}</tr>`)); }
+  else if (n * m > 4e6) { for (let i = 0; i < Math.max(n, m); i++) rows.push(`<tr>${cell(i < n ? i + 1 : null, a[i], i < n ? 'del' : 'emp', true)}${cell(i < m ? i + 1 : null, b[i], i < m ? 'add' : 'emp')}</tr>`); }
+  else {
+    const W = m + 1, dp = new Int32Array((n + 1) * W);
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i * W + j] = a[i] === b[j] ? dp[(i + 1) * W + j + 1] + 1 : Math.max(dp[(i + 1) * W + j], dp[i * W + j + 1]);
+    let i = 0, j = 0, D = [], A = [];
+    const flush = () => { for (let k = 0; k < Math.max(D.length, A.length); k++) rows.push(`<tr>${D[k] != null ? cell(D[k] + 1, a[D[k]], 'del', true) : cell(null, null, 'emp', true)}${A[k] != null ? cell(A[k] + 1, b[A[k]], 'add') : cell(null, null, 'emp')}</tr>`); D = []; A = []; };
+    while (i < n || j < m) {
+      if (i < n && j < m && a[i] === b[j]) { flush(); rows.push(`<tr>${cell(i + 1, a[i], '', true)}${cell(j + 1, b[j], '')}</tr>`); i++; j++; }
+      else if (j >= m || (i < n && dp[(i + 1) * W + j] >= dp[i * W + j + 1])) D.push(i++);
+      else A.push(j++);
+    }
+    flush();
+  }
+  return `<table class="diff"><colgroup><col style="width:46px"><col><col style="width:46px"><col></colgroup>
+    <tr><th colspan="2" style="text-align:left;padding:4px 6px">格式化前（左側色條＝健檢問題）</th><th colspan="2" style="text-align:left;padding:4px 6px">格式化後</th></tr>${rows.join('')}</table>`;
+}
+function renderHealth() {
+  const lv = $('hLevel').value, rl = $('hRule').value;
+  S.files.forEach(f => f._lines = null);
+  const all = S.files.flatMap(f => f.issues.map(i => ({ f, i })));
+  const iss = all.filter(({ i }) => (!lv || i.level === lv) && (!rl || i.rule === rl))
+    .sort((x, y) => LV_ORDER[x.i.level] - LV_ORDER[y.i.level] || x.f.path.localeCompare(y.f.path) || x.i.line - y.i.line);
+  $('hCount').textContent = all.length ? `顯示 ${iss.length} / ${all.length} 筆` : '';
+  if (!S.files.length) { $('healthBox').innerHTML = '<div class="empty">尚無資料</div>'; return; }
+  if (!all.length) { $('healthBox').innerHTML = '<div class="empty">未發現健檢問題 👍</div>'; return; }
+  const lc = { error: 0, warn: 0, info: 0 }; all.forEach(({ i }) => lc[i.level]++);
+  const sum = {}; all.forEach(({ i }) => sum[i.rule] = (sum[i.rule] || 0) + 1);
+  const shown = iss.slice(0, 2000);
+  $('healthBox').innerHTML = `<div class="stats"><div class="stat e"><b>${lc.error}</b><span>錯誤</span></div><div class="stat w"><b>${lc.warn}</b><span>注意</span></div><div class="stat i"><b>${lc.info}</b><span>提示</span></div>
+    ${Object.entries(sum).sort((x, y) => y[1] - x[1]).map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(RULES.find(r => r.id === k).name)}</span></div>`).join('')}</div>
+    ${iss.length > shown.length ? `<div class="msg info">筆數較多，僅顯示前 ${shown.length} 筆；完整清單請用「匯出報告」。</div>` : ''}
+    ${issueTable(shown, null, true)}`;
+}
+$('hLevel').onchange = renderHealth; $('hRule').onchange = renderHealth;
+$('healthBox').addEventListener('click', e => {
+  const r = e.target.closest('tr.clk'); if (!r || r.dataset.i === '') return;
+  select(S.files[+r.dataset.i]);
+  const c = document.getElementById('L' + r.dataset.l); if (c) c.scrollIntoView({ block: 'center' });
+});
+function showTab(id) { document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.p === id)); document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === id)); }
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.p)));
+
+/* ----- quick test ----- */
+function quick() {
+  const src = $('qIn').value, r = formatText(src, opt()); $('qOut').value = r.out;
+  const iss = runHealth(src);
+  $('quickMsg').textContent = (r.mode === 'plsql' ? 'PL/SQL 安全模式 · ' : 'SQL 模式 · ') + (r.ok ? '✔ 安全驗證通過' : '✖ ' + r.err) + ` · 健檢 ${iss.length} 筆`;
+  $('qIssues').innerHTML = iss.length ? issueTable(iss.map(i => ({ f: null, i })), src, false) : '<div class="msg ok">未發現健檢問題</div>';
+}
+$('btnQuick').onclick = quick;
+
+/* ----- wire ----- */
+$('btnPick').onclick = pick;
+$('btnRescan').onclick = () => S.root && scan();
+$('btnPreview').onclick = preview;
+$('btnWrite').onclick = writeAll;
+$('btnUndo').onclick = undo;
+$('btnZip').onclick = exportZip;
+$('btnReport').onclick = exportReport;
+$('btnAll').onclick = () => { S.files.forEach(f => f.checked = true); refresh(); };
+$('btnNone').onclick = () => { S.files.forEach(f => f.checked = false); refresh(); };
+$('fFilter').oninput = refresh; $('fStatus').onchange = refresh;
+loadOpt(); loadRcfg(); renderRules(); refresh(); quick();
+log('Oracle SQL Formatter Studio 已啟動' + (window.showDirectoryPicker ? '' : '；目前瀏覽器不支援寫回，將以唯讀＋ZIP 匯出模式運作'));
+</script>
+<a class="home-link" href="index.html">⌂ 工具入口</a>
+<button id="themeToggle" class="theme-toggle" type="button">☀️ 淺色模式</button>
+</body>
+</html>

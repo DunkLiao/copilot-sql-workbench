@@ -1,0 +1,2481 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SQL SPA Tools｜資料關聯探索器</title>
+<link rel="stylesheet" href="theme.css">
+<script src="theme.js"></script>
+<style>
+*{box-sizing:border-box}
+
+html,body{margin:0;height:100%;background:var(--theme-page);color:var(--theme-text);font:13px/1.5 var(--theme-font-sans)}
+button{font:inherit;color:var(--theme-text);background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--theme-primary)}
+button.primary{background:var(--theme-primary);color:var(--theme-surface);border-color:var(--theme-primary)}
+button.danger{color:var(--theme-danger);background:var(--theme-danger-soft);border-color:var(--theme-danger)}
+button.sm{padding:1px 7px;font-size:12px}
+button:disabled{opacity:.65;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--theme-primary);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--theme-text);background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:6px;padding:4px 6px}
+input[type=checkbox]{vertical-align:middle}
+textarea{width:100%}
+.topbar{height:50px;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--theme-surface);border-bottom:1px solid var(--theme-border);box-shadow:var(--theme-shadow);position:relative;z-index:5}
+.brand{font-weight:700;font-size:15px;margin:0 6px 0 0;white-space:nowrap}
+.topbar .brand{color:var(--theme-text)!important}
+.ver{font-size:11px;background:var(--theme-primary);color:var(--theme-surface);border-radius:4px;padding:0 5px;margin-left:4px}
+.sep{flex:1}
+.topbar label{white-space:nowrap}
+#thresholdInput{width:56px}
+#wsSelect{max-width:180px}
+.dropdown{position:relative}
+.menu{display:none;position:absolute;right:0;top:110%;background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:8px;box-shadow:var(--theme-shadow);min-width:230px;padding:4px;z-index:20}
+.menu.open{display:block}
+.menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:6px 10px}
+.menu button:hover{background:var(--theme-surface-soft)}
+.menu hr{border:none;border-top:1px solid var(--theme-border);margin:4px 0}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr) 370px;height:calc(100% - 50px)}
+.layout.nodetail{grid-template-columns:230px minmax(0,1fr) 0}
+.sidebar{border-right:1px solid var(--theme-border);background:var(--theme-surface);display:flex;flex-direction:column;min-height:0}
+.side-head{padding:10px 12px;font-weight:700;border-bottom:1px solid var(--theme-border);display:flex;justify-content:space-between;align-items:center}
+#tableList{flex:1;overflow:auto;padding:6px}
+.titem{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.titem:hover{background:var(--theme-surface-soft)}
+.titem.active{background:var(--theme-surface-soft);font-weight:600}
+.titem .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.titem .meta{color:var(--theme-muted);font-size:11px}
+.titem .ops{display:none;gap:2px}.titem:hover .ops{display:inline-flex}
+.titem .ops button{padding:0 4px;border:none;background:none}
+.progress-box{border-top:1px solid var(--theme-border);padding:10px}
+.pbar{height:6px;background:var(--theme-border);border-radius:3px;overflow:hidden}
+#pbarFill{height:100%;width:0;background:var(--theme-primary);transition:width .2s}
+#pmsg{font-size:12px;color:var(--theme-muted);margin:4px 0;word-break:break-all}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:2px;padding:4px 10px 0;border-bottom:1px solid var(--theme-border);background:var(--theme-surface);overflow-x:auto;flex-shrink:0}
+.tabs button{border:none;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 11px}
+.tabs button.active{border-bottom-color:var(--theme-primary);color:var(--theme-primary);font-weight:700}
+.view{flex:1;overflow:auto;padding:14px;min-height:0}
+.view.full{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.detail{border-left:1px solid var(--theme-border);background:var(--theme-surface);overflow:auto;min-width:0}
+.nodetail .detail{display:none}
+.detail-head{position:sticky;top:0;background:var(--theme-surface);padding:10px 12px;font-weight:700;border-bottom:1px solid var(--theme-border);display:flex;justify-content:space-between;align-items:center;z-index:2}
+#detailBody{padding:12px}
+#detailBody h3{margin:0 0 8px;font-size:15px;word-break:break-all}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:10px;padding:10px 12px;box-shadow:var(--theme-shadow)}
+.card .k{color:var(--theme-muted);font-size:12px}.card .v{font-size:22px;font-weight:700}
+.box{background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:10px;padding:12px;margin-bottom:14px;box-shadow:var(--theme-shadow)}
+.box h3{margin:0 0 8px;font-size:14px}
+.tblwrap{overflow:auto;max-height:65vh}
+table.grid{border-collapse:collapse;width:100%;font-size:12px}
+table.grid th,table.grid td{border-bottom:1px solid var(--theme-border);padding:5px 8px;text-align:left;vertical-align:top}
+table.grid th{position:sticky;top:0;background:var(--theme-surface-alt);font-weight:600;z-index:1;white-space:nowrap}
+table.grid tr.click{cursor:pointer}
+table.grid tr.click:hover td{background:var(--theme-surface-soft)}
+table.grid tr.sel td{background:var(--theme-surface-soft)}
+table.grid td.num,table.grid th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.grid tr.dim td{opacity:.5}
+.tag{display:inline-block;padding:0 6px;border-radius:10px;font-size:11px;border:1px solid var(--theme-border);white-space:nowrap;margin:1px 2px 1px 0}
+.tag.ok{color:var(--theme-success);border-color:var(--theme-success)}.tag.bad{color:var(--theme-danger);border-color:var(--theme-danger)}.tag.warn{color:var(--theme-warning);border-color:var(--theme-warning)}.tag.acc{color:var(--theme-primary);border-color:var(--theme-primary)}.tag.pk{color:var(--theme-info);border-color:var(--theme-info)}
+.muted{color:var(--theme-muted)}
+.small{font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.barbg{background:var(--theme-border);border-radius:4px;height:8px;min-width:60px;overflow:hidden}
+.barfg{height:8px;background:var(--theme-primary);border-radius:4px}
+.mono{font-family:var(--theme-font-mono)}
+pre.code{font-family:var(--theme-font-mono);background:var(--theme-surface-alt);border:1px solid var(--theme-border);border-radius:8px;padding:10px;overflow:auto;max-height:55vh;font-size:12px;white-space:pre;margin:0}
+.empty{padding:50px 20px;text-align:center;color:var(--theme-muted)}
+.modal-bg{position:fixed;inset:0;background:color-mix(in srgb,var(--theme-text) 45%,transparent);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:var(--theme-surface);border-radius:12px;width:min(580px,94vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:var(--theme-shadow)}
+.modal.wide{width:min(1150px,96vw)}
+.modal-h{padding:12px 16px;font-weight:700;border-bottom:1px solid var(--theme-border);display:flex;justify-content:space-between;align-items:center}
+.modal-b{padding:14px 16px;overflow:auto}
+.modal-f{padding:10px 16px;border-top:1px solid var(--theme-border);display:flex;justify-content:flex-end;gap:8px}
+.form-grid{display:grid;grid-template-columns:200px 1fr;gap:8px 12px;align-items:center}
+.form-grid .hint{grid-column:2;color:var(--theme-muted);font-size:11px;margin-top:-6px}
+.drop{border:2px dashed var(--theme-border);border-radius:10px;padding:20px;text-align:center;color:var(--theme-muted);cursor:pointer;margin-bottom:12px}
+.drop.over{border-color:var(--theme-primary);background:var(--theme-surface-soft)}
+.flist{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.flist button.active{background:var(--theme-surface-soft);border-color:var(--theme-primary);font-weight:600}
+.preview{max-height:40vh;overflow:auto;border:1px solid var(--theme-border);border-radius:8px;margin-top:10px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--theme-text);color:var(--theme-surface);padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99;max-width:80vw}
+#toast.show{opacity:.95}
+.er-tool{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--theme-border);background:var(--theme-surface)}
+.er-wrap{flex:1;position:relative;overflow:hidden;background:var(--theme-surface-alt);min-height:300px}
+#erSvg{width:100%;height:100%;display:block;cursor:grab;user-select:none;touch-action:none}
+#erSvg .ernode{cursor:move}
+#erSvg .eredge{cursor:pointer}
+.legend{position:absolute;left:10px;bottom:10px;background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.7}
+.legend i{display:inline-block;width:26px;height:0;border-top:2px solid;vertical-align:middle;margin-right:4px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:12px;margin-bottom:10px}
+.kv>div:nth-child(odd){color:var(--theme-muted)}
+.kv>div{word-break:break-all}
+.pathc{border:1px solid var(--theme-border);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:var(--theme-surface)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:4px 0}
+.chip{background:var(--theme-surface-soft);border-radius:6px;padding:1px 8px;font-weight:600}
+.arrow{color:var(--theme-muted);font-size:11px}
+.lvl{padding:3px 0 3px calc(var(--d) * 20px)}
+h4{margin:12px 0 6px;font-size:13px}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:1300px){.layout{grid-template-columns:200px minmax(0,1fr) 320px}.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1 class="brand">SQL SPA Tools｜資料關聯探索器</h1>
+  <select id="wsSelect" data-chg="ws" title="切換工作區"></select>
+  <button data-act="ws-new" title="新增工作區">＋</button>
+  <button data-act="ws-rename" title="重新命名工作區">✏️</button>
+  <button data-act="ws-delete" class="danger" title="刪除工作區">🗑</button>
+  <span class="sep"></span>
+  <button data-act="import" class="primary">📥 匯入</button>
+  <button data-act="analyze" class="primary" id="btnAnalyze">⚙️ 分析</button>
+  <div class="dropdown">
+    <button data-act="toggle-export">📤 匯出 ▾</button>
+    <div class="menu" id="exportMenu">
+      <button data-act="exp-mermaid">Mermaid erDiagram</button>
+      <button data-act="exp-ddl">SQL DDL（Oracle / SQL Server / SQLite）</button>
+      <button data-act="exp-excel">Excel 分析報告（.xls）</button>
+      <button data-act="exp-md">Markdown 關聯說明文件</button>
+      <button data-act="exp-svg">ER 圖 SVG</button>
+      <button data-act="exp-png">ER 圖 PNG</button>
+      <button data-act="exp-report">📑 一鍵產生分析報告（HTML）</button>
+      <hr>
+      <button data-act="exp-json">匯出工作區 JSON</button>
+      <button data-act="imp-json">匯入工作區 JSON</button>
+      <hr>
+      <button data-act="load-sample">載入範例資料（放款系統）</button>
+    </div>
+  </div>
+  <label>門檻 <input type="number" id="thresholdInput" min="0" max="100" step="5" value="70" title="信心分數門檻"></label>
+  <button data-act="settings" title="分析設定">⚙ 設定</button>
+  <button data-act="theme" id="btnTheme" title="切換主題">☾</button>
+</header>
+<a class="home-link" href="index.html">⌂ 工具入口</a>
+<button id="themeToggle" class="theme-toggle" type="button">切換主題</button>
+<div class="layout" id="layout">
+  <aside class="sidebar">
+    <div class="side-head"><span>資料表 <span id="tblCount" class="muted"></span></span><span class="muted small" title="勾選＝在 ER 圖顯示">ER</span></div>
+    <div id="tableList"></div>
+    <div class="progress-box">
+      <div class="pbar"><div id="pbarFill"></div></div>
+      <div id="pmsg">尚未分析</div>
+      <button data-act="cancel" id="btnCancel" class="sm danger" hidden>取消分析</button>
+    </div>
+  </aside>
+  <main class="main">
+    <nav class="tabs" id="tabs"></nav>
+    <section id="view" class="view"></section>
+  </main>
+  <aside class="detail" id="detail">
+    <div class="detail-head"><span>詳細資訊</span><button class="sm" data-act="close-detail">✕</button></div>
+    <div id="detailBody"><div class="muted">點選欄位、關聯、相依或資料表，即可在此查看詳細資訊。</div></div>
+  </aside>
+</div>
+<div id="modalRoot"></div>
+<input type="file" id="fileInput" multiple accept=".csv,.tsv,.txt" hidden>
+<input type="file" id="wsFileInput" accept=".json" hidden>
+<div id="toast"></div>
+<script type="text/js-worker" id="workerSrc">
+'use strict';
+/* ===== 分析引擎（Web Worker） ===== */
+self.onmessage = function (e) {
+  const m = e.data;
+  if (m.type === 'analyze') {
+    try {
+      const t0 = Date.now();
+      const r = analyze(m.payload);
+      r.ms = Date.now() - t0;
+      self.postMessage({ type: 'done', result: r });
+    } catch (err) {
+      self.postMessage({ type: 'error', message: String((err && err.stack) || err) });
+    }
+  }
+};
+let lastP = 0;
+function P(p, msg) {
+  const now = Date.now();
+  if (now - lastP < 100 && p < 100) return;
+  lastP = now;
+  self.postMessage({ type: 'progress', p: Math.min(100, Math.round(p)), msg: msg });
+}
+
+const RE_INT = /^[+-]?\d+$/;
+const RE_DEC = /^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)?\.\d+$|^[+-]?\d{1,3}(?:,\d{3})+$/;
+const RE_CJK = /[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/;
+const KEYISH = /(^|_)(ID|NO|CODE|CD|KEY|SEQ)$|(ID|NO)$|帳號|編號|代號|代碼|序號|統編|鍵|號碼$|分行別|分號/i;
+const FKBAD = new Set(['decimal', 'dateAD', 'dateROC', 'empty']);
+
+function validMD(y, m, d) {
+  if (m < 1 || m > 12 || d < 1) return false;
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  return d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+}
+const pad2 = n => (n < 10 ? '0' : '') + n;
+function parseAD(v) {
+  const m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.exec(v) || /^(\d{4})(\d{2})(\d{2})$/.exec(v);
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 1900 || y > 2100 || !validMD(y, mo, d)) return null;
+  return y + '-' + pad2(mo) + '-' + pad2(d);
+}
+function parseROC(v) {
+  const m = /^(\d{2,3})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(v) || /^(\d{3})(\d{2})(\d{2})$/.exec(v);
+  if (!m) return null;
+  const y = +m[1];
+  if (y < 1 || y > 200) return null;
+  const Y = y + 1911, mo = +m[2], d = +m[3];
+  if (!validMD(Y, mo, d)) return null;
+  return Y + '-' + pad2(mo) + '-' + pad2(d);
+}
+function sig(v) {
+  let s = '';
+  const L = Math.min(v.length, 40);
+  for (let i = 0; i < L; i++) {
+    const c = v.charCodeAt(i);
+    if (c >= 48 && c <= 57) s += '9';
+    else if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) s += 'A';
+    else if (c >= 0x2E80) s += '中';
+    else if (c === 32) s += '_';
+    else s += v[i];
+  }
+  if (v.length > 40) s += '…';
+  return s;
+}
+function descSig(s) {
+  if (/^9+$/.test(s)) return '固定' + s.length + '碼數字';
+  if (/^A+$/.test(s)) return '固定' + s.length + '碼英文';
+  const m = /^(A+)(9+)$/.exec(s);
+  if (m) return m[1].length + '碼英文＋' + m[2].length + '碼數字';
+  if (/^中+$/.test(s)) return '固定' + s.length + '字中文';
+  return '格式 ' + s;
+}
+function topN(freq, k) {
+  const a = [];
+  for (const [v, c] of freq) {
+    if (a.length < k) {
+      a.push([v, c]);
+      if (a.length === k) a.sort((x, y) => y[1] - x[1]);
+    } else if (c > a[k - 1][1]) {
+      a[k - 1] = [v, c];
+      let i = k - 1;
+      while (i > 0 && a[i][1] > a[i - 1][1]) { const t = a[i]; a[i] = a[i - 1]; a[i - 1] = t; i--; }
+    }
+  }
+  if (a.length < k) a.sort((x, y) => y[1] - x[1]);
+  return a;
+}
+
+/* ---------- 欄位剖析 ---------- */
+function profileCol(vals, st) {
+  const n = vals.length;
+  let nulls = 0, minL = Infinity, maxL = 0;
+  const freq = new Map();
+  for (let i = 0; i < n; i++) {
+    const v = vals[i];
+    if (v === null) { nulls++; continue; }
+    const L = v.length;
+    if (L < minL) minL = L;
+    if (L > maxL) maxL = L;
+    freq.set(v, (freq.get(v) || 0) + 1);
+  }
+  const nonNull = n - nulls, distinct = freq.size;
+  let cInt = 0, cLead = 0, cDec = 0, cAD = 0, cROC = 0, cCJK = 0;
+  const pat = new Map();
+  for (const [v, c] of freq) {
+    const s = sig(v);
+    pat.set(s, (pat.get(s) || 0) + c);
+    if (RE_CJK.test(v)) cCJK += c;
+    if (RE_INT.test(v)) {
+      if (v.replace(/^[+-]/, '').length > 1 && /^[+-]?0/.test(v)) cLead += c; else cInt += c;
+    } else if (RE_DEC.test(v)) cDec += c;
+    if (parseAD(v)) cAD += c;
+    else if (st.rocDate && parseROC(v)) cROC += c;
+  }
+  const th = nonNull * 0.98;
+  let type;
+  if (!nonNull) type = 'empty';
+  else if (cAD >= th) type = 'dateAD';
+  else if (cROC >= th) type = 'dateROC';
+  else if (cInt >= th) type = 'int';
+  else if (cInt + cDec >= th) type = 'decimal';
+  else if (cInt + cLead >= th) type = 'digits';
+  else if (maxL <= 12 && cCJK < nonNull * 0.5 && (distinct <= 50 || distinct / nonNull <= 0.05)) type = 'code';
+  else type = 'text';
+
+  let numMin = null, numMax = null, maxScale = 0, maxIntD = 0, dMin = null, dMax = null;
+  const rocSample = [];
+  if (type === 'int' || type === 'decimal') {
+    for (const v of freq.keys()) {
+      const s = v.replace(/,/g, '');
+      const f = parseFloat(s);
+      if (isNaN(f)) continue;
+      if (numMin === null || f < numMin) numMin = f;
+      if (numMax === null || f > numMax) numMax = f;
+      const p = s.replace(/^[+-]/, '').split('.');
+      if (p[0].length > maxIntD) maxIntD = p[0].length;
+      if (p[1] && p[1].length > maxScale) maxScale = p[1].length;
+    }
+  }
+  if (type === 'dateAD' || type === 'dateROC') {
+    const fn = type === 'dateAD' ? parseAD : parseROC;
+    for (const v of freq.keys()) {
+      const d = fn(v);
+      if (!d) continue;
+      if (!dMin || d < dMin) dMin = d;
+      if (!dMax || d > dMax) dMax = d;
+      if (type === 'dateROC' && rocSample.length < 5) rocSample.push([v, d]);
+    }
+  }
+  const pats = topN(pat, 5);
+  const topPat = pats[0] ? pats[0][0] : '';
+  const patShare = nonNull && pats[0] ? pats[0][1] / nonNull : 0;
+  let patternDesc;
+  if (!nonNull) patternDesc = '—';
+  else if (patShare >= 0.95) patternDesc = descSig(topPat);
+  else if (type === 'int' || type === 'digits') patternDesc = minL === maxL ? '固定' + minL + '碼數字' : minL + '～' + maxL + '碼數字';
+  else patternDesc = '混合格式';
+  let cls = 'mixed';
+  if (type === 'int' || type === 'digits') cls = 'digit';
+  else if (/^[A9]+$/.test(topPat) && patShare >= 0.9) cls = 'alnum';
+  else if (cCJK >= nonNull * 0.9 && nonNull) cls = 'cjk';
+  const isEnum = distinct >= 2 && distinct <= 30 && nonNull >= 20 && distinct / nonNull <= 0.2;
+  return {
+    _freq: freq, rows: n, nulls, nonNull, nullRate: n ? nulls / n : 0, distinct,
+    uniqueRate: nonNull ? distinct / nonNull : 0, minLen: nonNull ? minL : 0, maxLen: maxL, type,
+    pattern: topPat, patShare, patternDesc, patterns: pats, cls, hasCJK: cCJK > 0,
+    top10: topN(freq, 10).map(([v, c]) => [v.length > 80 ? v.slice(0, 80) + '…' : v, c]),
+    isEnum, numMin, numMax, maxScale, maxIntD, dMin, dMax, rocSample
+  };
+}
+
+/* ---------- 工具 ---------- */
+function randIdx(n, k) {
+  const a = new Uint32Array(n);
+  for (let i = 0; i < n; i++) a[i] = i;
+  if (k >= n) return a;
+  for (let i = 0; i < k; i++) {
+    const j = i + Math.floor(Math.random() * (n - i));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a.slice(0, k).sort();
+}
+function combos(pool, k, cb) {
+  const c = [];
+  let stop = false;
+  (function rec(s) {
+    if (stop) return;
+    if (c.length === k) { if (cb(c) === 'stop') stop = true; return; }
+    for (let i = s; i < pool.length && !stop; i++) { c.push(pool[i]); rec(i + 1); c.pop(); }
+  })(0);
+}
+function lev(a, b) {
+  a = a.slice(0, 40); b = b.slice(0, 40);
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+const normName = s => String(s).toUpperCase().replace(/[\s_\-.()\[\]]/g, '');
+const stripAff = s => s.replace(/^(FK|PK|REF|SRC|TGT)/, '').replace(/(ID|NO|CODE|CD|KEY|NUM|NBR)$/, '');
+function nameSim(a, b, tgtTable) {
+  const A = normName(a), B = normName(b);
+  if (!A || !B) return 0;
+  if (A === B) return 1;
+  const T = normName(tgtTable || '');
+  if (T && (A === T + B || A === T + stripAff(B) || stripAff(A) === T)) return 0.9;
+  const As = stripAff(A), Bs = stripAff(B);
+  if (As && As === Bs) return 0.85;
+  const mx = Math.max(A.length, B.length), mn = Math.min(A.length, B.length);
+  if (A.includes(B) || B.includes(A)) return 0.5 + 0.35 * mn / mx;
+  return Math.max(0, 1 - lev(A, B) / mx);
+}
+function typeCompat(a, b) {
+  if (FKBAD.has(a.type) || FKBAD.has(b.type)) return (a.type === b.type && (a.type === 'dateAD' || a.type === 'dateROC')) ? 1 : 0;
+  if (a.type === b.type) return 1;
+  return 0.5;
+}
+function patMatch(a, b) {
+  if (a.patShare >= 0.9 && b.patShare >= 0.9 && a.pattern === b.pattern) return 1;
+  if (a.cls === b.cls && a.cls !== 'mixed') return 0.5;
+  return 0;
+}
+const FKOK = p => p.nonNull > 0 && !FKBAD.has(p.type) && p.maxLen <= 60;
+function inclusion(a, b, minIncl) {
+  if (!a.size) return 0;
+  let miss = 0;
+  const maxMiss = a.size * (1 - minIncl);
+  for (const k of a.keys()) if (!b.has(k)) { miss++; if (miss > maxMiss) return 0; }
+  return (a.size - miss) / a.size;
+}
+function orphanList(src, tgt) {
+  let d = 0, r = 0;
+  const list = [];
+  for (const [v, c] of src) {
+    if (!tgt.has(v)) { d++; r += c; if (list.length < 3000) list.push([v.replace(/\u0001/g, ' | '), c]); }
+  }
+  list.sort((a, b) => b[1] - a[1]);
+  return { d, r, list: list.slice(0, 300) };
+}
+function tupleFreq(cols, idxs, n) {
+  const m = new Map();
+  let nullRows = 0;
+  for (let i = 0; i < n; i++) {
+    let k = '', bad = false;
+    for (let q = 0; q < idxs.length; q++) {
+      const v = cols[idxs[q]][i];
+      if (v === null) { bad = true; break; }
+      k += (q ? '\u0001' : '') + v;
+    }
+    if (bad) { nullRows++; continue; }
+    m.set(k, (m.get(k) || 0) + 1);
+  }
+  m.nullRows = nullRows;
+  return m;
+}
+function isUniqueTuple(cols, combo, idx, n) {
+  const s = new Set();
+  const L = idx ? idx.length : n;
+  for (let j = 0; j < L; j++) {
+    const i = idx ? idx[j] : j;
+    let k = cols[combo[0]][i];
+    if (k === null) return false;
+    for (let q = 1; q < combo.length; q++) {
+      const v = cols[combo[q]][i];
+      if (v === null) return false;
+      k += '\u0001' + v;
+    }
+    if (s.has(k)) return false;
+    s.add(k);
+  }
+  return true;
+}
+
+/* ---------- 主鍵候選 ---------- */
+const AMTISH = /金額|餘額|額度|利率|利息|費用|價格|數量|AMT|BAL|RATE|PRICE|QTY/i;
+function mkPK(t, combo) {
+  const ps = combo.map(i => t.profs[i]);
+  let s = 100 - (combo.length - 1) * 15;
+  ps.forEach(p => {
+    const k = KEYISH.test(p.col);
+    if (combo.length > 1) s += k ? 6 : -8; else if (k) s += 8;
+    if (AMTISH.test(p.col) || (p.type === 'int' && p.minLen !== p.maxLen && !k)) s -= 20;
+  });
+  if (ps.every(p => p.minLen === p.maxLen)) s += 5;
+  if (ps.some(p => p.maxLen > 30)) s -= 15;
+  if (ps.some(p => p.type === 'dateAD' || p.type === 'dateROC' || p.type === 'decimal')) s -= 12;
+  if (ps.some(p => p.cls === 'cjk')) s -= 12;
+  s = Math.max(1, Math.min(100, Math.round(s)));
+  return { cols: ps.map(p => p.col), idxs: combo.slice(), score: s };
+}
+function findPK(t, st) {
+  const out = [], n = t.n;
+  if (!n) return out;
+  const singles = new Set();
+  t.profs.forEach(p => { if (p.nulls === 0 && p.distinct === n) { singles.add(p.idx); out.push(mkPK(t, [p.idx])); } });
+  const maxK = Math.min(3, st.maxComposite || 3);
+  if (maxK >= 2) {
+    const pool = t.profs.filter(p => p.nulls === 0 && !singles.has(p.idx) && p.distinct > 1 && p.type !== 'decimal' && p.maxLen <= 50)
+      .sort((a, b) => b.distinct - a.distinct).slice(0, st.topK || 12).map(p => p.idx).sort((a, b) => a - b);
+    const sampleIdx = n > st.sampleThreshold ? randIdx(n, st.sampleSize) : null;
+    const found = [];
+    for (let k = 2; k <= maxK; k++) {
+      combos(pool, k, combo => {
+        if (found.some(f => f.every(x => combo.includes(x)))) return;
+        let prod = 1;
+        for (const c of combo) { prod *= t.profs[c].distinct; if (prod >= n) break; }
+        if (prod < n) return;
+        if (sampleIdx && !isUniqueTuple(t.cols, combo, sampleIdx, n)) return;
+        if (!isUniqueTuple(t.cols, combo, null, n)) return;
+        found.push(combo.slice());
+        out.push(mkPK(t, combo));
+        if (out.length > 40) return 'stop';
+      });
+    }
+  }
+  out.sort((a, b) => b.score - a.score || a.cols.length - b.cols.length);
+  return out.slice(0, 15);
+}
+
+/* ---------- 欄位相依 ---------- */
+function encode(vals) {
+  const n = vals.length, codes = new Int32Array(n), map = new Map(), back = [null];
+  for (let i = 0; i < n; i++) {
+    const v = vals[i];
+    if (v === null) continue;
+    let c = map.get(v);
+    if (c === undefined) { c = back.length; map.set(v, c); back.push(v); }
+    codes[i] = c;
+  }
+  return { codes, D: back.length, back };
+}
+function fdViol(L, R, idx, n) {
+  const cnt = idx ? idx.length : n, RD = R.D;
+  const gT = new Int32Array(L.D), gM = new Int32Array(L.D);
+  if (L.D * RD <= Math.min(1e6, cnt * 4)) {
+    const arr = new Int32Array(L.D * RD);
+    for (let j = 0; j < cnt; j++) {
+      const i = idx ? idx[j] : j, l = L.codes[i];
+      const v = ++arr[l * RD + R.codes[i]];
+      gT[l]++;
+      if (v > gM[l]) gM[l] = v;
+    }
+  } else {
+    const m = new Map();
+    for (let j = 0; j < cnt; j++) {
+      const i = idx ? idx[j] : j, l = L.codes[i], k = l * RD + R.codes[i];
+      const v = (m.get(k) || 0) + 1;
+      m.set(k, v);
+      gT[l]++;
+      if (v > gM[l]) gM[l] = v;
+    }
+  }
+  let viol = 0;
+  for (let l = 0; l < L.D; l++) viol += gT[l] - gM[l];
+  return { viol, cnt, gT, gM };
+}
+function fdSamples(L, R, gT, gM, n) {
+  const bad = [];
+  for (let l = 0; l < L.D && bad.length < 20; l++) if (gT[l] > gM[l]) bad.push(l);
+  const set = new Map(bad.map(l => [l, new Map()]));
+  for (let i = 0; i < n; i++) {
+    const m = set.get(L.codes[i]);
+    if (m) { const r = R.codes[i]; m.set(r, (m.get(r) || 0) + 1); }
+  }
+  return bad.map(l => ({
+    lhs: L.back[l] == null ? '(空值)' : L.back[l],
+    rhs: [...set.get(l)].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([r, c]) => [R.back[r] == null ? '(空值)' : R.back[r], c])
+  }));
+}
+const codeLike = p => p.maxLen <= 10 && !p.hasCJK && (p.type === 'code' || p.type === 'digits' || p.type === 'int' || p.cls === 'alnum');
+function fdTable(t, st, dicts) {
+  const n = t.n, res = [];
+  if (n < 3) return res;
+  let cand = t.profs.filter(p => p.distinct >= 2 && !(p.distinct === n && p.nulls === 0) && p.type !== 'empty');
+  if (cand.length > st.fdMaxCols) cand = cand.slice(0, st.fdMaxCols);
+  const enc = cand.map(p => encode(t.cols[p.idx]));
+  const sIdx = n > 20000 ? randIdx(n, 20000) : null;
+  outer:
+  for (let i = 0; i < cand.length; i++) {
+    const a = cand[i];
+    if (a.distinct > n * st.fdMaxLhsRatio) continue;
+    for (let j = 0; j < cand.length; j++) {
+      if (i === j) continue;
+      const b = cand[j];
+      if (b.distinct - a.distinct > n * st.fdMax) continue;
+      if (sIdx) {
+        const s = fdViol(enc[i], enc[j], sIdx, n);
+        if (s.viol / s.cnt > st.fdMax * 2 + 0.001) continue;
+      }
+      const f = fdViol(enc[i], enc[j], null, n);
+      const rate = f.viol / n;
+      if (rate > st.fdMax) continue;
+      res.push({
+        tableId: t.id, lhs: a.col, rhs: b.col, violRows: f.viol, violRate: rate, exact: f.viol === 0,
+        lhsDistinct: a.distinct, rhsDistinct: b.distinct,
+        samples: f.viol ? fdSamples(enc[i], enc[j], f.gT, f.gM, n) : [], _i: i, _j: j
+      });
+      if (res.length >= 300) break outer;
+    }
+  }
+  const keys = new Set(res.map(r => r.lhs + '\u0001' + r.rhs));
+  res.forEach(r => { r.bijection = keys.has(r.rhs + '\u0001' + r.lhs); });
+  res.forEach(r => {
+    if (!r.bijection) return;
+    const a = cand[r._i], b = cand[r._j];
+    if (codeLike(a) && (b.hasCJK || (!codeLike(b) && b.maxLen > a.maxLen))) {
+      const L = enc[r._i], R = enc[r._j], seen = new Map();
+      for (let i = 0; i < n && seen.size < 15; i++) { const l = L.codes[i]; if (l && !seen.has(l)) seen.set(l, R.codes[i]); }
+      dicts.push({ tableId: t.id, codeCol: a.col, nameCol: b.col, entries: a.distinct, exact: r.exact && !r.violRows,
+        sample: [...seen].map(([l, rr]) => [L.back[l], R.back[rr] == null ? '' : R.back[rr]]) });
+    }
+  });
+  res.forEach(r => { delete r._i; delete r._j; });
+  return res;
+}
+
+/* ---------- 主流程 ---------- */
+function analyze(P0) {
+  const st = P0.settings;
+  const nullSet = new Set(st.nullTokens || []);
+  const trim = st.trim !== false, blankNull = st.blankAsNull !== false;
+  const norm = v => {
+    if (v === undefined || v === null) return null;
+    let s = String(v);
+    if (trim) s = s.trim();
+    else if (blankNull && s.trim() === '') return null;
+    if (s === '' && blankNull) return null;
+    if (nullSet.has(s)) return null;
+    return s;
+  };
+  const N = P0.tables.length;
+  const T = [];
+  P0.tables.forEach((t, ti) => {
+    let rows = t.rows, sampled = false;
+    const origN = rows.length;
+    if (st.sampling && rows.length > st.fullLimit) {
+      const idx = randIdx(rows.length, st.fullLimit);
+      rows = Array.from(idx, i => t.rows[i]);
+      sampled = true;
+    }
+    const cols = t.cols.map((c, ci) => {
+      const a = new Array(rows.length);
+      for (let i = 0; i < rows.length; i++) a[i] = norm(rows[i][ci]);
+      return a;
+    });
+    t.rows = null;
+    const profs = [], freqs = [];
+    cols.forEach((vals, ci) => {
+      const r = profileCol(vals, st);
+      r.col = t.cols[ci];
+      r.idx = ci;
+      freqs.push(r._freq);
+      delete r._freq;
+      profs.push(r);
+    });
+    T.push({ id: t.id, name: t.name, colNames: t.cols, n: rows.length, origN, sampled, cols, profs, freqs });
+    P(30 * (ti + 1) / N, '欄位剖析：' + t.name);
+  });
+
+  // 主鍵
+  T.forEach((t, ti) => {
+    t.pkCands = findPK(t, st);
+    const man = P0.manualPK[t.id], rej = P0.rejectedPK[t.id] || [];
+    if (man && man.length) t.effPK = man;
+    else { const c = t.pkCands.find(c => !rej.includes(c.cols.join(','))); t.effPK = c ? c.cols : []; }
+    t.compKeys = t.pkCands.filter(c => c.cols.length >= 2 && !rej.includes(c.cols.join(','))).slice(0, 3).map(c => c.cols);
+    if (man && man.length >= 2 && !t.compKeys.some(k => k.join(',') === man.join(','))) t.compKeys.unshift(man);
+    P(30 + 15 * (ti + 1) / N, '主鍵分析：' + t.name);
+  });
+
+  // 單欄外鍵
+  const targets = [], sources = [];
+  T.forEach(t => t.profs.forEach(p => {
+    if (!FKOK(p)) return;
+    if (p.distinct >= 2 && p.distinct / p.nonNull >= st.fkTargetMinUnique)
+      targets.push({ t, p, set: t.freqs[p.idx], isPK: t.effPK.length === 1 && t.effPK[0] === p.col });
+    if (p.distinct >= st.fkMinDistinct) sources.push({ t, p, set: t.freqs[p.idx] });
+  }));
+  const rels = [];
+  sources.forEach((s, si) => {
+    const cand = [];
+    for (const g of targets) {
+      if (s.t === g.t && s.p.idx === g.p.idx) continue;
+      const tc = typeCompat(s.p, g.p);
+      if (!tc) continue;
+      if (s.p.minLen > g.p.maxLen || s.p.maxLen < g.p.minLen) continue;
+      if (s.p.distinct * st.fkMinIncl > g.p.distinct) continue;
+      const inc = inclusion(s.set, g.set, st.fkMinIncl);
+      if (inc < st.fkMinIncl) continue;
+      const ns = nameSim(s.p.col, g.p.col, g.t.name), pm = patMatch(s.p, g.p);
+      let score = inc * 45 + ns * 20 + tc * 15 + pm * 10 + (g.isPK ? 10 : 0);
+      if (s.p.distinct < 10) score *= 0.75;
+      if (ns < 0.3) score -= 10;
+      if (s.t === g.t) score -= 5;
+      if (score < st.keepScore) continue;
+      cand.push({ g, inc, ns, tc, pm, score });
+    }
+    cand.sort((a, b) => b.score - a.score);
+    cand.slice(0, 3).forEach(c => {
+      const o = orphanList(s.set, c.g.set);
+      const srcU = s.p.distinct === s.p.nonNull, tgtU = c.g.p.distinct === c.g.p.nonNull;
+      rels.push({
+        key: s.t.id + '|' + s.p.col + '|' + c.g.t.id + '|' + c.g.p.col,
+        srcTable: s.t.id, srcCols: [s.p.col], tgtTable: c.g.t.id, tgtCols: [c.g.p.col],
+        score: Math.max(0, Math.min(100, Math.round(c.score))), incl: c.inc, nameSim: c.ns, typeMatch: c.tc, patMatch: c.pm,
+        tgtIsPK: c.g.isPK, card: tgtU ? (srcU ? '1:1' : '1:N') : 'N:M', srcOptional: s.p.nulls > 0,
+        orphanDistinct: o.d, orphanRows: o.r, orphans: o.list, srcNonNull: s.p.nonNull, kind: 'single'
+      });
+    });
+    if (si % 10 === 0) P(45 + 30 * (si + 1) / sources.length, '外鍵分析：' + s.t.name + '.' + s.p.col);
+  });
+  const relsOut = rels;
+  // 複合外鍵
+  T.forEach((B, bi) => {
+    B.compKeys.forEach(kc => {
+      const bIdx = kc.map(c => B.colNames.indexOf(c));
+      if (bIdx.some(i => i < 0)) return;
+      const tgtSet = tupleFreq(B.cols, bIdx, B.n);
+      const tgtU = tgtSet.size === B.n - tgtSet.nullRows;
+      T.forEach(A => {
+        if (A === B) return;
+        const options = bIdx.map(bi2 => {
+          const bp = B.profs[bi2];
+          return A.profs.filter(ap => ap.nonNull > 0 && ap.type !== 'empty')
+            .map(ap => ({ ap, ns: nameSim(ap.col, bp.col, B.name), tc: typeCompat(ap, bp), pm: patMatch(ap, bp) }))
+            .filter(o => o.ns >= 0.8 && o.tc > 0).sort((x, y) => y.ns - x.ns).slice(0, 2);
+        });
+        if (options.some(o => !o.length)) return;
+        const assign = [];
+        (function rec(d) {
+          if (d === options.length) {
+            const idxs = assign.map(o => o.ap.idx);
+            if (new Set(idxs).size !== idxs.length) return;
+            const srcSet = tupleFreq(A.cols, idxs, A.n);
+            const inc = inclusion(srcSet, tgtSet, st.fkMinIncl);
+            if (inc < st.fkMinIncl) return;
+            const avg = f => assign.reduce((s, o) => s + o[f], 0) / assign.length;
+            const ns = avg('ns'), tc = avg('tc'), pm = avg('pm');
+            const score = Math.round(Math.min(100, inc * 45 + ns * 20 + tc * 15 + pm * 10 + 10));
+            if (score < st.keepScore) return;
+            const o = orphanList(srcSet, tgtSet);
+            const srcNN = A.n - srcSet.nullRows, srcU = srcSet.size === srcNN;
+            const sc = assign.map(o2 => o2.ap.col);
+            relsOut.push({
+              key: A.id + '|' + sc.join(',') + '|' + B.id + '|' + kc.join(','),
+              srcTable: A.id, srcCols: sc, tgtTable: B.id, tgtCols: kc.slice(),
+              score, incl: inc, nameSim: ns, typeMatch: tc, patMatch: pm, tgtIsPK: B.effPK.join(',') === kc.join(','),
+              card: tgtU ? (srcU ? '1:1' : '1:N') : 'N:M', srcOptional: srcSet.nullRows > 0,
+              orphanDistinct: o.d, orphanRows: o.r, orphans: o.list, srcNonNull: srcNN, kind: 'composite'
+            });
+            return;
+          }
+          for (const o of options[d]) { assign.push(o); rec(d + 1); assign.pop(); }
+        })(0);
+      });
+    });
+    P(75 + 5 * (bi + 1) / N, '複合外鍵：' + B.name);
+  });
+
+  // 1:1 雙向去重
+  const byKey = new Map(relsOut.map(r => [r.key, r]));
+  const drop = new Set();
+  relsOut.forEach(r => {
+    if (r.card !== '1:1' || drop.has(r.key)) return;
+    const rk = r.tgtTable + '|' + r.tgtCols.join(',') + '|' + r.srcTable + '|' + r.srcCols.join(',');
+    const o = byKey.get(rk);
+    if (o && !drop.has(rk)) {
+      const ts = T.find(x => x.id === r.tgtTable), so = T.find(x => x.id === r.srcTable);
+      if (o.score > r.score || (o.score === r.score && so.n > ts.n)) drop.add(r.key); else drop.add(rk);
+    }
+  });
+  const relations = relsOut.filter(r => !drop.has(r.key));
+
+  // 相依 + 代碼對照
+  const fds = [], dicts = [];
+  T.forEach((t, ti) => {
+    fdTable(t, st, dicts).forEach(f => fds.push(f));
+    P(80 + 17 * (ti + 1) / N, '欄位相依：' + t.name);
+  });
+
+  // 代碼表、列舉、日期
+  const codeTables = [], enums = [], dates = [];
+  T.forEach(t => {
+    if (t.n > 0 && t.n <= 1000 && t.colNames.length <= 6 && t.effPK.length === 1) {
+      const kp = t.profs.find(p => p.col === t.effPK[0]);
+      const np = t.profs.find(p => p !== kp && p.hasCJK && (p.type === 'text' || p.type === 'code'));
+      if (kp && codeLike(kp) && kp.maxLen <= 6 && np) codeTables.push({ tableId: t.id, codeCol: kp.col, nameCol: np.col, entries: t.n });
+    }
+    t.profs.forEach(p => {
+      if (p.isEnum) enums.push({ tableId: t.id, col: p.col, distinct: p.distinct, values: p.top10 });
+      if (p.type === 'dateAD' || p.type === 'dateROC') dates.push({ tableId: t.id, col: p.col, type: p.type, min: p.dMin, max: p.dMax, sample: p.rocSample, pattern: p.patternDesc });
+    });
+  });
+  P(100, '整理結果…');
+  const profiles = {};
+  T.forEach(t => { profiles[t.id] = t.profs; });
+  return {
+    tables: T.map(t => ({ id: t.id, n: t.n, origN: t.origN, sampled: t.sampled, pkCands: t.pkCands.map(c => ({ cols: c.cols, score: c.score })) })),
+    profiles, relations, fds, dicts, codeTables, enums, dates
+  };
+}
+</script>
+<script>
+'use strict';
+/* ===== 共用工具 ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const fmt = n => typeof n === 'number' ? n.toLocaleString('zh-TW') : (n == null ? '' : n);
+const pct = (x, d = 1) => (x == null || isNaN(x)) ? '—' : (x * 100).toFixed(d) + '%';
+const clampN = (v, a, b) => Math.max(a, Math.min(b, isNaN(v) ? a : v));
+const sameArr = (a, b) => a && b && a.length === b.length && a.every((x, i) => x === b[i]);
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+function downloadBlob(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function downloadText(name, text, type = 'text/plain') { downloadBlob(name, new Blob([text], { type: type + ';charset=utf-8' })); }
+function stamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+function fmtTime(ts) { if (!ts) return '—'; const d = new Date(ts), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+async function copyText(t) { try { await navigator.clipboard.writeText(t); toast('已複製到剪貼簿'); } catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('已複製到剪貼簿'); } }
+const TYPE_LABEL = { int: '整數', decimal: '小數', dateAD: '日期(西元)', dateROC: '日期(民國)', digits: '數字代碼', code: '代碼', text: '文字', empty: '全空' };
+const DEFAULT_SETTINGS = {
+  threshold: 70, nullTokens: ['', 'NULL', 'null', 'N/A', 'n/a', '#N/A'], trim: true, blankAsNull: true, rocDate: true,
+  fkTargetMinUnique: 0.9, fkMinIncl: 0.5, fkMinDistinct: 2, keepScore: 40, maxComposite: 3, topK: 12,
+  fdMax: 0.01, fdMaxLhsRatio: 0.5, fdMaxCols: 50, sampling: true, fullLimit: 500000, sampleThreshold: 20000, sampleSize: 10000, ddlDialect: 'oracle'
+};
+function mkNorm(st) {
+  const ns = new Set(st.nullTokens || []), trim = st.trim !== false, bn = st.blankAsNull !== false;
+  return v => {
+    if (v === undefined || v === null) return null;
+    let s = String(v);
+    if (trim) s = s.trim(); else if (bn && s.trim() === '') return null;
+    if (s === '' && bn) return null;
+    if (ns.has(s)) return null;
+    return s;
+  };
+}
+
+/* ===== IndexedDB ===== */
+const DB_NAME = 'DataRelationshipExplorer', DB_VER = 1;
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      const mk = (n, opt, idx) => { if (!db.objectStoreNames.contains(n)) { const os = db.createObjectStore(n, opt); (idx || []).forEach(i => os.createIndex(i, i)); } };
+      mk('workspaces', { keyPath: 'id' });
+      mk('tables', { keyPath: 'id' }, ['wsId']);
+      mk('rows', { keyPath: ['tableId', 'chunkNo'] }, ['tableId']);
+      mk('profiles', { keyPath: 'id' }, ['tableId', 'wsId']);
+      mk('relations', { keyPath: 'id' }, ['wsId']);
+      mk('fds', { keyPath: 'id' }, ['wsId']);
+      mk('layouts', { keyPath: 'wsId' });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+const tx = (stores, mode = 'readonly') => S.db.transaction(stores, mode);
+const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const txDone = t => new Promise((res, rej) => { t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('交易中止')); });
+const dbGet = (s, k) => reqP(tx(s).objectStore(s).get(k));
+const dbAll = s => reqP(tx(s).objectStore(s).getAll());
+const dbByIndex = (s, i, k) => reqP(tx(s).objectStore(s).index(i).getAll(k));
+async function dbPut(s, v) { const t = tx(s, 'readwrite'); t.objectStore(s).put(v); await txDone(t); }
+async function dbPutMany(s, vs) { if (!vs.length) return; const t = tx(s, 'readwrite'); const os = t.objectStore(s); vs.forEach(v => os.put(v)); await txDone(t); }
+async function dbDel(s, k) { const t = tx(s, 'readwrite'); t.objectStore(s).delete(k); await txDone(t); }
+async function dbDelByIndex(s, i, k) {
+  const t = tx(s, 'readwrite'), os = t.objectStore(s);
+  const r = os.index(i).openKeyCursor(IDBKeyRange.only(k));
+  r.onsuccess = () => { const c = r.result; if (c) { os.delete(c.primaryKey); c.continue(); } };
+  await txDone(t);
+}
+
+/* ===== 狀態 ===== */
+const S = {
+  db: null, wsList: [], ws: null, tables: [], profiles: {}, relations: [], fds: [], layout: null, tab: 'overview',
+  rowCache: new Map(), worker: null, busy: false, selTable: null, highlight: null, modalCtx: null, imp: null,
+  er: { showPending: true, showAll: false, focus: '' }, relFilter: { status: 'all', q: '', onlyTh: true }, fdFilter: { table: '', exact: false },
+  pathState: { from: '', to: '', max: 4, pending: true, results: null }, impactState: { table: '', col: '', dir: 'down', depth: 3, pending: true, result: null }
+};
+const TB = id => S.tables.find(t => t.id === id);
+const tname = id => (TB(id) || {}).name || '(已刪除)';
+function profMap(tid) { const m = {}; (S.profiles[tid] || []).forEach(p => { m[p.col] = p; }); return m; }
+function effPK(t) {
+  if (!t) return [];
+  if (t.pk && t.pk.cols && t.pk.cols.length) return t.pk.cols;
+  const rej = t.pkRejected || [];
+  const c = (t.pkCands || []).find(c => !rej.includes(c.cols.join(',')));
+  return c ? c.cols : [];
+}
+function visRels(opts = {}) {
+  const th = S.ws.settings.threshold;
+  return S.relations.filter(r => r.status !== 'rejected' && TB(r.srcTable) && TB(r.tgtTable) &&
+    (r.status === 'confirmed' || r.origin === 'manual' || (r.score >= th && opts.pending !== false)));
+}
+const effCard = r => r.cardOverride || r.card;
+function cardSides(r) {
+  const c = effCard(r);
+  const [p, ch] = c === '1:1' ? ['1', '1'] : c === '1:N' ? ['1', 'N'] : ['N', 'M'];
+  return { parent: p, child: (r.srcOptional ? '0..' : '') + ch };
+}
+function cardText(r) {
+  const c = effCard(r);
+  const base = c === '1:1' ? '1 : 1（一對一）' : c === '1:N' ? '1 : N（父表一筆對應子表多筆）' : 'N : M（多對多，建議檢查中間表）';
+  return base + (r.srcOptional ? '；參照端可為空（0..）' : '');
+}
+const relLabel = r => `${tname(r.srcTable)}.${r.srcCols.join('+')} → ${tname(r.tgtTable)}.${r.tgtCols.join('+')}`;
+function statusTag(r) {
+  const s = r.status === 'confirmed' ? '<span class="tag ok">✅ 已確認</span>' : r.status === 'rejected' ? '<span class="tag bad">❌ 已否決</span>' : '<span class="tag warn">🟡 待審核</span>';
+  return s + (r.origin === 'manual' ? '<span class="tag acc">手動</span>' : '') + (r.stale ? '<span class="tag bad" title="重新分析時未再偵測到">未再偵測</span>' : '');
+}
+function scoreColor(s) { return s >= 85 ? 'var(--theme-success)' : s >= 70 ? 'var(--theme-primary)' : s >= 50 ? 'var(--theme-warning)' : 'var(--theme-danger)'; }
+const codeTableSet = () => new Set(((S.ws.analysis || {}).codeTables || []).map(c => c.tableId));
+function readLastWs() { try { return localStorage.getItem('dre_lastWs'); } catch (_) { return null; } }
+function writeLastWs(id) { try { localStorage.setItem('dre_lastWs', id); } catch (_) { /* 瀏覽器封鎖儲存時僅失去記憶上次工作區 */ } }
+
+/* ===== 初始化 ===== */
+function newWs(name) { return { id: uid(), name, createdAt: Date.now(), updatedAt: Date.now(), settings: { ...DEFAULT_SETTINGS }, analysis: null }; }
+async function init() {
+  try { S.db = await openDB(); } catch (e) { document.body.innerHTML = '<div class="empty">無法開啟 IndexedDB：' + esc(e.message) + '<br>請確認瀏覽器未停用本機儲存。</div>'; return; }
+  S.wsList = await dbAll('workspaces');
+  if (!S.wsList.length) { const ws = newWs('預設工作區'); await dbPut('workspaces', ws); S.wsList = [ws]; }
+  const last = readLastWs();
+  bind();
+  await loadWs((S.wsList.find(w => w.id === last) || S.wsList[0]).id);
+}
+async function loadWs(id) {
+  S.ws = await dbGet('workspaces', id);
+  S.ws.settings = { ...DEFAULT_SETTINGS, ...(S.ws.settings || {}) };
+  writeLastWs(id);
+  S.rowCache.clear();
+  S.highlight = null;
+  S.tables = (await dbByIndex('tables', 'wsId', id)).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+  if (S.selTable && !TB(S.selTable)) S.selTable = null;
+  const profs = await dbByIndex('profiles', 'wsId', id);
+  S.profiles = {};
+  profs.forEach(p => { (S.profiles[p.tableId] = S.profiles[p.tableId] || []).push(p); });
+  Object.values(S.profiles).forEach(a => a.sort((x, y) => x.idx - y.idx));
+  S.relations = await dbByIndex('relations', 'wsId', id);
+  S.fds = await dbByIndex('fds', 'wsId', id);
+  S.layout = (await dbGet('layouts', id)) || { wsId: id, pos: {}, zoom: 1, pan: { x: 40, y: 40 }, hidden: [] };
+  S.layout.hidden = S.layout.hidden || [];
+  renderAll();
+}
+async function saveWs() {
+  S.ws.updatedAt = Date.now();
+  await dbPut('workspaces', S.ws);
+  const i = S.wsList.findIndex(w => w.id === S.ws.id);
+  if (i >= 0) S.wsList[i] = S.ws; else S.wsList.push(S.ws);
+}
+let layoutTimer = null;
+function saveLayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(() => dbPut('layouts', S.layout).catch(console.error), 400); }
+async function getRows(tid) {
+  if (S.rowCache.has(tid)) return S.rowCache.get(tid);
+  const chunks = await dbByIndex('rows', 'tableId', tid);
+  chunks.sort((a, b) => a.chunkNo - b.chunkNo);
+  const rows = [];
+  chunks.forEach(c => { for (const r of c.rows) rows.push(r); });
+  S.rowCache.set(tid, rows);
+  return rows;
+}
+async function saveTable(rec, rows) {
+  await dbDelByIndex('rows', 'tableId', rec.id);
+  const t = tx(['tables', 'rows'], 'readwrite');
+  t.objectStore('tables').put(rec);
+  const os = t.objectStore('rows');
+  for (let i = 0, c = 0; i < rows.length; i += 5000, c++) os.put({ tableId: rec.id, chunkNo: c, rows: rows.slice(i, i + 5000) });
+  await txDone(t);
+  S.rowCache.delete(rec.id);
+}
+async function deleteTableData(tid) {
+  await dbDelByIndex('rows', 'tableId', tid);
+  await dbDelByIndex('profiles', 'tableId', tid);
+  await dbDel('tables', tid);
+  const rels = S.relations.filter(r => r.srcTable === tid || r.tgtTable === tid);
+  for (const r of rels) await dbDel('relations', r.id);
+  const fds = S.fds.filter(f => f.tableId === tid);
+  for (const f of fds) await dbDel('fds', f.id);
+  delete S.layout.pos[tid];
+  S.layout.hidden = S.layout.hidden.filter(x => x !== tid);
+  await dbPut('layouts', S.layout);
+  S.rowCache.delete(tid);
+}
+
+/* ===== 事件 ===== */
+const A = {};
+function bind() {
+  document.addEventListener('click', async e => {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    if (el !== e.target && e.target.matches('input,select,textarea,label')) return;
+    const f = A[el.dataset.act];
+    if (!f) return;
+    try { await f(el, e); } catch (err) { console.error(err); toast('發生錯誤：' + err.message); }
+  });
+  document.addEventListener('change', async e => {
+    const el = e.target.closest('[data-chg]');
+    if (!el) return;
+    const f = CHG[el.dataset.chg];
+    if (f) { try { await f(el, e); } catch (err) { console.error(err); toast('發生錯誤：' + err.message); } }
+  });
+  $('#fileInput').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return; if (!S.imp) openImport(); addImportFiles(fs); });
+  $('#wsFileInput').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importWsJSON(f); });
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    const fs = [...((e.dataTransfer && e.dataTransfer.files) || [])];
+    if (!fs.length) return;
+    if (fs.length === 1 && /\.json$/i.test(fs[0].name)) { importWsJSON(fs[0]); return; }
+    if (!S.imp) openImport();
+    addImportFiles(fs);
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) $('#exportMenu').classList.remove('open'); }, true);
+  $('#thresholdInput').addEventListener('change', async e => { S.ws.settings.threshold = clampN(+e.target.value, 0, 100); e.target.value = S.ws.settings.threshold; await saveWs(); renderAll(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').innerHTML) closeModal(); });
+}
+const CHG = {};
+CHG.ws = async el => { await loadWs(el.value); };
+
+A['toggle-export'] = () => $('#exportMenu').classList.toggle('open');
+A['theme'] = () => document.getElementById('themeToggle').click();
+document.getElementById('themeToggle').addEventListener('click', () => setTimeout(() => { if (S.tab === 'er' && S.ws) drawER(); }, 0));
+A['close-detail'] = () => $('#layout').classList.add('nodetail');
+function openDetail(html) { $('#detailBody').innerHTML = html; $('#layout').classList.remove('nodetail'); $('#detail').scrollTop = 0; }
+
+/* ===== Modal ===== */
+function modal({ title, body, buttons = [], wide = false }) {
+  const root = $('#modalRoot');
+  root.innerHTML = `<div class="modal-bg" data-act="modal-bg"><div class="modal ${wide ? 'wide' : ''}"><div class="modal-h"><span>${esc(title)}</span><button class="sm" data-act="modal-close">✕</button></div><div class="modal-b" id="modalBody">${body}</div><div class="modal-f">${buttons.map(b => `<button ${b.id ? `id="${b.id}"` : ''} class="${b.cls || ''}" data-act="${b.act}">${esc(b.label)}</button>`).join('')}</div></div></div>`;
+  return root.firstElementChild;
+}
+function closeModal() {
+  const ctx = S.modalCtx;
+  S.modalCtx = null;
+  S.imp = null;
+  $('#modalRoot').innerHTML = '';
+  if (ctx && ctx.resolve) ctx.resolve(null);
+}
+A['modal-close'] = () => closeModal();
+A['modal-bg'] = (el, e) => { if (e.target === el && !S.imp) closeModal(); };
+function askText(title, label, def = '') {
+  return new Promise(resolve => {
+    modal({ title, body: `<div class="form-grid"><label>${esc(label)}</label><input id="askInput" value="${esc(def)}"></div>`, buttons: [{ label: '取消', act: 'modal-close' }, { label: '確定', act: 'ask-ok', cls: 'primary' }] });
+    S.modalCtx = { resolve };
+    const i = $('#askInput');
+    i.focus(); i.select();
+    i.addEventListener('keydown', e => { if (e.key === 'Enter') A['ask-ok'](); });
+  });
+}
+A['ask-ok'] = () => { const v = $('#askInput').value.trim(); const ctx = S.modalCtx; S.modalCtx = null; closeModal(); if (ctx) ctx.resolve(v || null); };
+function showCode(title, code, fileName, extraHead = '') {
+  modal({ title, wide: true, body: `${extraHead}<pre class="code" id="codeOut">${esc(code)}</pre>`, buttons: [{ label: '關閉', act: 'modal-close' }, { label: '📋 複製', act: 'code-copy' }, { label: '💾 下載', act: 'code-dl', cls: 'primary' }] });
+  S.modalCtx = { code, fileName };
+}
+A['code-copy'] = () => copyText(S.modalCtx.code);
+A['code-dl'] = () => downloadText(S.modalCtx.fileName, S.modalCtx.code);
+
+/* ===== 工作區 ===== */
+A['ws-new'] = async () => { const n = await askText('新增工作區', '工作區名稱', '新工作區'); if (!n) return; const ws = newWs(n); await dbPut('workspaces', ws); S.wsList.push(ws); await loadWs(ws.id); toast('已建立工作區'); };
+A['ws-rename'] = async () => { const n = await askText('重新命名工作區', '工作區名稱', S.ws.name); if (!n) return; S.ws.name = n; await saveWs(); renderAll(); };
+A['ws-delete'] = async () => {
+  if (!confirm(`確定刪除工作區「${S.ws.name}」及其所有資料表與分析結果？此動作無法復原。`)) return;
+  const id = S.ws.id;
+  for (const t of S.tables) await deleteTableData(t.id);
+  await dbDelByIndex('relations', 'wsId', id);
+  await dbDelByIndex('fds', 'wsId', id);
+  await dbDelByIndex('profiles', 'wsId', id);
+  await dbDel('layouts', id);
+  await dbDel('workspaces', id);
+  S.wsList = S.wsList.filter(w => w.id !== id);
+  if (!S.wsList.length) { const ws = newWs('預設工作區'); await dbPut('workspaces', ws); S.wsList = [ws]; }
+  await loadWs(S.wsList[0].id);
+  toast('工作區已刪除');
+};
+
+/* ===== 資料表操作 ===== */
+A['tbl-open'] = el => { S.selTable = el.dataset.tid; if (S.tab === 'overview' || S.tab === 'er' || S.tab === 'path' || S.tab === 'impact' || S.tab === 'dict') S.tab = 'profile'; renderAll(); showTableDetail(el.dataset.tid); };
+A['tbl-rename'] = async el => {
+  const t = TB(el.dataset.tid);
+  const n = await askText('重新命名資料表', '資料表名稱', t.name);
+  if (!n || n === t.name) return;
+  if (S.tables.some(x => x.name === n && x.id !== t.id)) return toast('名稱已存在');
+  t.name = n; await dbPut('tables', t); renderAll();
+};
+A['tbl-del'] = async el => {
+  const t = TB(el.dataset.tid);
+  if (!confirm(`確定刪除資料表「${t.name}」？相關的關聯與相依結果也會一併刪除。`)) return;
+  await deleteTableData(t.id);
+  await loadWs(S.ws.id);
+  toast('已刪除資料表');
+};
+CHG['tbl-vis'] = async el => {
+  const id = el.dataset.tid, h = new Set(S.layout.hidden);
+  if (el.checked) h.delete(id); else h.add(id);
+  S.layout.hidden = [...h];
+  saveLayout();
+  if (S.tab === 'er') drawER();
+};
+
+/* ===== 匯入 ===== */
+const ENC_OPTS = [['auto', '自動偵測'], ['utf-8', 'UTF-8'], ['big5', 'Big5 / CP950'], ['big5-hkscs', 'Big5-HKSCS'], ['utf-16le', 'UTF-16 LE'], ['utf-16be', 'UTF-16 BE'], ['gb18030', 'GB18030（簡中）']];
+const DECODER = { 'utf-8': 'utf-8', big5: 'big5', 'big5-hkscs': 'big5', 'utf-16le': 'utf-16le', 'utf-16be': 'utf-16be', gb18030: 'gb18030' };
+const DELIMS = [[',', '逗號 ,'], ['\t', 'Tab'], ['|', '直線 |'], [';', '分號 ;']];
+function detectEnc(u8) {
+  if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) return 'utf-8';
+  if (u8[0] === 0xFF && u8[1] === 0xFE) return 'utf-16le';
+  if (u8[0] === 0xFE && u8[1] === 0xFF) return 'utf-16be';
+  const L = Math.min(u8.length, 4000);
+  let ze = 0, zo = 0;
+  for (let i = 0; i < L; i++) if (u8[i] === 0) { if (i % 2) zo++; else ze++; }
+  if (zo > L * 0.15 && zo > ze * 3) return 'utf-16le';
+  if (ze > L * 0.15 && ze > zo * 3) return 'utf-16be';
+  try { new TextDecoder('utf-8', { fatal: true }).decode(u8); return 'utf-8'; } catch (e) { return 'big5'; }
+}
+function detectDelim(text, fileName) {
+  const lines = text.split(/\r?\n/).filter(l => l.length).slice(0, 30);
+  let best = /\.tsv$/i.test(fileName) ? '\t' : ',', bestScore = -1;
+  for (const [d] of DELIMS) {
+    const counts = lines.map(l => { let c = 0, q = false; for (const ch of l) { if (ch === '"') q = !q; else if (ch === d && !q) c++; } return c; });
+    const freq = {};
+    counts.forEach(c => { freq[c] = (freq[c] || 0) + 1; });
+    let mode = 0, mf = 0;
+    for (const [k, v] of Object.entries(freq)) if (v > mf || (v === mf && +k > mode)) { mode = +k; mf = v; }
+    if (!mode) continue;
+    const score = (mf / lines.length) * 1000 + mode;
+    if (score > bestScore) { bestScore = score; best = d; }
+  }
+  return best;
+}
+function parseDelimited(text, d, maxRows = Infinity) {
+  const rows = [];
+  let row = [], i = 0;
+  const n = text.length;
+  if (text.charCodeAt(0) === 0xFEFF) i = 1;
+  while (i < n) {
+    let f;
+    if (text[i] === '"') {
+      let j = i + 1, s = '';
+      while (j < n) {
+        const k = text.indexOf('"', j);
+        if (k < 0) { s += text.slice(j); j = n; break; }
+        s += text.slice(j, k);
+        if (text[k + 1] === '"') { s += '"'; j = k + 2; } else { j = k + 1; break; }
+      }
+      f = s;
+      while (j < n && text[j] !== d && text[j] !== '\n' && text[j] !== '\r') { f += text[j]; j++; }
+      i = j;
+    } else {
+      let j = i;
+      while (j < n) { const c = text[j]; if (c === d || c === '\n' || c === '\r') break; j++; }
+      f = text.slice(i, j);
+      i = j;
+    }
+    row.push(f);
+    if (i >= n) { rows.push(row); row = null; break; }
+    const c = text[i];
+    if (c === d) { i++; if (i >= n) { row.push(''); rows.push(row); row = null; } continue; }
+    if (c === '\r') { i++; if (text[i] === '\n') i++; } else i++;
+    rows.push(row);
+    row = [];
+    if (rows.length >= maxRows) return rows;
+  }
+  if (row && row.length) rows.push(row);
+  return rows;
+}
+function decodeImp(o) {
+  const enc = o.encSel === 'auto' ? o.encDetected : o.encSel;
+  try { o.text = new TextDecoder(DECODER[enc] || 'utf-8').decode(o.buf); } catch (e) { o.text = new TextDecoder('utf-8').decode(o.buf); }
+  if (!o.delim) o.delim = detectDelim(o.text.slice(0, 200000), o.file.name);
+  o.preview = parseDelimited(o.text, o.delim, 101);
+  o.lineCount = (o.text.match(/\n/g) || []).length + (o.text.endsWith('\n') ? 0 : 1);
+}
+function openImport() {
+  S.imp = { files: [], cur: 0 };
+  modal({
+    title: '匯入 CSV / TSV', wide: true,
+    body: `<div class="drop" id="dropZone" data-act="pick-files">📂 拖拉檔案到這裡，或點擊選擇檔案（可多選）<br><span class="muted small">支援 .csv / .tsv / .txt；編碼支援 UTF-8、UTF-8 BOM、Big5 / CP950、Big5-HKSCS、UTF-16 LE/BE、GB18030</span></div><div id="impBody"></div>`,
+    buttons: [{ label: '取消', act: 'modal-close' }, { label: '確認匯入', act: 'imp-confirm', cls: 'primary', id: 'impOk' }]
+  });
+  const dz = $('#dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('over'); addImportFiles([...e.dataTransfer.files]); });
+  renderImp();
+}
+A.import = () => openImport();
+A['pick-files'] = () => $('#fileInput').click();
+async function addImportFiles(files) {
+  if (!S.imp) return;
+  for (const f of files) {
+    if (!/\.(csv|tsv|txt)$/i.test(f.name)) { toast('略過不支援的檔案：' + f.name); continue; }
+    const buf = await f.arrayBuffer();
+    const o = { file: f, name: f.name.replace(/\.[^.]+$/, ''), buf, encSel: 'auto', encDetected: detectEnc(new Uint8Array(buf)), delim: null, header: true };
+    decodeImp(o);
+    S.imp.files.push(o);
+    S.imp.cur = S.imp.files.length - 1;
+  }
+  renderImp();
+}
+function renderImp() {
+  const box = $('#impBody');
+  if (!box || !S.imp) return;
+  const fs = S.imp.files;
+  if (!fs.length) { box.innerHTML = '<div class="muted">尚未選擇檔案。</div>'; return; }
+  const o = fs[S.imp.cur];
+  const exists = S.tables.find(t => t.name === o.name);
+  const nameDup = fs.filter(x => x.name === o.name).length > 1;
+  const pv = o.preview.slice(0, o.header ? 101 : 100);
+  const head = o.header ? (pv[0] || []) : (pv[0] || []).map((_, i) => 'COL_' + (i + 1));
+  const body = o.header ? pv.slice(1) : pv;
+  const w = Math.max(head.length, ...body.map(r => r.length));
+  box.innerHTML = `
+  <div class="flist">${fs.map((x, i) => `<button class="sm ${i === S.imp.cur ? 'active' : ''}" data-act="imp-sel" data-i="${i}">${esc(x.name)}</button>`).join('')}</div>
+  <div class="form-grid">
+    <label>資料表名稱</label><input id="impName" value="${esc(o.name)}" data-chg="imp-name">
+    ${exists ? '<div class="hint" style="color:var(--theme-warning)">⚠ 已有同名資料表，匯入後將取代其資料（保留已審核的關聯）。</div>' : ''}
+    ${nameDup ? '<div class="hint" style="color:var(--theme-danger)">⚠ 本次匯入有重複名稱，請修改。</div>' : ''}
+    <label>編碼</label><select data-chg="imp-enc">${ENC_OPTS.map(([v, l]) => `<option value="${v}" ${o.encSel === v ? 'selected' : ''}>${l}${v === 'auto' ? `（偵測：${o.encDetected}）` : ''}</option>`).join('')}</select>
+    <label>分隔符號</label><select data-chg="imp-delim">${DELIMS.map(([v, l]) => `<option value="${esc(v)}" ${o.delim === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <label>第一列為標題</label><span><input type="checkbox" data-chg="imp-header" ${o.header ? 'checked' : ''}></span>
+    <label>檔案資訊</label><span class="muted">${esc(o.file.name)}｜${fmt(Math.round(o.buf.byteLength / 1024))} KB｜約 ${fmt(o.lineCount)} 行｜${w} 欄</span>
+  </div>
+  <div class="row" style="margin-top:8px"><button class="sm danger" data-act="imp-remove">移除此檔案</button><span class="muted small">預覽前 100 列；空值寫法可在「設定」調整</span></div>
+  <div class="preview"><table class="grid"><thead><tr><th>#</th>${Array.from({ length: w }, (_, i) => `<th>${esc(head[i] || 'COL_' + (i + 1))}</th>`).join('')}</tr></thead>
+  <tbody>${body.map((r, ri) => `<tr><td class="muted">${ri + 1}</td>${Array.from({ length: w }, (_, i) => `<td>${esc(r[i] == null ? '' : r[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+A['imp-sel'] = el => { S.imp.cur = +el.dataset.i; renderImp(); };
+A['imp-remove'] = () => { S.imp.files.splice(S.imp.cur, 1); S.imp.cur = Math.max(0, S.imp.cur - 1); renderImp(); };
+CHG['imp-name'] = el => { S.imp.files[S.imp.cur].name = el.value.trim(); renderImp(); };
+CHG['imp-enc'] = el => { const o = S.imp.files[S.imp.cur]; o.encSel = el.value; o.delim = null; decodeImp(o); renderImp(); };
+CHG['imp-delim'] = el => { const o = S.imp.files[S.imp.cur]; o.delim = el.value; o.preview = parseDelimited(o.text, o.delim, 101); renderImp(); };
+CHG['imp-header'] = el => { S.imp.files[S.imp.cur].header = el.checked; renderImp(); };
+function buildTable(parsed, header) {
+  let rows = parsed.filter(r => !(r.length === 1 && r[0] === ''));
+  let hdr = header ? (rows.shift() || []) : [];
+  let w = hdr.length;
+  for (const r of rows) if (r.length > w) w = r.length;
+  const seen = new Map(), cols = [];
+  for (let i = 0; i < w; i++) {
+    let nm = String(hdr[i] == null ? '' : hdr[i]).trim() || 'COL_' + (i + 1);
+    let base = nm, k = 2;
+    while (seen.has(nm)) nm = base + '_' + (k++);
+    seen.set(nm, 1);
+    cols.push(nm);
+  }
+  for (const r of rows) while (r.length < w) r.push('');
+  return { cols, rows };
+}
+A['imp-confirm'] = async () => {
+  const fs = S.imp.files;
+  if (!fs.length) return toast('請先選擇檔案');
+  const names = fs.map(f => f.name);
+  if (names.some(n => !n)) return toast('資料表名稱不可空白');
+  if (new Set(names).size !== names.length) return toast('本次匯入有重複名稱');
+  const btn = $('#impOk');
+  btn.disabled = true;
+  let ok = 0;
+  for (const o of fs) {
+    btn.textContent = `匯入中… ${o.name}`;
+    await new Promise(r => setTimeout(r, 20));
+    const { cols, rows } = buildTable(parseDelimited(o.text, o.delim), o.header);
+    const old = S.tables.find(t => t.name === o.name);
+    const rec = {
+      id: old ? old.id : uid(), wsId: S.ws.id, name: o.name, cols, rowCount: rows.length,
+      encoding: o.encSel === 'auto' ? o.encDetected : o.encSel, delimiter: o.delim, fileName: o.file.name, importedAt: Date.now(),
+      pk: old && old.pk && old.pk.cols.every(c => cols.includes(c)) ? old.pk : null, pkCands: [], pkRejected: old ? (old.pkRejected || []) : []
+    };
+    if (old) await dbDelByIndex('profiles', 'tableId', old.id);
+    await saveTable(rec, rows);
+    ok++;
+  }
+  S.imp = null;
+  closeModal();
+  await loadWs(S.ws.id);
+  toast(`已匯入 ${ok} 張資料表，請按「分析」開始推測關聯`);
+};
+
+/* ===== 分析 ===== */
+function setProg(p, msg) { $('#pbarFill').style.width = p + '%'; $('#pmsg').textContent = msg; }
+function endBusy() { S.busy = false; $('#btnCancel').hidden = true; $('#btnAnalyze').disabled = false; if (S.worker && S.worker.terminate) S.worker.terminate(); S.worker = null; }
+function makeInlineWorker(handler) {
+  let dead = false;
+  const selfObj = { postMessage: m => setTimeout(() => { if (!dead) handler({ data: m }); }, 0), onmessage: null };
+  new Function('self', $('#workerSrc').textContent)(selfObj);
+  return { postMessage: m => { if (!dead) setTimeout(() => selfObj.onmessage({ data: m }), 30); }, terminate() { dead = true; } };
+}
+A.analyze = async () => {
+  if (S.busy) return;
+  if (!S.tables.length) return toast('請先匯入資料表');
+  S.busy = true;
+  $('#btnCancel').hidden = false;
+  $('#btnAnalyze').disabled = true;
+  setProg(0, '載入資料…');
+  try {
+    const tables = [];
+    for (const t of S.tables) tables.push({ id: t.id, name: t.name, cols: t.cols, rows: await getRows(t.id) });
+    const manualPK = {}, rejectedPK = {};
+    S.tables.forEach(t => { if (t.pk && t.pk.cols && t.pk.cols.length) manualPK[t.id] = t.pk.cols; rejectedPK[t.id] = t.pkRejected || []; });
+    const msg = { type: 'analyze', payload: { tables, settings: S.ws.settings, manualPK, rejectedPK } };
+    let got = false;
+    const handler = async e => {
+      got = true;
+      const m = e.data;
+      if (m.type === 'progress') setProg(m.p, m.msg);
+      else if (m.type === 'done') {
+        setProg(100, '儲存結果…');
+        try { await onAnalysisDone(m.result); setProg(100, `分析完成（${(m.result.ms / 1000).toFixed(1)} 秒）`); toast('分析完成'); }
+        catch (err) { console.error(err); setProg(0, '儲存失敗：' + err.message); }
+        endBusy();
+      } else if (m.type === 'error') { console.error(m.message); setProg(0, '分析錯誤：' + m.message.split('\n')[0]); endBusy(); }
+    };
+    let w;
+    try {
+      const url = URL.createObjectURL(new Blob([$('#workerSrc').textContent], { type: 'text/javascript' }));
+      w = new Worker(url);
+      w.onmessage = handler;
+      w.onerror = ev => {
+        if (!got) { ev.preventDefault(); const iw = makeInlineWorker(handler); S.worker = iw; iw.postMessage(msg); }
+        else { setProg(0, '分析錯誤：' + ev.message); endBusy(); }
+      };
+    } catch (e) { w = makeInlineWorker(handler); }
+    S.worker = w;
+    w.postMessage(msg);
+  } catch (err) { console.error(err); toast(err.message); setProg(0, '錯誤：' + err.message); endBusy(); }
+};
+A.cancel = () => { if (!S.busy) return; endBusy(); setProg(0, '已取消分析'); toast('已取消'); };
+async function onAnalysisDone(r) {
+  const wsId = S.ws.id;
+  await dbDelByIndex('profiles', 'wsId', wsId);
+  const profRecs = [];
+  for (const [tid, arr] of Object.entries(r.profiles)) arr.forEach(p => profRecs.push({ ...p, id: tid + '|' + p.idx, wsId, tableId: tid }));
+  await dbPutMany('profiles', profRecs);
+  for (const ti of r.tables) {
+    const t = TB(ti.id);
+    if (!t) continue;
+    t.pkCands = ti.pkCands; t.sampled = ti.sampled; t.analyzedRows = ti.n;
+  }
+  await dbPutMany('tables', S.tables);
+  const old = S.relations;
+  const keep = new Map(old.filter(x => x.status !== 'pending' || x.origin === 'manual').map(x => [x.key, x]));
+  const out = [];
+  const METRICS = ['score', 'incl', 'nameSim', 'typeMatch', 'patMatch', 'tgtIsPK', 'card', 'srcOptional', 'orphanDistinct', 'orphanRows', 'orphans', 'srcNonNull', 'kind'];
+  for (const nr of r.relations) {
+    const o = keep.get(nr.key);
+    if (o) { if (o.origin !== 'manual') METRICS.forEach(k => { o[k] = nr[k]; }); o.stale = false; out.push(o); keep.delete(nr.key); }
+    else out.push({ ...nr, id: uid(), wsId, status: 'pending', origin: 'auto', note: '', cardOverride: '', stale: false });
+  }
+  for (const o of keep.values()) { if (o.origin === 'auto') o.stale = true; out.push(o); }
+  await dbDelByIndex('relations', 'wsId', wsId);
+  await dbPutMany('relations', out);
+  await dbDelByIndex('fds', 'wsId', wsId);
+  await dbPutMany('fds', r.fds.map(f => ({ ...f, id: uid(), wsId })));
+  S.ws.analysis = { analyzedAt: Date.now(), ms: r.ms, dicts: r.dicts, enums: r.enums, dates: r.dates, codeTables: r.codeTables, sampled: r.tables.filter(t => t.sampled).map(t => t.id) };
+  await saveWs();
+  await loadWs(wsId);
+}
+
+/* ===== 手動關聯評估、主鍵驗證 ===== */
+async function evalRel(srcT, srcCols, tgtT, tgtCols) {
+  const nv = mkNorm(S.ws.settings);
+  const sr = await getRows(srcT.id), tr = await getRows(tgtT.id);
+  const si = srcCols.map(c => srcT.cols.indexOf(c)), ti = tgtCols.map(c => tgtT.cols.indexOf(c));
+  const tf = (rows, idx) => {
+    const m = new Map(); let nulls = 0;
+    for (const r of rows) {
+      let k = '', bad = false;
+      for (let q = 0; q < idx.length; q++) { const v = nv(r[idx[q]]); if (v === null) { bad = true; break; } k += (q ? '\u0001' : '') + v; }
+      if (bad) { nulls++; continue; }
+      m.set(k, (m.get(k) || 0) + 1);
+    }
+    return { m, nulls };
+  };
+  const Aa = tf(sr, si), Bb = tf(tr, ti);
+  let hit = 0, od = 0, orr = 0;
+  const ol = [];
+  for (const [k, c] of Aa.m) { if (Bb.m.has(k)) hit++; else { od++; orr += c; if (ol.length < 3000) ol.push([k.replace(/\u0001/g, ' | '), c]); } }
+  ol.sort((a, b) => b[1] - a[1]);
+  const incl = Aa.m.size ? hit / Aa.m.size : 0;
+  const srcNN = sr.length - Aa.nulls, srcU = Aa.m.size === srcNN, tgtU = Bb.m.size === tr.length - Bb.nulls;
+  return {
+    incl, card: tgtU ? (srcU ? '1:1' : '1:N') : 'N:M', srcOptional: Aa.nulls > 0, orphanDistinct: od, orphanRows: orr, orphans: ol.slice(0, 300),
+    srcNonNull: srcNN, score: Math.round(incl * 100), nameSim: null, typeMatch: null, patMatch: null, tgtIsPK: sameArr(effPK(tgtT), tgtCols), kind: srcCols.length > 1 ? 'composite' : 'single'
+  };
+}
+async function verifyPK(t, cols) {
+  const rows = await getRows(t.id), nv = mkNorm(S.ws.settings), idx = cols.map(c => t.cols.indexOf(c));
+  const s = new Set(); let nulls = 0, dup = 0; const ex = [];
+  for (const r of rows) {
+    let k = '', bad = false;
+    for (let q = 0; q < idx.length; q++) { const v = nv(r[idx[q]]); if (v === null) bad = true; k += (q ? '\u0001' : '') + (v == null ? '∅' : v); }
+    if (bad) nulls++;
+    if (s.has(k)) { dup++; if (ex.length < 5) ex.push(k.replace(/\u0001/g, ' | ')); } else s.add(k);
+  }
+  return { nulls, dup, ex, total: rows.length };
+}
+/* ===== 畫面 ===== */
+const TABS = [['overview', '總覽'], ['profile', '欄位剖析'], ['pk', '主鍵'], ['rel', '外鍵關聯'], ['fd', '欄位相依'], ['er', 'ER 圖'], ['path', '路徑查詢'], ['impact', '影響分析'], ['dict', '代碼與日期']];
+function renderAll() {
+  $('#wsSelect').innerHTML = S.wsList.map(w => `<option value="${w.id}" ${w.id === S.ws.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('');
+  $('#thresholdInput').value = S.ws.settings.threshold;
+  renderSidebar();
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="${S.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${l}${k === 'rel' ? relBadge() : ''}</button>`).join('');
+  renderView();
+  const a = S.ws.analysis;
+  if (!S.busy) setProg(a ? 100 : 0, a ? `上次分析：${fmtTime(a.analyzedAt)}（${(a.ms / 1000).toFixed(1)} 秒）` : '尚未分析');
+}
+function relBadge() { const n = S.relations.filter(r => r.status === 'pending' && r.score >= S.ws.settings.threshold && r.origin === 'auto').length; return n ? ` <span class="tag warn">${n}</span>` : ''; }
+A.tab = el => { S.tab = el.dataset.tab; renderAll(); };
+function renderSidebar() {
+  const hidden = new Set(S.layout.hidden), ct = codeTableSet();
+  $('#tblCount').textContent = `(${S.tables.length})`;
+  $('#tableList').innerHTML = S.tables.length ? S.tables.map(t => `<div class="titem ${S.selTable === t.id ? 'active' : ''}" data-act="tbl-open" data-tid="${t.id}" title="${esc(t.fileName || '')}">
+    <input type="checkbox" data-chg="tbl-vis" data-tid="${t.id}" ${hidden.has(t.id) ? '' : 'checked'} title="在 ER 圖顯示">
+    <span class="nm">${ct.has(t.id) ? '📘 ' : ''}${esc(t.name)}</span><span class="meta">${fmt(t.rowCount)}</span>
+    <span class="ops"><button data-act="tbl-rename" data-tid="${t.id}" title="重新命名">✏️</button><button data-act="tbl-del" data-tid="${t.id}" title="刪除">🗑</button></span></div>`).join('')
+    : '<div class="muted small" style="padding:8px">尚無資料表，請按「匯入」或拖拉檔案到視窗。</div>';
+}
+function renderView() {
+  const v = $('#view');
+  v.className = 'view' + (S.tab === 'er' ? ' full' : '');
+  const fn = { overview: vOverview, profile: vProfile, pk: vPK, rel: vRel, fd: vFD, er: () => '', path: vPath, impact: vImpact, dict: vDict }[S.tab];
+  v.innerHTML = fn();
+  if (S.tab === 'er') renderER();
+}
+const needAnalysis = () => `<div class="empty">尚未分析。請先按上方「⚙️ 分析」。<br><br><button class="primary" data-act="analyze">立即分析</button></div>`;
+
+/* ---------- 總覽 ---------- */
+function vOverview() {
+  if (!S.tables.length) return `<div class="empty"><div style="font-size:40px">🔗</div><h2>資料關聯探索器</h2>匯入多個 CSV / TSV，自動推測主鍵、外鍵、欄位相依與資料表關聯，並畫出 ER 圖。<br><br>
+    <button class="primary" data-act="import">📥 匯入 CSV / TSV</button> <button data-act="load-sample">載入範例資料（放款系統）</button><br><br>
+    <span class="small">支援 UTF-8、Big5/CP950、UTF-16 等編碼；所有資料只存在本機瀏覽器（IndexedDB），不會上傳。</span></div>`;
+  const a = S.ws.analysis, vis = visRels(), ct = codeTableSet();
+  const totalCols = S.tables.reduce((s, t) => s + t.cols.length, 0), totalRows = S.tables.reduce((s, t) => s + t.rowCount, 0);
+  const cnt = st => S.relations.filter(r => r.status === st).length;
+  const withPK = S.tables.filter(t => effPK(t).length).length;
+  const cards = [['資料表', S.tables.length], ['欄位總數', totalCols], ['資料總列數', totalRows], ['有主鍵的表', `${withPK} / ${S.tables.length}`],
+    ['顯示中的關聯', vis.length], ['已確認', cnt('confirmed')], ['待審核', cnt('pending')], ['已否決', cnt('rejected')], ['欄位相依', S.fds.length], ['代碼表', ct.size]];
+  const warn = [];
+  if (a) {
+    S.tables.filter(t => !effPK(t).length).forEach(t => warn.push(`⚠ <b>${esc(t.name)}</b> 找不到主鍵候選，可到「主鍵」頁手動指定。`));
+    vis.forEach(r => { const rate = r.srcNonNull ? r.orphanRows / r.srcNonNull : 0; if (rate > 0.05) warn.push(`⚠ ${esc(relLabel(r))} 孤兒值比例 ${pct(rate)}（${fmt(r.orphanDistinct)} 個值）`); });
+    vis.filter(r => effCard(r) === 'N:M').forEach(r => warn.push(`⚠ ${esc(relLabel(r))} 為 N:M，建議檢查是否缺少中間表。`));
+    S.relations.filter(r => r.stale).forEach(r => warn.push(`ℹ ${esc(relLabel(r))} 已審核，但本次分析未再偵測到。`));
+    (a.sampled || []).forEach(id => warn.push(`ℹ <b>${esc(tname(id))}</b> 超過全量上限，本次以抽樣分析。`));
+    const connected = new Set(); vis.forEach(r => { connected.add(r.srcTable); connected.add(r.tgtTable); });
+    S.tables.filter(t => !connected.has(t.id)).forEach(t => warn.push(`ℹ <b>${esc(t.name)}</b> 目前沒有任何關聯（孤立表）。`));
+  }
+  const rows = S.tables.map(t => {
+    const out = vis.filter(r => r.srcTable === t.id).length, inn = vis.filter(r => r.tgtTable === t.id).length, pk = effPK(t);
+    return `<tr class="click" data-act="tbl-open" data-tid="${t.id}"><td><b>${esc(t.name)}</b> ${ct.has(t.id) ? '<span class="tag acc">代碼表</span>' : ''}${t.sampled ? '<span class="tag warn">抽樣</span>' : ''}</td>
+    <td class="num">${fmt(t.rowCount)}</td><td class="num">${t.cols.length}</td><td>${esc(t.encoding || '')}</td>
+    <td>${pk.length ? `<span class="tag pk">🔑 ${esc(pk.join(' + '))}</span>${t.pk ? '<span class="tag acc">手動</span>' : ''}` : '<span class="muted">—</span>'}</td>
+    <td class="num">${out}</td><td class="num">${inn}</td><td class="muted small">${fmtTime(t.importedAt)}</td></tr>`;
+  }).join('');
+  return `<div class="cards">${cards.map(([k, v]) => `<div class="card"><div class="k">${k}</div><div class="v">${typeof v === 'number' ? fmt(v) : v}</div></div>`).join('')}</div>
+  <div class="box"><h3>分析狀態</h3>${a ? `上次分析：${fmtTime(a.analyzedAt)}，耗時 ${(a.ms / 1000).toFixed(1)} 秒；信心門檻 ${S.ws.settings.threshold}。` : '<span class="muted">尚未分析，請按上方「⚙️ 分析」。</span>'}
+  ${warn.length ? `<h4>提醒（${warn.length}）</h4><div class="small" style="max-height:220px;overflow:auto">${warn.map(w => `<div>${w}</div>`).join('')}</div>` : ''}</div>
+  <div class="box"><h3>資料表</h3><div class="tblwrap"><table class="grid"><thead><tr><th>名稱</th><th class="num">列數</th><th class="num">欄數</th><th>編碼</th><th>主鍵</th><th class="num">參照出</th><th class="num">被參照</th><th>匯入時間</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+/* ---------- 欄位剖析 ---------- */
+function tableSelect(chg, cur, allLabel) {
+  return `<select data-chg="${chg}">${allLabel ? `<option value="">${allLabel}</option>` : ''}${S.tables.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`;
+}
+function fkColsOf(tid) { const s = new Set(); visRels().forEach(r => { if (r.srcTable === tid) r.srcCols.forEach(c => s.add(c)); }); return s; }
+function vProfile() {
+  if (!S.tables.length) return vOverview();
+  const tid = S.selTable && TB(S.selTable) ? S.selTable : S.tables[0].id;
+  const t = TB(tid), profs = S.profiles[tid];
+  const head = `<div class="row"><b>資料表</b>${tableSelect('sel-table', tid)}<span class="muted">${fmt(t.rowCount)} 列｜${t.cols.length} 欄｜編碼 ${esc(t.encoding || '')}${t.sampled ? '｜抽樣分析' : ''}</span>
+    <span class="sep"></span><button class="sm" data-act="data-preview" data-tid="${tid}">檢視原始資料</button></div>`;
+  if (!profs) return head + needAnalysis();
+  const pk = new Set(effPK(t)), fk = fkColsOf(tid);
+  return head + `<div class="box"><div class="tblwrap"><table class="grid"><thead><tr><th>#</th><th>欄位</th><th>鍵</th><th>推測型態</th><th class="num">長度</th><th class="num">空值率</th><th class="num">唯一率</th><th class="num">不重複值</th><th>型態特徵</th><th>最常出現的值</th></tr></thead><tbody>
+  ${profs.map(p => `<tr class="click" data-act="col-detail" data-tid="${tid}" data-col="${esc(p.col)}"><td class="muted">${p.idx + 1}</td><td><b>${esc(p.col)}</b></td>
+    <td>${pk.has(p.col) ? '<span class="tag pk">🔑PK</span>' : ''}${fk.has(p.col) ? '<span class="tag acc">🔗FK</span>' : ''}${p.isEnum ? '<span class="tag">列舉</span>' : ''}</td>
+    <td>${TYPE_LABEL[p.type] || p.type}</td><td class="num">${p.minLen === p.maxLen ? p.maxLen : p.minLen + '～' + p.maxLen}</td>
+    <td class="num" style="color:${p.nullRate > 0.5 ? 'var(--theme-danger)' : p.nullRate > 0 ? 'var(--theme-warning)' : 'inherit'}">${pct(p.nullRate)}</td>
+    <td class="num">${pct(p.uniqueRate)}</td><td class="num">${fmt(p.distinct)}</td><td>${esc(p.patternDesc)}</td>
+    <td class="small">${p.top10.slice(0, 3).map(([v, c]) => `<span class="tag">${esc(v.length > 16 ? v.slice(0, 16) + '…' : v)} ×${fmt(c)}</span>`).join('')}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+CHG['sel-table'] = el => { S.selTable = el.value; renderAll(); };
+A['col-detail'] = el => showColDetail(el.dataset.tid, el.dataset.col);
+A['data-preview'] = async el => {
+  const t = TB(el.dataset.tid), rows = await getRows(t.id);
+  modal({ title: `${t.name}（前 200 列 / 共 ${fmt(rows.length)} 列）`, wide: true, body: `<div class="preview" style="max-height:70vh"><table class="grid"><thead><tr><th>#</th>${t.cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 200).map((r, i) => `<tr><td class="muted">${i + 1}</td>${r.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`, buttons: [{ label: '關閉', act: 'modal-close' }] });
+};
+function showColDetail(tid, col) {
+  const p = (S.profiles[tid] || []).find(x => x.col === col), t = TB(tid);
+  if (!p) return;
+  const max = p.top10.length ? p.top10[0][1] : 1;
+  const relsIn = visRels().filter(r => (r.srcTable === tid && r.srcCols.includes(col)) || (r.tgtTable === tid && r.tgtCols.includes(col)));
+  const fds = S.fds.filter(f => f.tableId === tid && (f.lhs === col || f.rhs === col));
+  openDetail(`<h3>${esc(t.name)}.${esc(col)}</h3>
+  <div class="kv"><div>推測型態</div><div>${TYPE_LABEL[p.type]}</div><div>總列數</div><div>${fmt(p.rows)}</div><div>空值</div><div>${fmt(p.nulls)}（${pct(p.nullRate)}）</div>
+  <div>不重複值</div><div>${fmt(p.distinct)}</div><div>唯一率</div><div>${pct(p.uniqueRate, 2)}</div><div>長度</div><div>${p.minLen}～${p.maxLen}</div>
+  <div>型態特徵</div><div>${esc(p.patternDesc)}（${pct(p.patShare)}）</div>
+  ${p.numMin != null ? `<div>數值範圍</div><div>${fmt(p.numMin)} ～ ${fmt(p.numMax)}${p.maxScale ? `（小數 ${p.maxScale} 位）` : ''}</div>` : ''}
+  ${p.dMin ? `<div>日期範圍</div><div>${p.dMin} ～ ${p.dMax}（西元）</div>` : ''}</div>
+  ${p.rocSample && p.rocSample.length ? `<h4>民國日期轉換範例</h4>${p.rocSample.map(([a, b]) => `<div class="small mono">${esc(a)} → ${b}</div>`).join('')}` : ''}
+  <h4>格式分布</h4>${p.patterns.map(([s, c]) => `<div class="small"><span class="mono">${esc(s)}</span> <span class="muted">${fmt(c)}（${pct(c / Math.max(1, p.nonNull))}）</span></div>`).join('')}
+  <h4>Top 10 值</h4><table class="grid">${p.top10.map(([v, c]) => `<tr><td style="width:45%;word-break:break-all">${esc(v)}</td><td style="width:40%"><div class="barbg"><div class="barfg" style="width:${(c / max * 100).toFixed(1)}%"></div></div></td><td class="num">${fmt(c)}</td></tr>`).join('')}</table>
+  ${relsIn.length ? `<h4>相關關聯</h4>${relsIn.map(r => `<div class="small"><a href="#" data-act="rel-detail" data-rid="${r.id}">${esc(relLabel(r))}</a></div>`).join('')}` : ''}
+  ${fds.length ? `<h4>欄位相依</h4>${fds.map(f => `<div class="small">${esc(f.lhs)} → ${esc(f.rhs)} <span class="muted">${f.exact ? '完全' : '違反 ' + pct(f.violRate, 2)}</span></div>`).join('')}` : ''}`);
+}
+function showTableDetail(tid) {
+  const t = TB(tid);
+  if (!t) return;
+  const vis = visRels(), pk = effPK(t);
+  const out = vis.filter(r => r.srcTable === tid), inn = vis.filter(r => r.tgtTable === tid);
+  openDetail(`<h3>📋 ${esc(t.name)}</h3>
+  <div class="kv"><div>檔案</div><div>${esc(t.fileName || '')}</div><div>列數</div><div>${fmt(t.rowCount)}</div><div>欄數</div><div>${t.cols.length}</div><div>編碼</div><div>${esc(t.encoding || '')}</div>
+  <div>主鍵</div><div>${pk.length ? esc(pk.join(' + ')) + (t.pk ? '（手動）' : '') : '—'}</div></div>
+  <div class="btns"><button class="sm" data-act="go-profile" data-tid="${tid}">欄位剖析</button><button class="sm" data-act="go-impact" data-tid="${tid}">影響分析</button><button class="sm" data-act="er-focus" data-tid="${tid}">在 ER 圖聚焦</button></div>
+  <h4>參照出（${out.length}）</h4>${out.map(r => `<div class="small"><a href="#" data-act="rel-detail" data-rid="${r.id}">${esc(r.srcCols.join('+'))} → ${esc(tname(r.tgtTable))}.${esc(r.tgtCols.join('+'))}</a> <span class="muted">${r.score}</span></div>`).join('') || '<div class="muted small">無</div>'}
+  <h4>被參照（${inn.length}）</h4>${inn.map(r => `<div class="small"><a href="#" data-act="rel-detail" data-rid="${r.id}">${esc(tname(r.srcTable))}.${esc(r.srcCols.join('+'))} → ${esc(r.tgtCols.join('+'))}</a> <span class="muted">${r.score}</span></div>`).join('') || '<div class="muted small">無</div>'}
+  <h4>欄位</h4><div class="small">${t.cols.map(c => `<span class="tag ${pk.includes(c) ? 'pk' : ''}">${esc(c)}</span>`).join('')}</div>`);
+}
+A['go-profile'] = el => { S.selTable = el.dataset.tid; S.tab = 'profile'; renderAll(); };
+A['go-impact'] = el => { S.impactState.table = el.dataset.tid; S.impactState.col = ''; S.tab = 'impact'; runImpact(); renderAll(); };
+A['er-focus'] = el => { S.er.focus = el.dataset.tid; S.tab = 'er'; renderAll(); };
+
+/* ---------- 主鍵 ---------- */
+function vPK() {
+  if (!S.tables.length) return vOverview();
+  if (!S.ws.analysis) return needAnalysis();
+  return `<div class="muted small" style="margin-bottom:10px">主鍵候選規則：唯一率 100% 且無空值；複合鍵最多 ${S.ws.settings.maxComposite} 欄，只保留「最小鍵」。分數越高越像真正的主鍵。手動指定的主鍵優先使用，重新分析時會保留。</div>` +
+    S.tables.map(t => {
+      const pk = effPK(t), rej = t.pkRejected || [];
+      const cands = t.pkCands || [];
+      return `<div class="box"><h3>${esc(t.name)} <span class="muted small">${fmt(t.rowCount)} 列</span> ${pk.length ? `<span class="tag pk">🔑 ${esc(pk.join(' + '))}</span>` : '<span class="tag bad">無主鍵</span>'} ${t.pk ? '<span class="tag acc">手動指定</span> <button class="sm" data-act="pk-clear" data-tid="' + t.id + '">清除手動設定</button>' : ''}</h3>
+      ${cands.length ? `<table class="grid"><thead><tr><th>欄位組合</th><th class="num">欄數</th><th class="num">分數</th><th>狀態</th><th>操作</th></tr></thead><tbody>
+      ${cands.map((c, i) => { const k = c.cols.join(','), r = rej.includes(k), cur = sameArr(c.cols, pk); return `<tr class="${r ? 'dim' : ''}"><td>${esc(c.cols.join(' + '))}</td><td class="num">${c.cols.length}</td><td class="num" style="color:${scoreColor(c.score)}">${c.score}</td>
+        <td>${cur ? '<span class="tag pk">使用中</span>' : r ? '<span class="tag bad">已否決</span>' : ''}</td>
+        <td><button class="sm" data-act="pk-set" data-tid="${t.id}" data-i="${i}">設為主鍵</button> ${r ? `<button class="sm" data-act="pk-unrej" data-tid="${t.id}" data-i="${i}">恢復</button>` : `<button class="sm danger" data-act="pk-rej" data-tid="${t.id}" data-i="${i}">否決</button>`}</td></tr>`; }).join('')}
+      </tbody></table>` : '<div class="muted small">找不到唯一且無空值的欄位組合。</div>'}
+      <div class="row" style="margin-top:8px"><span class="small">手動指定：</span>${[0, 1, 2].map(i => `<select id="pkm_${t.id}_${i}"><option value="">${i ? '（不使用）' : '選擇欄位'}</option>${t.cols.map(c => `<option>${esc(c)}</option>`).join('')}</select>`).join('')}
+      <button class="sm primary" data-act="pk-manual" data-tid="${t.id}">驗證並設為主鍵</button></div></div>`;
+    }).join('');
+}
+async function savePKChange(t, msg) { await dbPut('tables', t); renderAll(); if (msg) toast(msg); }
+A['pk-set'] = async el => { const t = TB(el.dataset.tid), c = t.pkCands[+el.dataset.i]; t.pk = { cols: c.cols.slice(), source: 'manual' }; t.pkRejected = (t.pkRejected || []).filter(k => k !== c.cols.join(',')); await savePKChange(t, '已設定主鍵，重新分析後外鍵推測會採用此主鍵'); };
+A['pk-rej'] = async el => { const t = TB(el.dataset.tid), c = t.pkCands[+el.dataset.i], k = c.cols.join(','); t.pkRejected = [...new Set([...(t.pkRejected || []), k])]; if (t.pk && t.pk.cols.join(',') === k) t.pk = null; await savePKChange(t); };
+A['pk-unrej'] = async el => { const t = TB(el.dataset.tid), k = t.pkCands[+el.dataset.i].cols.join(','); t.pkRejected = (t.pkRejected || []).filter(x => x !== k); await savePKChange(t); };
+A['pk-clear'] = async el => { const t = TB(el.dataset.tid); t.pk = null; await savePKChange(t, '已清除手動主鍵'); };
+A['pk-manual'] = async el => {
+  const t = TB(el.dataset.tid);
+  const cols = [0, 1, 2].map(i => $(`#pkm_${t.id}_${i}`).value).filter(Boolean);
+  if (!cols.length) return toast('請選擇欄位');
+  if (new Set(cols).size !== cols.length) return toast('欄位重複');
+  const r = await verifyPK(t, cols);
+  if ((r.nulls || r.dup) && !confirm(`驗證結果：空值 ${r.nulls} 列、重複 ${r.dup} 列${r.ex.length ? '\n重複範例：' + r.ex.join('、') : ''}\n\n此組合不是嚴格唯一，仍要設為主鍵？`)) return;
+  t.pk = { cols, source: 'manual' };
+  await savePKChange(t, r.nulls || r.dup ? '已設定（非嚴格唯一）' : '驗證通過，已設為主鍵');
+};
+
+/* ---------- 外鍵關聯審核 ---------- */
+function vRel() {
+  if (!S.tables.length) return vOverview();
+  const f = S.relFilter, th = S.ws.settings.threshold, ct = codeTableSet();
+  let list = S.relations.filter(r => TB(r.srcTable) && TB(r.tgtTable));
+  if (f.status !== 'all') list = list.filter(r => r.status === f.status);
+  if (f.onlyTh) list = list.filter(r => r.score >= th || r.status !== 'pending' || r.origin === 'manual');
+  if (f.q) { const q = f.q.toLowerCase(); list = list.filter(r => relLabel(r).toLowerCase().includes(q)); }
+  const ord = { pending: 0, confirmed: 1, rejected: 2 };
+  list.sort((a, b) => ord[a.status] - ord[b.status] || b.score - a.score);
+  const pendTh = S.relations.filter(r => r.status === 'pending' && r.score >= th).length;
+  return `<div class="row"><select data-chg="relf-status">${[['all', '全部狀態'], ['pending', '待審核'], ['confirmed', '已確認'], ['rejected', '已否決']].map(([v, l]) => `<option value="${v}" ${f.status === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+  <label><input type="checkbox" data-chg="relf-th" ${f.onlyTh ? 'checked' : ''}> 只顯示信心 ≥ ${th}</label>
+  <input placeholder="搜尋表名或欄位…" value="${esc(f.q)}" data-chg="relf-q" style="width:200px">
+  <span class="sep"></span><button class="sm" data-act="rel-add">＋ 手動新增關聯</button><button class="sm primary" data-act="rel-confirm-all" ${pendTh ? '' : 'disabled'}>全部確認（≥門檻 ${pendTh} 筆）</button></div>
+  ${!S.relations.length ? (S.ws.analysis ? '<div class="empty">沒有偵測到關聯。可調低「設定」中的包含率門檻，或手動新增。</div>' : needAnalysis()) :
+    `<div class="box"><div class="tblwrap"><table class="grid"><thead><tr><th>狀態</th><th>來源（子表）</th><th></th><th>目標（父表）</th><th>基數</th><th class="num">信心</th><th class="num">包含率</th><th class="num">孤兒值</th><th>類型</th><th>操作</th></tr></thead><tbody>
+    ${list.map(r => `<tr class="click ${r.status === 'rejected' ? 'dim' : ''}" data-act="rel-detail" data-rid="${r.id}"><td>${statusTag(r)}</td>
+      <td><b>${esc(tname(r.srcTable))}</b>.${esc(r.srcCols.join(' + '))}</td><td class="muted">→</td><td><b>${esc(tname(r.tgtTable))}</b>.${esc(r.tgtCols.join(' + '))}${r.tgtIsPK ? ' <span class="tag pk">PK</span>' : ''}</td>
+      <td>${effCard(r)}${r.srcOptional ? ' <span class="muted small">0..</span>' : ''}${r.cardOverride ? ' <span class="tag acc">改</span>' : ''}</td>
+      <td class="num" style="color:${scoreColor(r.score)};font-weight:700">${r.score}</td><td class="num">${pct(r.incl)}</td>
+      <td class="num" style="color:${r.orphanDistinct ? 'var(--theme-warning)' : 'inherit'}">${fmt(r.orphanDistinct)}</td>
+      <td>${r.kind === 'composite' ? '<span class="tag acc">複合</span>' : '<span class="tag">單欄</span>'}${ct.has(r.tgtTable) ? '<span class="tag">代碼參照</span>' : ''}</td>
+      <td style="white-space:nowrap"><button class="sm" title="確認" data-act="rel-st" data-st="confirmed" data-rid="${r.id}">✅</button><button class="sm" title="否決" data-act="rel-st" data-st="rejected" data-rid="${r.id}">❌</button><button class="sm" title="修改" data-act="rel-edit" data-rid="${r.id}">✏️</button></td></tr>`).join('') || '<tr><td colspan="10" class="muted">沒有符合條件的關聯</td></tr>'}
+    </tbody></table></div></div>`}`;
+}
+CHG['relf-status'] = el => { S.relFilter.status = el.value; renderView(); };
+CHG['relf-th'] = el => { S.relFilter.onlyTh = el.checked; renderView(); };
+CHG['relf-q'] = el => { S.relFilter.q = el.value.trim(); renderView(); };
+A['rel-detail'] = (el, e) => { if (e) e.preventDefault(); showRelDetail(el.dataset.rid); };
+async function updateRel(r) { await dbPut('relations', r); renderAll(); if (S.tab === 'er') drawER(); }
+A['rel-st'] = async el => { const r = S.relations.find(x => x.id === el.dataset.rid); r.status = r.status === el.dataset.st ? 'pending' : el.dataset.st; await updateRel(r); if ($('#detailBody').dataset.rid === r.id) showRelDetail(r.id); };
+A['rel-confirm-all'] = async () => {
+  const th = S.ws.settings.threshold, l = S.relations.filter(r => r.status === 'pending' && r.score >= th);
+  if (!l.length || !confirm(`確認全部 ${l.length} 筆信心 ≥ ${th} 的待審核關聯？`)) return;
+  l.forEach(r => { r.status = 'confirmed'; });
+  await dbPutMany('relations', l);
+  renderAll();
+  toast(`已確認 ${l.length} 筆`);
+};
+function showRelDetail(id) {
+  const r = S.relations.find(x => x.id === id);
+  if (!r) return;
+  const bar = (label, v, w) => v == null ? '' : `<div class="small">${label}（權重 ${w}%）</div><div class="row" style="margin-bottom:4px"><div class="barbg" style="flex:1"><div class="barfg" style="width:${(v * 100).toFixed(0)}%"></div></div><span class="small">${pct(v, 0)}</span></div>`;
+  const rate = r.srcNonNull ? r.orphanRows / r.srcNonNull : 0;
+  openDetail(`<h3>🔗 關聯明細</h3>
+  <div class="chain"><span class="chip">${esc(tname(r.srcTable))}</span><span class="arrow">${esc(r.srcCols.join('+'))} → ${esc(r.tgtCols.join('+'))}</span><span class="chip">${esc(tname(r.tgtTable))}</span></div>
+  <div style="margin:6px 0">${statusTag(r)}</div>
+  <div class="kv"><div>信心分數</div><div><b style="color:${scoreColor(r.score)};font-size:18px">${r.score}</b></div>
+  <div>基數</div><div>${cardText(r)}${r.cardOverride ? `（系統判斷 ${r.card}）` : ''}</div>
+  <div>包含率</div><div>${pct(r.incl, 2)}</div><div>孤兒值</div><div>${fmt(r.orphanDistinct)} 個值／${fmt(r.orphanRows)} 列（${pct(rate, 2)}）</div>
+  <div>目標為主鍵</div><div>${r.tgtIsPK ? '是' : '否'}</div><div>類型</div><div>${r.kind === 'composite' ? '複合外鍵' : '單欄外鍵'}</div>
+  <div>來源</div><div>${r.origin === 'manual' ? '手動建立' : '系統推測'}</div>${r.note ? `<div>備註</div><div>${esc(r.note)}</div>` : ''}</div>
+  ${r.origin === 'auto' ? `<h4>信心分數組成</h4>${bar('包含率', r.incl, 45)}${bar('欄位名稱相似度', r.nameSim, 20)}${bar('型態與長度一致', r.typeMatch, 15)}${bar('型態特徵一致', r.patMatch, 10)}${bar('目標欄位是主鍵', r.tgtIsPK ? 1 : 0, 10)}` : ''}
+  <div class="btns"><button class="sm" data-act="rel-st" data-st="confirmed" data-rid="${r.id}">✅ 確認</button><button class="sm" data-act="rel-st" data-st="rejected" data-rid="${r.id}">❌ 否決</button><button class="sm" data-act="rel-edit" data-rid="${r.id}">✏️ 修改</button>
+  ${r.origin === 'manual' ? `<button class="sm danger" data-act="rel-del" data-rid="${r.id}">🗑 刪除</button>` : ''}</div>
+  <div class="btns"><button class="sm" data-act="rel-hl" data-rid="${r.id}">在 ER 圖標示</button><button class="sm" data-act="rel-sql" data-rid="${r.id}">產生 JOIN SQL</button><button class="sm" data-act="rel-orph-sql" data-rid="${r.id}">產生孤兒值查詢 SQL</button>${r.orphanDistinct ? `<button class="sm" data-act="rel-orph" data-rid="${r.id}">匯出孤兒值 CSV</button>` : ''}</div>
+  ${r.orphanDistinct ? `<h4>孤兒值（前 ${Math.min(300, r.orphans.length)} 個，依出現次數）</h4><div class="scroll"><table class="grid"><thead><tr><th>值</th><th class="num">列數</th></tr></thead><tbody>${r.orphans.map(([v, c]) => `<tr><td class="mono">${esc(v)}</td><td class="num">${fmt(c)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="small" style="color:var(--theme-success)">✔ 沒有孤兒值，來源的值都能在目標找到。</div>'}`);
+  $('#detailBody').dataset.rid = r.id;
+}
+A['rel-del'] = async el => { if (!confirm('刪除此手動關聯？')) return; await dbDel('relations', el.dataset.rid); S.relations = S.relations.filter(r => r.id !== el.dataset.rid); openDetail('<div class="muted">已刪除。</div>'); renderAll(); };
+A['rel-hl'] = el => { const r = S.relations.find(x => x.id === el.dataset.rid); S.highlight = { tables: new Set([r.srcTable, r.tgtTable]), rels: new Set([r.id]), label: relLabel(r) }; S.er.focus = ''; S.tab = 'er'; renderAll(); };
+A['rel-sql'] = el => { const r = S.relations.find(x => x.id === el.dataset.rid); showCode('JOIN SQL', joinSQL([{ rel: r, from: r.srcTable, to: r.tgtTable }], r.srcTable, 'INNER'), 'join.sql'); };
+A['rel-orph-sql'] = el => {
+  const r = S.relations.find(x => x.id === el.dataset.rid), q = sqlQ(S.ws.settings.ddlDialect);
+  const s = tname(r.srcTable), t = tname(r.tgtTable);
+  const sql = `-- 找出 ${s} 參照不到 ${t} 的資料（孤兒值）\nSELECT c.*\n  FROM ${q(s)} c\n WHERE ${r.srcCols.map(x => `c.${q(x)} IS NOT NULL`).join('\n   AND ')}\n   AND NOT EXISTS (\n       SELECT 1 FROM ${q(t)} p\n        WHERE ${r.srcCols.map((x, i) => `p.${q(r.tgtCols[i])} = c.${q(x)}`).join('\n          AND ')}\n   );`;
+  showCode('孤兒值查詢 SQL', sql, 'orphans.sql');
+};
+A['rel-orph'] = el => {
+  const r = S.relations.find(x => x.id === el.dataset.rid);
+  const csv = '\uFEFF' + [[r.srcCols.join('|'), '列數'], ...r.orphans].map(row => row.map(csvCell).join(',')).join('\r\n');
+  downloadText(`孤兒值_${tname(r.srcTable)}_${r.srcCols.join('_')}.csv`, csv, 'text/csv');
+};
+const csvCell = v => { const s = String(v == null ? '' : v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+
+/* 新增 / 修改關聯 */
+function relForm(r) {
+  const st = r ? r.srcTable : S.tables[0].id, tt = r ? r.tgtTable : (S.tables[1] || S.tables[0]).id;
+  S.modalCtx = { rid: r ? r.id : null };
+  modal({
+    title: r ? '修改關聯' : '手動新增關聯', wide: false,
+    body: `<div class="form-grid"><label>來源表（子表）</label>${tableSelect('rf-src', st).replace('<select', '<select id="rfSrc"')}
+    <label>目標表（父表）</label>${tableSelect('rf-tgt', tt).replace('<select', '<select id="rfTgt"')}</div>
+    <h4>欄位對應（複合鍵最多 3 組，依序對應）</h4><div id="rfPairs"></div>
+    <div class="form-grid" style="margin-top:10px"><label>基數</label><select id="rfCard"><option value="">自動判斷</option><option value="1:1">1 : 1</option><option value="1:N">1 : N</option><option value="N:M">N : M</option></select>
+    <label>狀態</label><select id="rfStatus"><option value="confirmed">已確認</option><option value="pending">待審核</option><option value="rejected">已否決</option></select>
+    <label>備註</label><textarea id="rfNote" rows="2">${esc(r ? r.note || '' : '')}</textarea></div>
+    <div class="muted small" style="margin-top:8px">儲存時會重新計算包含率、孤兒值與基數。</div>`,
+    buttons: [{ label: '取消', act: 'modal-close' }, { label: '儲存', act: 'rf-save', cls: 'primary' }]
+  });
+  if (r) { $('#rfCard').value = r.cardOverride || ''; $('#rfStatus').value = r.status; }
+  renderRfPairs(r ? r.srcCols : [], r ? r.tgtCols : []);
+}
+function renderRfPairs(sc, tc) {
+  const s = TB($('#rfSrc').value), t = TB($('#rfTgt').value);
+  if (!tc.length) { const pk = effPK(t); tc = pk.slice(); sc = pk.map(c => s.cols.includes(c) ? c : ''); }
+  $('#rfPairs').innerHTML = [0, 1, 2].map(i => `<div class="row"><select id="rfS${i}"><option value="">${i ? '（不使用）' : '來源欄位'}</option>${s.cols.map(c => `<option ${sc[i] === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select> → 
+  <select id="rfT${i}"><option value="">${i ? '（不使用）' : '目標欄位'}</option>${t.cols.map(c => `<option ${tc[i] === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>`).join('');
+}
+CHG['rf-src'] = () => renderRfPairs([], []);
+CHG['rf-tgt'] = () => renderRfPairs([], []);
+A['rel-add'] = () => { if (S.tables.length < 1) return toast('請先匯入資料表'); relForm(null); };
+A['rel-edit'] = el => relForm(S.relations.find(x => x.id === el.dataset.rid));
+A['rf-save'] = async () => {
+  const src = TB($('#rfSrc').value), tgt = TB($('#rfTgt').value);
+  const sc = [], tc = [];
+  for (let i = 0; i < 3; i++) { const a = $('#rfS' + i).value, b = $('#rfT' + i).value; if (a && b) { sc.push(a); tc.push(b); } else if (a || b) return toast(`第 ${i + 1} 組欄位對應不完整`); }
+  if (!sc.length) return toast('請至少設定一組欄位對應');
+  if (src.id === tgt.id && sameArr(sc, tc)) return toast('來源與目標不可相同');
+  const card = $('#rfCard').value, status = $('#rfStatus').value, note = $('#rfNote').value.trim();
+  const key = `${src.id}|${sc.join(',')}|${tgt.id}|${tc.join(',')}`;
+  const rid = S.modalCtx.rid;
+  const old = rid ? S.relations.find(x => x.id === rid) : null;
+  const dup = S.relations.find(x => x.key === key && x.id !== rid);
+  if (dup) return toast('已有相同的關聯');
+  const changedCols = !old || old.key !== key;
+  let rec = old || { id: uid(), wsId: S.ws.id, origin: 'manual', stale: false };
+  if (changedCols) {
+    const m = await evalRel(src, sc, tgt, tc);
+    Object.assign(rec, m, { key, srcTable: src.id, srcCols: sc, tgtTable: tgt.id, tgtCols: tc });
+    if (old) rec.origin = 'manual';
+  }
+  Object.assign(rec, { cardOverride: card, status, note });
+  await dbPut('relations', rec);
+  if (!old) S.relations.push(rec);
+  S.modalCtx = null;
+  closeModal();
+  renderAll();
+  if (S.tab === 'er') drawER();
+  showRelDetail(rec.id);
+  toast(`已儲存（包含率 ${pct(rec.incl)}）`);
+};
+
+/* ---------- 欄位相依 ---------- */
+function vFD() {
+  if (!S.tables.length) return vOverview();
+  if (!S.ws.analysis) return needAnalysis();
+  const f = S.fdFilter;
+  let list = S.fds.filter(x => TB(x.tableId));
+  if (f.table) list = list.filter(x => x.tableId === f.table);
+  if (f.exact) list = list.filter(x => x.exact);
+  list.sort((a, b) => tname(a.tableId).localeCompare(tname(b.tableId)) || a.violRate - b.violRate);
+  const groups = {};
+  list.forEach(x => { const k = x.tableId + '\u0001' + x.lhs; (groups[k] = groups[k] || []).push(x); });
+  const sugg = Object.entries(groups).filter(([, v]) => v.length >= 1).map(([k, v]) => {
+    const [tid, lhs] = k.split('\u0001');
+    return `<tr><td>${esc(tname(tid))}</td><td><b>${esc(lhs)}</b></td><td>${v.map(x => `<span class="tag ${x.exact ? '' : 'warn'}">${esc(x.rhs)}</span>`).join('')}</td><td class="small muted">可拆出 (${esc(lhs)}, ${esc(v.map(x => x.rhs).join(', '))})，以 ${esc(lhs)} 為主鍵</td></tr>`;
+  }).join('');
+  return `<div class="row"><b>資料表</b>${tableSelect('fdf-table', f.table, '全部資料表')}<label><input type="checkbox" data-chg="fdf-exact" ${f.exact ? 'checked' : ''}> 只顯示完全相依</label>
+  <span class="muted small">近似相依門檻：違反率 ≤ ${pct(S.ws.settings.fdMax, 1)}；決定欄位不重複值 ≤ 列數 × ${S.ws.settings.fdMaxLhsRatio}</span></div>
+  <div class="split"><div class="box"><h3>相依關係（${list.length}）</h3><div class="tblwrap"><table class="grid"><thead><tr><th>資料表</th><th>A（決定）</th><th></th><th>B（被決定）</th><th class="num">違反率</th><th>標記</th></tr></thead><tbody>
+  ${list.map(x => `<tr class="click" data-act="fd-detail" data-id="${x.id}"><td>${esc(tname(x.tableId))}</td><td><b>${esc(x.lhs)}</b></td><td class="muted">→</td><td>${esc(x.rhs)}</td>
+  <td class="num" style="color:${x.exact ? 'var(--theme-success)' : 'var(--theme-warning)'}">${x.exact ? '0%' : pct(x.violRate, 2)}</td><td>${x.exact ? '<span class="tag ok">完全</span>' : '<span class="tag warn">近似</span>'}${x.bijection ? '<span class="tag acc">一對一對應</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">沒有偵測到相依關係</td></tr>'}
+  </tbody></table></div></div>
+  <div class="box"><h3>正規化建議</h3><div class="muted small" style="margin-bottom:6px">同一個決定欄位可決定多個欄位時，這些欄位通常可以另外拆成一張表。近似相依（黃色）代表資料有少量不一致，請點左側查看違反明細。</div>
+  <div class="tblwrap"><table class="grid"><thead><tr><th>資料表</th><th>決定欄位</th><th>被決定欄位</th><th>建議</th></tr></thead><tbody>${sugg || '<tr><td colspan="4" class="muted">無</td></tr>'}</tbody></table></div></div></div>`;
+}
+CHG['fdf-table'] = el => { S.fdFilter.table = el.value; renderView(); };
+CHG['fdf-exact'] = el => { S.fdFilter.exact = el.checked; renderView(); };
+A['fd-detail'] = el => {
+  const f = S.fds.find(x => x.id === el.dataset.id);
+  openDetail(`<h3>${esc(tname(f.tableId))}：${esc(f.lhs)} → ${esc(f.rhs)}</h3>
+  <div class="kv"><div>類型</div><div>${f.exact ? '完全相依' : '近似相依'}${f.bijection ? '（雙向一對一對應）' : ''}</div><div>違反列數</div><div>${fmt(f.violRows)}（${pct(f.violRate, 3)}）</div>
+  <div>${esc(f.lhs)} 不重複</div><div>${fmt(f.lhsDistinct)}</div><div>${esc(f.rhs)} 不重複</div><div>${fmt(f.rhsDistinct)}</div></div>
+  <div class="small muted">意義：知道「${esc(f.lhs)}」的值，就能決定「${esc(f.rhs)}」的值。${f.bijection ? '兩欄互相決定，常見於「代碼 ↔ 名稱」。' : ''}</div>
+  ${f.samples && f.samples.length ? `<h4>違反明細（同一個 ${esc(f.lhs)} 對到多個 ${esc(f.rhs)}）</h4>${f.samples.map(s => `<div class="pathc"><b class="mono">${esc(s.lhs)}</b><div class="small">${s.rhs.map(([v, c]) => `<span class="tag">${esc(v)} ×${fmt(c)}</span>`).join('')}</div></div>`).join('')}` : ''}`);
+};
+
+/* ---------- 代碼與日期 ---------- */
+function vDict() {
+  if (!S.tables.length) return vOverview();
+  const a = S.ws.analysis;
+  if (!a) return needAnalysis();
+  const valid = x => TB(x.tableId);
+  const ct = (a.codeTables || []).filter(valid), dicts = (a.dicts || []).filter(valid), enums = (a.enums || []).filter(valid), dates = (a.dates || []).filter(valid);
+  const refBy = tid => visRels().filter(r => r.tgtTable === tid).map(r => `${tname(r.srcTable)}.${r.srcCols.join('+')}`);
+  return `<div class="box"><h3>📘 代碼表（${ct.length}）</h3><div class="muted small" style="margin-bottom:6px">列數少、以短代碼為主鍵、並含中文名稱欄的資料表。</div>
+  <table class="grid"><thead><tr><th>資料表</th><th>代碼欄</th><th>名稱欄</th><th class="num">筆數</th><th>被哪些欄位參照</th></tr></thead><tbody>
+  ${ct.map(c => `<tr class="click" data-act="tbl-open" data-tid="${c.tableId}"><td><b>${esc(tname(c.tableId))}</b></td><td>${esc(c.codeCol)}</td><td>${esc(c.nameCol)}</td><td class="num">${fmt(c.entries)}</td><td class="small">${refBy(c.tableId).map(x => `<span class="tag">${esc(x)}</span>`).join('') || '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">無</td></tr>'}</tbody></table></div>
+  <div class="box"><h3>🔤 表內代碼對照（${dicts.length}）</h3><div class="muted small" style="margin-bottom:6px">同一張表中「代碼 ↔ 名稱」雙向一對一的欄位組，可考慮另外建立代碼表。</div>
+  ${dicts.map((d, i) => `<div class="pathc"><b>${esc(tname(d.tableId))}</b>：${esc(d.codeCol)} ↔ ${esc(d.nameCol)} <span class="muted small">${fmt(d.entries)} 種代碼</span> <button class="sm" data-act="dict-export" data-i="${i}">匯出代碼表 CSV</button>
+  <div class="small" style="margin-top:4px">${d.sample.map(([c, n]) => `<span class="tag"><b class="mono">${esc(c)}</b> ${esc(n)}</span>`).join('')}</div></div>`).join('') || '<div class="muted">無</div>'}</div>
+  <div class="box"><h3>📋 列舉欄位（${enums.length}）</h3><div class="muted small" style="margin-bottom:6px">不重複值 2～30 個、且只佔非空列數 20% 以下的欄位。</div>
+  <div class="tblwrap"><table class="grid"><thead><tr><th>資料表</th><th>欄位</th><th class="num">種類</th><th>值分布</th></tr></thead><tbody>
+  ${enums.map(e => `<tr class="click" data-act="col-detail" data-tid="${e.tableId}" data-col="${esc(e.col)}"><td>${esc(tname(e.tableId))}</td><td><b>${esc(e.col)}</b></td><td class="num">${e.distinct}</td><td class="small">${e.values.map(([v, c]) => `<span class="tag">${esc(v)} ×${fmt(c)}</span>`).join('')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">無</td></tr>'}</tbody></table></div></div>
+  <div class="box"><h3>📅 日期欄位（${dates.length}）</h3><div class="muted small" style="margin-bottom:6px">自動辨識西元（YYYY-MM-DD、YYYYMMDD…）與民國（YYYMMDD、YYY/MM/DD…）格式，範圍以西元表示。</div>
+  <table class="grid"><thead><tr><th>資料表</th><th>欄位</th><th>曆法</th><th>格式</th><th>最早</th><th>最晚</th><th>轉換範例</th></tr></thead><tbody>
+  ${dates.map(d => `<tr class="click" data-act="col-detail" data-tid="${d.tableId}" data-col="${esc(d.col)}"><td>${esc(tname(d.tableId))}</td><td><b>${esc(d.col)}</b></td><td>${d.type === 'dateROC' ? '<span class="tag warn">民國</span>' : '<span class="tag">西元</span>'}</td><td class="small">${esc(d.pattern)}</td><td>${d.min || ''}</td><td>${d.max || ''}</td>
+  <td class="small mono">${(d.sample || []).slice(0, 2).map(([x, y]) => `${esc(x)}→${y}`).join('<br>')}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">無</td></tr>'}</tbody></table></div>`;
+}
+A['dict-export'] = async el => {
+  const d = S.ws.analysis.dicts.filter(x => TB(x.tableId))[+el.dataset.i];
+  const t = TB(d.tableId), rows = await getRows(t.id), nv = mkNorm(S.ws.settings);
+  const ci = t.cols.indexOf(d.codeCol), ni = t.cols.indexOf(d.nameCol), m = new Map();
+  rows.forEach(r => { const c = nv(r[ci]); if (c !== null && !m.has(c)) m.set(c, nv(r[ni]) || ''); });
+  const list = [...m].sort((a, b) => a[0].localeCompare(b[0]));
+  downloadText(`代碼表_${t.name}_${d.codeCol}.csv`, '\uFEFF' + [[d.codeCol, d.nameCol], ...list].map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv');
+};
+
+/* ---------- 設定 ---------- */
+A.settings = () => {
+  const s = S.ws.settings;
+  const num = (id, v, step, hint) => `<input type="number" id="${id}" value="${v}" step="${step || 1}">${hint ? `<div class="hint">${hint}</div>` : ''}`;
+  modal({
+    title: `分析設定（工作區：${S.ws.name}）`,
+    body: `<div class="form-grid">
+    <label>空值寫法</label><input id="stNull" value="${esc(s.nullTokens.map(x => x === '' ? "''" : x).join(', '))}"><div class="hint">以逗號分隔，'' 代表空字串</div>
+    <label>去除前後空白</label><span><input type="checkbox" id="stTrim" ${s.trim ? 'checked' : ''}></span>
+    <label>全空白視為空值</label><span><input type="checkbox" id="stBlank" ${s.blankAsNull ? 'checked' : ''}></span>
+    <label>辨識民國日期</label><span><input type="checkbox" id="stRoc" ${s.rocDate ? 'checked' : ''}></span>
+    <label>信心門檻（顯示）</label>${num('stTh', s.threshold, 5, '0～100，也可在上方工具列調整')}
+    <label>外鍵包含率下限</label>${num('stIncl', s.fkMinIncl, 0.05, '0～1，低於此包含率不列入候選')}
+    <label>外鍵目標唯一率下限</label>${num('stTU', s.fkTargetMinUnique, 0.05, '目標欄位唯一率達此值才當作被參照欄位')}
+    <label>保留分數下限</label>${num('stKeep', s.keepScore, 5, '分析時保留的最低信心分數')}
+    <label>複合鍵最多欄數</label><select id="stComp">${[1, 2, 3].map(v => `<option ${s.maxComposite === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+    <label>複合鍵候選欄位數</label>${num('stTopK', s.topK, 1, '只從唯一率最高的前 N 個欄位挑組合')}
+    <label>近似相依違反率上限</label>${num('stFd', s.fdMax, 0.005, '例如 0.01 = 1%')}
+    <label>相依分析最多欄位數</label>${num('stFdCols', s.fdMaxCols, 1)}
+    <label>大表抽樣</label><span><input type="checkbox" id="stSamp" ${s.sampling ? 'checked' : ''}> 超過全量上限時改為抽樣</span>
+    <label>全量分析上限（列）</label>${num('stFull', s.fullLimit, 10000)}
+    <label>篩選抽樣門檻（列）</label>${num('stSTh', s.sampleThreshold, 1000, '超過此列數時，複合鍵先用抽樣篩選再全量驗證')}
+    <label>抽樣筆數</label>${num('stSS', s.sampleSize, 1000)}
+    <label>SQL 預設語法</label><select id="stDial"><option value="oracle" ${s.ddlDialect === 'oracle' ? 'selected' : ''}>Oracle</option><option value="mssql" ${s.ddlDialect === 'mssql' ? 'selected' : ''}>SQL Server</option><option value="sqlite" ${s.ddlDialect === 'sqlite' ? 'selected' : ''}>SQLite</option></select><div class="hint">也套用於 JOIN SQL 與孤兒值查詢 SQL 的識別字引號</div>
+    </div>`,
+    buttons: [{ label: '恢復預設', act: 'st-reset' }, { label: '取消', act: 'modal-close' }, { label: '儲存', act: 'st-save', cls: 'primary' }]
+  });
+};
+A['st-reset'] = async () => { S.ws.settings = { ...DEFAULT_SETTINGS }; await saveWs(); closeModal(); renderAll(); toast('已恢復預設，請重新分析'); };
+A['st-save'] = async () => {
+  const g = id => $('#' + id), n = (id, a, b) => clampN(parseFloat(g(id).value), a, b);
+  const s = S.ws.settings;
+  s.nullTokens = g('stNull').value.split(',').map(x => x.trim()).map(x => x === "''" || x === '""' ? '' : x).filter((x, i, a) => a.indexOf(x) === i);
+  s.trim = g('stTrim').checked; s.blankAsNull = g('stBlank').checked; s.rocDate = g('stRoc').checked;
+  s.threshold = n('stTh', 0, 100); s.fkMinIncl = n('stIncl', 0.05, 1); s.fkTargetMinUnique = n('stTU', 0.5, 1); s.keepScore = n('stKeep', 0, 100);
+  s.maxComposite = +g('stComp').value; s.topK = n('stTopK', 3, 30); s.fdMax = n('stFd', 0, 0.2); s.fdMaxCols = n('stFdCols', 5, 200);
+  s.sampling = g('stSamp').checked; s.fullLimit = n('stFull', 10000, 1e7); s.sampleThreshold = n('stSTh', 1000, 1e7); s.sampleSize = n('stSS', 1000, 1e6); s.ddlDialect = g('stDial').value;
+  await saveWs();
+  closeModal();
+  renderAll();
+  toast('設定已儲存；分析相關設定需重新分析才會生效');
+};
+/* ===== ER 圖 ===== */
+const tw = (s, size = 12) => { let w = 0; for (const ch of String(s)) w += /[\u2E80-\uFFFF]/.test(ch) ? size : size * 0.62; return w; };
+const LIGHT = { bg: '#ececec', node: '#ffffff', head: '#444444', headCode: '#595959', headText: '#fdfdfd', text: '#303030', muted: '#707070', border: '#d4d4d4', ok: '#505050', warn: '#5c5c5c', accent: '#444444', pk: '#595959', fk: '#444444', hl: '#5c5c5c' };
+function erColors(forceLight) {
+  if (forceLight) return LIGHT;
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  return { bg: g('--theme-surface-alt'), node: g('--theme-surface'), head: g('--theme-primary'), headCode: g('--theme-info'), headText: '#fdfdfd', text: g('--theme-text'), muted: g('--theme-muted'), border: g('--theme-border'), ok: g('--theme-success'), warn: g('--theme-warning'), accent: g('--theme-primary'), pk: g('--theme-info'), fk: g('--theme-primary'), hl: g('--theme-warning') };
+}
+function erModel(opts = {}) {
+  const hidden = new Set(S.layout.hidden || []);
+  let rels = visRels().filter(r => S.er.showPending || r.status === 'confirmed' || r.origin === 'manual');
+  let tids = S.tables.filter(t => !hidden.has(t.id) || opts.all).map(t => t.id);
+  if (S.er.focus && !opts.all) {
+    const f = S.er.focus, nb = new Set([f]);
+    rels.forEach(r => { if (r.srcTable === f) nb.add(r.tgtTable); if (r.tgtTable === f) nb.add(r.srcTable); });
+    tids = tids.filter(id => nb.has(id));
+  }
+  const tset = new Set(tids), ct = codeTableSet();
+  rels = rels.filter(r => tset.has(r.srcTable) && tset.has(r.tgtTable));
+  const nodes = tids.map(id => {
+    const t = TB(id), pk = new Set(effPK(t)), fk = new Set(), ref = new Set(), pm = profMap(id);
+    rels.forEach(r => { if (r.srcTable === id) r.srcCols.forEach(c => fk.add(c)); if (r.tgtTable === id) r.tgtCols.forEach(c => ref.add(c)); });
+    let cols = S.er.showAll ? t.cols.slice() : t.cols.filter(c => pk.has(c) || fk.has(c) || ref.has(c));
+    const more = t.cols.length - cols.length;
+    const lines = cols.map(c => ({ c, pk: pk.has(c), fk: fk.has(c), ty: pm[c] ? (TYPE_LABEL[pm[c].type] || '') : '' }));
+    const w = Math.ceil(Math.max(170, tw(t.name, 13) + tw(fmt(t.rowCount), 11) + 40, ...lines.map(l => tw(l.c) + tw(l.ty, 10) + 66)));
+    const h = 30 + lines.length * 20 + (more ? 18 : 0) + 6;
+    return { id, t, lines, more, w, h, code: ct.has(id) };
+  });
+  return { nodes, rels };
+}
+function autoLayout(nodes, rels) {
+  const n = nodes.length;
+  if (!n) return;
+  const idx = new Map(nodes.map((d, i) => [d.id, i]));
+  const R0 = 150 + n * 45;
+  const P = nodes.map((d, i) => ({ x: Math.cos(2 * Math.PI * i / n) * R0, y: Math.sin(2 * Math.PI * i / n) * R0 * 0.7 }));
+  const E = rels.map(r => [idx.get(r.srcTable), idx.get(r.tgtTable)]).filter(e => e[0] != null && e[1] != null && e[0] !== e[1]);
+  const K = 280;
+  for (let it = 0; it < 450; it++) {
+    const F = P.map(() => ({ x: 0, y: 0 }));
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      let dx = P[i].x - P[j].x, dy = P[i].y - P[j].y;
+      let d = Math.hypot(dx, dy);
+      if (d < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d = 1; }
+      const f = K * K / d;
+      F[i].x += dx / d * f; F[i].y += dy / d * f; F[j].x -= dx / d * f; F[j].y -= dy / d * f;
+    }
+    E.forEach(([a, b]) => {
+      const dx = P[a].x - P[b].x, dy = P[a].y - P[b].y, d = Math.max(1, Math.hypot(dx, dy)), f = d * d / K;
+      F[a].x -= dx / d * f; F[a].y -= dy / d * f; F[b].x += dx / d * f; F[b].y += dy / d * f;
+    });
+    const temp = 60 * (1 - it / 450) + 2;
+    for (let i = 0; i < n; i++) {
+      F[i].x -= P[i].x * 0.05; F[i].y -= P[i].y * 0.08;
+      const m = Math.hypot(F[i].x, F[i].y) || 1;
+      P[i].x += F[i].x / m * Math.min(m, temp); P[i].y += F[i].y / m * Math.min(m, temp);
+    }
+  }
+  for (let pass = 0; pass < 80; pass++) {
+    let moved = false;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = nodes[i], b = nodes[j];
+      const ox = (a.w + b.w) / 2 + 50 - Math.abs(P[i].x - P[j].x), oy = (a.h + b.h) / 2 + 40 - Math.abs(P[i].y - P[j].y);
+      if (ox > 0 && oy > 0) {
+        moved = true;
+        if (ox < oy) { const s = (P[i].x < P[j].x ? -1 : 1) * ox / 2; P[i].x += s; P[j].x -= s; }
+        else { const s = (P[i].y < P[j].y ? -1 : 1) * oy / 2; P[i].y += s; P[j].y -= s; }
+      }
+    }
+    if (!moved) break;
+  }
+  const minX = Math.min(...nodes.map((d, i) => P[i].x - d.w / 2)), minY = Math.min(...nodes.map((d, i) => P[i].y - d.h / 2));
+  nodes.forEach((d, i) => { S.layout.pos[d.id] = { x: Math.round(P[i].x - d.w / 2 - minX + 40), y: Math.round(P[i].y - d.h / 2 - minY + 40) }; });
+}
+function ensurePositions(nodes, rels) {
+  const missing = nodes.filter(d => !S.layout.pos[d.id]);
+  if (!missing.length) return;
+  if (missing.length === nodes.length) { autoLayout(nodes, rels); saveLayout(); return; }
+  const placed = nodes.filter(d => S.layout.pos[d.id]);
+  let x = Math.max(...placed.map(d => S.layout.pos[d.id].x + d.w)) + 80, y = 40;
+  missing.forEach(d => { S.layout.pos[d.id] = { x, y }; y += d.h + 40; if (y > 900) { y = 40; x += 280; } });
+  saveLayout();
+}
+function erInner(nodes, rels, C, hl) {
+  const nm = new Map(nodes.map(n => [n.id, { ...n, ...S.layout.pos[n.id] }]));
+  const rowY = (nd, col) => { const i = nd.lines.findIndex(l => l.c === col); return i < 0 ? nd.y + 15 : nd.y + 30 + i * 20 + 10; };
+  const dimT = id => hl && !hl.tables.has(id), dimR = id => hl && !hl.rels.has(id);
+  let edges = '', labels = '';
+  const anc = new Map(), off = k => { const n = anc.get(k) || 0; anc.set(k, n + 1); return n * 12; };
+  rels.forEach(r => {
+    const a = nm.get(r.srcTable), b = nm.get(r.tgtTable);
+    if (!a || !b) return;
+    const ay = rowY(a, r.srcCols[0]), by = rowY(b, r.tgtCols[0]);
+    let x1, x2, d1, d2, path;
+    if (a.id === b.id) { x1 = x2 = a.x + a.w; d1 = d2 = 1; path = `M${x1},${ay} C${x1 + 70},${ay} ${x2 + 70},${by} ${x2},${by}`; }
+    else {
+      if (a.x + a.w < b.x) { x1 = a.x + a.w; x2 = b.x; d1 = 1; d2 = -1; }
+      else if (b.x + b.w < a.x) { x1 = a.x; x2 = b.x + b.w; d1 = -1; d2 = 1; }
+      else { x1 = a.x + a.w; x2 = b.x + b.w; d1 = 1; d2 = 1; }
+      const dx = Math.max(50, Math.abs(x2 - x1) / 2);
+      path = `M${x1},${ay} C${x1 + d1 * dx},${ay} ${x2 + d2 * dx},${by} ${x2},${by}`;
+    }
+    const isHL = hl && hl.rels.has(r.id);
+    const col = isHL ? C.hl : r.status === 'confirmed' ? C.ok : r.origin === 'manual' ? C.accent : r.score >= 85 ? C.accent : C.warn;
+    const dash = r.status === 'confirmed' || r.origin === 'manual' ? '' : ' stroke-dasharray="6 4"';
+    const op = dimR(r.id) ? 0.15 : 1, sw = isHL ? 3.2 : 1.8;
+    const cs = cardSides(r);
+    edges += `<g class="eredge" data-rid="${r.id}" opacity="${op}"><path d="${path}" fill="none" stroke="${col}" stroke-width="${sw}"${dash} marker-end="url(#erArrow)"/><path d="${path}" fill="none" stroke="transparent" stroke-width="12"><title>${esc(relLabel(r))}｜信心 ${r.score}｜${effCard(r)}</title></path></g>`;
+    const o1 = off(a.id + '|' + x1 + '|' + ay), o2 = off(b.id + '|' + x2 + '|' + by);
+    labels += `<g opacity="${op}" font-size="11" font-weight="700"><text x="${x1 + d1 * 8}" y="${ay - 5 - o1}" text-anchor="${d1 > 0 ? 'start' : 'end'}" fill="${col}">${esc(cs.child)}</text><text x="${x2 + d2 * 12}" y="${by - 5 - o2}" text-anchor="${d2 > 0 ? 'start' : 'end'}" fill="${col}">${esc(cs.parent)}</text></g>`;
+  });
+  let ns = '';
+  nm.forEach(d => {
+    const op = dimT(d.id) ? 0.25 : 1, isHL = hl && hl.tables.has(d.id);
+    const hc = d.code ? C.headCode : C.head;
+    ns += `<g class="ernode" data-tid="${d.id}" transform="translate(${d.x},${d.y})" opacity="${op}">
+<rect width="${d.w}" height="${d.h}" rx="8" fill="${C.node}" stroke="${isHL ? C.hl : C.border}" stroke-width="${isHL ? 3 : 1.2}"/>
+<path d="M0,8 a8,8 0 0 1 8,-8 h${d.w - 16} a8,8 0 0 1 8,8 v20 h-${d.w} z" fill="${hc}"/>
+<text x="10" y="19" fill="${C.headText}" font-size="13" font-weight="700">${esc(d.t.name)}</text>
+<text x="${d.w - 8}" y="19" fill="${C.headText}" font-size="11" text-anchor="end" opacity=".85">${fmt(d.t.rowCount)}</text>
+${d.lines.map((l, i) => { const y = 30 + i * 20 + 14; return `${l.pk ? `<text x="8" y="${y}" font-size="9" font-weight="700" fill="${C.pk}">PK</text>` : ''}${l.fk ? `<text x="${l.pk ? 22 : 8}" y="${y}" font-size="9" font-weight="700" fill="${C.fk}">FK</text>` : ''}<text x="40" y="${y}" font-size="12" fill="${C.text}" font-weight="${l.pk ? 700 : 400}">${esc(l.c)}</text><text x="${d.w - 8}" y="${y}" font-size="10" fill="${C.muted}" text-anchor="end">${esc(l.ty)}</text>`; }).join('')}
+${d.more ? `<text x="40" y="${30 + d.lines.length * 20 + 13}" font-size="11" fill="${C.muted}">…另 ${d.more} 個欄位</text>` : ''}</g>`;
+  });
+  const defs = `<defs><marker id="erArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${C.muted}"/></marker></defs>`;
+  return { defs, body: edges + ns + labels, nm };
+}
+function renderER() {
+  const v = $('#view');
+  if (!S.tables.length) { v.className = 'view'; v.innerHTML = vOverview(); return; }
+  const hl = S.highlight;
+  v.innerHTML = `<div class="er-tool">
+    <button class="sm" data-act="er-auto">🔀 自動排列</button><button class="sm" data-act="er-fit">⛶ 適合畫面</button><button class="sm" data-act="er-zoom" data-z="1.2">＋</button><button class="sm" data-act="er-zoom" data-z="0.833">－</button>
+    <span class="small">聚焦</span><select data-chg="er-focus"><option value="">（全部資料表）</option>${S.tables.map(t => `<option value="${t.id}" ${S.er.focus === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+    <label class="small"><input type="checkbox" data-chg="er-pending" ${S.er.showPending ? 'checked' : ''}> 顯示推測關聯</label>
+    <label class="small"><input type="checkbox" data-chg="er-all" ${S.er.showAll ? 'checked' : ''}> 顯示全部欄位</label>
+    ${hl ? `<span class="tag warn">標示中：${esc(hl.label || '')}</span><button class="sm" data-act="er-clear-hl">清除標示</button>` : ''}
+    <span class="sep"></span><button class="sm" data-act="exp-svg">SVG</button><button class="sm" data-act="exp-png">PNG</button><button class="sm" data-act="exp-mermaid">Mermaid</button></div>
+    <div class="er-wrap"><svg id="erSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend"><div><i style="border-color:var(--theme-success)"></i>已確認</div><div><i style="border-color:var(--theme-primary);border-top-style:dashed"></i>推測（信心 ≥ 85）</div><div><i style="border-color:var(--theme-warning);border-top-style:dashed"></i>推測（門檻～84）</div><div><i style="border-color:var(--theme-info);border-top-width:8px"></i>代碼表</div><div class="muted">拖拉表格移動｜拖拉空白平移｜滾輪縮放｜點線看明細</div></div></div>`;
+  bindER($('#erSvg'));
+  drawER();
+}
+function drawER() {
+  const svg = $('#erSvg');
+  if (!svg) return;
+  const { nodes, rels } = erModel();
+  ensurePositions(nodes, rels);
+  S.er.nodes = nodes;
+  const C = erColors();
+  const r = erInner(nodes, rels, C, S.highlight);
+  svg.innerHTML = `${r.defs}<g id="erVp" transform="translate(${S.layout.pan.x},${S.layout.pan.y}) scale(${S.layout.zoom})" font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, Noto Sans CJK TC, system-ui, sans-serif">${r.body}</g>${nodes.length ? '' : `<text x="50%" y="50%" text-anchor="middle" fill="${C.muted}">沒有可顯示的資料表（檢查左側勾選或聚焦設定）</text>`}`;
+}
+const setVp = () => { const g = $('#erVp'); if (g) g.setAttribute('transform', `translate(${S.layout.pan.x},${S.layout.pan.y}) scale(${S.layout.zoom})`); };
+let drawPending = false;
+const scheduleDraw = () => { if (drawPending) return; drawPending = true; requestAnimationFrame(() => { drawPending = false; drawER(); }); };
+function bindER(svg) {
+  let mode = null, start, orig, tid, moved = false;
+  svg.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    const g = e.target.closest('.ernode');
+    moved = false;
+    if (g) { mode = 'node'; tid = g.dataset.tid; orig = { ...S.layout.pos[tid] }; }
+    else if (e.target.closest('.eredge')) { mode = null; return; }
+    else { mode = 'pan'; orig = { ...S.layout.pan }; svg.style.cursor = 'grabbing'; }
+    start = { x: e.clientX, y: e.clientY };
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!mode) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+    if (!moved) return;
+    if (mode === 'node') { const z = S.layout.zoom; S.layout.pos[tid] = { x: Math.round(orig.x + dx / z), y: Math.round(orig.y + dy / z) }; scheduleDraw(); }
+    else { S.layout.pan = { x: orig.x + dx, y: orig.y + dy }; setVp(); }
+  });
+  svg.addEventListener('pointerup', () => {
+    if (mode === 'node' && !moved) showTableDetail(tid);
+    if (mode && moved) saveLayout();
+    mode = null; svg.style.cursor = '';
+  });
+  svg.addEventListener('click', e => { const ed = e.target.closest('.eredge'); if (ed) showRelDetail(ed.dataset.rid); });
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rc = svg.getBoundingClientRect(), mx = e.clientX - rc.left, my = e.clientY - rc.top;
+    const z0 = S.layout.zoom, z = clampN(z0 * (e.deltaY < 0 ? 1.1 : 1 / 1.1), 0.1, 3), p = S.layout.pan;
+    S.layout.pan = { x: mx - (mx - p.x) * z / z0, y: my - (my - p.y) * z / z0 };
+    S.layout.zoom = z;
+    setVp();
+    saveLayout();
+  }, { passive: false });
+}
+function erBBox(nodes) {
+  if (!nodes.length) return { x: 0, y: 0, w: 400, h: 300 };
+  const ps = nodes.map(d => ({ ...S.layout.pos[d.id], w: d.w, h: d.h }));
+  const minX = Math.min(...ps.map(p => p.x)) - 40, minY = Math.min(...ps.map(p => p.y)) - 40;
+  const maxX = Math.max(...ps.map(p => p.x + p.w)) + 90, maxY = Math.max(...ps.map(p => p.y + p.h)) + 40;
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+A['er-fit'] = () => {
+  const svg = $('#erSvg'); if (!svg || !S.er.nodes) return;
+  const b = erBBox(S.er.nodes), rc = svg.getBoundingClientRect();
+  const z = clampN(Math.min(rc.width / b.w, rc.height / b.h), 0.1, 1.5);
+  S.layout.zoom = z;
+  S.layout.pan = { x: (rc.width - b.w * z) / 2 - b.x * z, y: (rc.height - b.h * z) / 2 - b.y * z };
+  setVp(); saveLayout();
+};
+A['er-auto'] = () => {
+  const { nodes, rels } = erModel();
+  autoLayout(nodes, rels);
+  saveLayout(); drawER(); setTimeout(A['er-fit'], 30);
+};
+A['er-zoom'] = el => {
+  const svg = $('#erSvg'), rc = svg.getBoundingClientRect(), mx = rc.width / 2, my = rc.height / 2;
+  const z0 = S.layout.zoom, z = clampN(z0 * +el.dataset.z, 0.1, 3), p = S.layout.pan;
+  S.layout.pan = { x: mx - (mx - p.x) * z / z0, y: my - (my - p.y) * z / z0 };
+  S.layout.zoom = z; setVp(); saveLayout();
+};
+A['er-clear-hl'] = () => { S.highlight = null; renderView(); };
+CHG['er-focus'] = el => { S.er.focus = el.value; drawER(); setTimeout(A['er-fit'], 30); };
+CHG['er-pending'] = el => { S.er.showPending = el.checked; drawER(); };
+CHG['er-all'] = el => { S.er.showAll = el.checked; drawER(); };
+function erSvgString(forceLight = true) {
+  const { nodes, rels } = erModel();
+  ensurePositions(nodes, rels);
+  const C = erColors(forceLight), r = erInner(nodes, rels, C, S.highlight), b = erBBox(nodes);
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.ceil(b.w)}" height="${Math.ceil(b.h)}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}" font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, Noto Sans CJK TC, system-ui, sans-serif">${r.defs}<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${C.bg}"/>${r.body}</svg>`, w: b.w, h: b.h };
+}
+A['exp-svg'] = () => { if (!S.tables.length) return toast('沒有資料表'); downloadText(`ER_${S.ws.name}_${stamp()}.svg`, erSvgString().svg, 'image/svg+xml'); };
+A['exp-png'] = () => {
+  if (!S.tables.length) return toast('沒有資料表');
+  const { svg, w, h } = erSvgString();
+  const img = new Image();
+  img.onload = () => {
+    const sc = Math.min(2, 8000 / Math.max(w, h)), c = document.createElement('canvas');
+    c.width = Math.ceil(w * sc); c.height = Math.ceil(h * sc);
+    const ctx = c.getContext('2d'); ctx.scale(sc, sc); ctx.drawImage(img, 0, 0);
+    try { c.toBlob(b => b ? downloadBlob(`ER_${S.ws.name}_${stamp()}.png`, b) : toast('PNG 產生失敗，請改用 SVG'), 'image/png'); } catch (e) { toast('瀏覽器限制無法輸出 PNG，請改用 SVG'); }
+  };
+  img.onerror = () => toast('PNG 產生失敗，請改用 SVG');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+};
+
+/* ===== V3：路徑查詢 ===== */
+function findPaths(from, to, max, inclPending) {
+  const rels = visRels({ pending: inclPending }), adj = new Map();
+  const add = (k, v) => { if (!adj.has(k)) adj.set(k, []); adj.get(k).push(v); };
+  rels.forEach(r => { if (r.srcTable === r.tgtTable) return; add(r.srcTable, { rel: r, to: r.tgtTable, dir: 'fwd' }); add(r.tgtTable, { rel: r, to: r.srcTable, dir: 'rev' }); });
+  const res = [], visited = new Set([from]), path = [];
+  (function dfs(cur) {
+    if (res.length >= 300) return;
+    if (cur === to && path.length) { res.push(path.slice()); return; }
+    if (path.length >= max) return;
+    for (const e of adj.get(cur) || []) {
+      if (visited.has(e.to)) continue;
+      visited.add(e.to); path.push({ rel: e.rel, from: cur, to: e.to, dir: e.dir }); dfs(e.to); path.pop(); visited.delete(e.to);
+    }
+  })(from);
+  const avg = p => p.reduce((s, x) => s + x.rel.score, 0) / p.length;
+  res.sort((a, b) => a.length - b.length || avg(b) - avg(a));
+  return res.slice(0, 50).map(p => ({ steps: p, avg: avg(p), min: Math.min(...p.map(x => x.rel.score)) }));
+}
+function sqlQ(dialect) {
+  return s => dialect === 'mssql' ? `[${String(s).replace(/]/g, ']]')}]` : (/^[A-Z][A-Z0-9_$#]*$/.test(s) ? s : `"${String(s).replace(/"/g, '""')}"`);
+}
+function joinSQL(steps, start, jt) {
+  const q = sqlQ(S.ws.settings.ddlDialect), alias = new Map([[start, 't1']]);
+  let n = 1, sql = `-- 路徑：${[tname(start), ...steps.map(s => tname(s.to))].join(' → ')}\nSELECT t1.*\n  FROM ${q(tname(start))} t1`;
+  for (const st of steps) {
+    const r = st.rel, a = alias.get(st.from), b = 't' + (++n);
+    alias.set(st.to, b);
+    const fwd = st.from === r.srcTable && (st.to === r.tgtTable);
+    const fc = fwd ? r.srcCols : r.tgtCols, tc = fwd ? r.tgtCols : r.srcCols;
+    sql += `\n  ${jt} JOIN ${q(tname(st.to))} ${b}\n    ON ${fc.map((c, i) => `${a}.${q(c)} = ${b}.${q(tc[i])}`).join('\n   AND ')}`;
+  }
+  return sql + ';';
+}
+function vPath() {
+  if (S.tables.length < 2) return S.tables.length ? '<div class="empty">至少需要兩張資料表。</div>' : vOverview();
+  const st = S.pathState;
+  if (!st.from || !TB(st.from)) st.from = S.tables[0].id;
+  if (!st.to || !TB(st.to)) st.to = S.tables[1].id;
+  const res = st.results;
+  return `<div class="box"><h3>跨表路徑查詢</h3><div class="muted small" style="margin-bottom:8px">找出資料表 A 經過哪些表可以 JOIN 到資料表 D，並自動產生 JOIN SQL。關聯不分方向（子→父、父→子都可走）。</div>
+  <div class="row"><span>起點</span>${tableSelect('path-from', st.from).replace('<select', '<select id="pathFrom"')}<span>終點</span>${tableSelect('path-to', st.to).replace('<select', '<select id="pathTo"')}
+  <span>最多</span><input type="number" id="pathMax" value="${st.max}" min="1" max="8" style="width:56px"><span>層</span>
+  <label><input type="checkbox" id="pathPend" ${st.pending ? 'checked' : ''}> 包含未確認的推測關聯（≥門檻）</label>
+  <button class="primary" data-act="path-run">🔍 查詢</button></div></div>
+  ${res == null ? '' : !res.length ? '<div class="empty">找不到路徑。可增加層數、勾選包含推測關聯，或到「外鍵關聯」手動新增關聯。</div>' :
+    `<div class="muted" style="margin-bottom:8px">找到 ${res.length} 條路徑（依經過的表數、平均信心排序）</div>` + res.map((p, i) => `<div class="pathc"><div class="row" style="margin:0"><b>#${i + 1}</b><span class="tag">${p.steps.length} 次 JOIN</span><span class="tag">平均信心 ${p.avg.toFixed(0)}</span><span class="tag ${p.min < 70 ? 'warn' : ''}">最低 ${p.min}</span>
+    <span class="sep"></span><button class="sm" data-act="path-hl" data-i="${i}">在 ER 圖標示</button><button class="sm" data-act="path-sql" data-i="${i}" data-j="INNER">INNER JOIN SQL</button><button class="sm" data-act="path-sql" data-i="${i}" data-j="LEFT">LEFT JOIN SQL</button></div>
+    <div class="chain"><span class="chip">${esc(tname(st.from))}</span>${p.steps.map(s => { const fwd = s.dir === 'fwd'; const fc = fwd ? s.rel.srcCols : s.rel.tgtCols, tc = fwd ? s.rel.tgtCols : s.rel.srcCols; return `<span class="arrow" title="${esc(relLabel(s.rel))}">— ${esc(fc.join('+'))} = ${esc(tc.join('+'))} ${fwd ? '→' : '←'} —</span><span class="chip">${esc(tname(s.to))}</span>`; }).join('')}</div>
+    <div class="small muted">${p.steps.map(s => `${s.rel.status === 'confirmed' ? '✅' : '🟡'} ${esc(relLabel(s.rel))}（${s.rel.score}，${effCard(s.rel)}）`).join('<br>')}</div></div>`).join('')}`;
+}
+A['path-run'] = () => {
+  const st = S.pathState;
+  st.from = $('#pathFrom').value; st.to = $('#pathTo').value; st.max = clampN(+$('#pathMax').value, 1, 8); st.pending = $('#pathPend').checked;
+  if (st.from === st.to) return toast('起點與終點不可相同');
+  st.results = findPaths(st.from, st.to, st.max, st.pending);
+  renderView();
+};
+CHG['path-from'] = () => { }; CHG['path-to'] = () => { };
+A['path-hl'] = el => {
+  const p = S.pathState.results[+el.dataset.i];
+  S.highlight = { tables: new Set([S.pathState.from, ...p.steps.map(s => s.to)]), rels: new Set(p.steps.map(s => s.rel.id)), label: `路徑 ${tname(S.pathState.from)} → ${tname(S.pathState.to)}` };
+  S.er.focus = ''; S.tab = 'er'; renderAll();
+};
+A['path-sql'] = el => { const p = S.pathState.results[+el.dataset.i]; showCode('JOIN SQL', joinSQL(p.steps, S.pathState.from, el.dataset.j), 'path_join.sql'); };
+
+/* ===== V3：影響分析 ===== */
+function runImpact() {
+  const st = S.impactState;
+  if (!st.table || !TB(st.table)) { st.result = null; return; }
+  const rels = visRels({ pending: st.pending }), dirs = st.dir === 'both' ? ['down', 'up'] : [st.dir];
+  const result = { down: [], up: [], fdDep: [], fdBy: [] };
+  for (const d of dirs) {
+    const seen = new Set([st.table]);
+    let fr = [{ tid: st.table, cols: st.col ? [st.col] : null }];
+    for (let lv = 1; lv <= st.depth && fr.length; lv++) {
+      const next = [];
+      for (const node of fr) for (const r of rels) {
+        let other, nextCols;
+        if (d === 'down') { if (r.tgtTable !== node.tid || r.srcTable === node.tid) continue; if (node.cols && !r.tgtCols.some(c => node.cols.includes(c))) continue; other = r.srcTable; nextCols = r.srcCols; }
+        else { if (r.srcTable !== node.tid || r.tgtTable === node.tid) continue; if (node.cols && !r.srcCols.some(c => node.cols.includes(c))) continue; other = r.tgtTable; nextCols = r.tgtCols; }
+        if (seen.has(other)) continue;
+        seen.add(other);
+        result[d].push({ level: lv, tid: other, via: r, from: node.tid });
+        next.push({ tid: other, cols: node.cols ? nextCols : null });
+      }
+      fr = next;
+    }
+  }
+  if (st.col) {
+    S.fds.filter(f => f.tableId === st.table).forEach(f => { if (f.lhs === st.col) result.fdDep.push(f); if (f.rhs === st.col) result.fdBy.push(f); });
+  }
+  st.result = result;
+}
+function vImpact() {
+  if (!S.tables.length) return vOverview();
+  const st = S.impactState;
+  if (!st.table || !TB(st.table)) st.table = S.tables[0].id;
+  const t = TB(st.table), res = st.result;
+  const tree = (list, d) => {
+    if (!list.length) return '<div class="muted small">無</div>';
+    const kids = from => list.filter(x => x.from === from);
+    const rec = (from, depth) => kids(from).map(x => `<div class="lvl" style="--d:${depth}"><span class="tag">L${x.level}</span> <span class="chip">${esc(tname(x.tid))}</span>
+      <a href="#" class="small" data-act="rel-detail" data-rid="${x.via.id}">${d === 'down' ? `${esc(x.via.srcCols.join('+'))} 參照 ${esc(tname(x.from))}.${esc(x.via.tgtCols.join('+'))}` : `${esc(tname(x.from))}.${esc(x.via.srcCols.join('+'))} 參照 ${esc(x.via.tgtCols.join('+'))}`}</a>
+      <span class="muted small">${x.via.status === 'confirmed' ? '✅' : '🟡'} ${x.via.score}</span></div>${rec(x.tid, depth + 1)}`).join('');
+    return rec(st.table, 0);
+  };
+  return `<div class="box"><h3>影響分析</h3><div class="muted small" style="margin-bottom:8px">下游＝哪些表參照它（它變動時會受影響）；上游＝它參照哪些表（它依賴誰）。選擇欄位時，只追蹤經過該欄位的關聯（欄位級血緣）。</div>
+  <div class="row"><span>資料表</span>${tableSelect('imp-table', st.table).replace('<select', '<select id="impTable"')}
+  <span>欄位</span><select id="impCol"><option value="">（整張表）</option>${t.cols.map(c => `<option ${st.col === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+  <select id="impDir">${[['down', '下游（被誰參照）'], ['up', '上游（參照誰）'], ['both', '雙向']].map(([v, l]) => `<option value="${v}" ${st.dir === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+  <span>深度</span><input type="number" id="impDepth" value="${st.depth}" min="1" max="10" style="width:56px">
+  <label><input type="checkbox" id="impPend" ${st.pending ? 'checked' : ''}> 包含推測關聯</label><button class="primary" data-act="imp-run">分析</button></div></div>
+  ${!res ? '' : `<div class="cards"><div class="card"><div class="k">下游受影響表</div><div class="v">${res.down.length}</div></div><div class="card"><div class="k">上游依賴表</div><div class="v">${res.up.length}</div></div>
+  ${st.col ? `<div class="card"><div class="k">同表相依欄位</div><div class="v">${res.fdDep.length + res.fdBy.length}</div></div>` : ''}</div>
+  <div class="row"><button class="sm" data-act="imp-hl">在 ER 圖標示</button><button class="sm" data-act="imp-export">匯出影響清單 CSV</button></div>
+  <div class="split">${st.dir !== 'up' ? `<div class="box"><h3>⬇ 下游（${res.down.length}）</h3><div class="lvl" style="--d:0"><span class="chip">${esc(t.name)}${st.col ? '.' + esc(st.col) : ''}</span></div>${tree(res.down, 'down')}</div>` : ''}
+  ${st.dir !== 'down' ? `<div class="box"><h3>⬆ 上游（${res.up.length}）</h3><div class="lvl" style="--d:0"><span class="chip">${esc(t.name)}${st.col ? '.' + esc(st.col) : ''}</span></div>${tree(res.up, 'up')}</div>` : ''}</div>
+  ${st.col ? `<div class="box"><h3>同表欄位相依</h3><div class="small"><b>${esc(st.col)}</b> 決定：${res.fdDep.map(f => `<span class="tag">${esc(f.rhs)}</span>`).join('') || '<span class="muted">無</span>'}</div>
+  <div class="small" style="margin-top:4px"><b>${esc(st.col)}</b> 被決定於：${res.fdBy.map(f => `<span class="tag">${esc(f.lhs)}</span>`).join('') || '<span class="muted">無</span>'}</div></div>` : ''}`}`;
+}
+CHG['imp-table'] = el => { S.impactState.table = el.value; S.impactState.col = ''; S.impactState.result = null; renderView(); };
+A['imp-run'] = () => {
+  const st = S.impactState;
+  st.table = $('#impTable').value; st.col = $('#impCol').value; st.dir = $('#impDir').value; st.depth = clampN(+$('#impDepth').value, 1, 10); st.pending = $('#impPend').checked;
+  runImpact(); renderView();
+};
+A['imp-hl'] = () => {
+  const st = S.impactState, r = st.result, all = [...r.down, ...r.up];
+  S.highlight = { tables: new Set([st.table, ...all.map(x => x.tid)]), rels: new Set(all.map(x => x.via.id)), label: `影響分析 ${tname(st.table)}${st.col ? '.' + st.col : ''}` };
+  S.er.focus = ''; S.tab = 'er'; renderAll();
+};
+A['imp-export'] = () => {
+  const st = S.impactState, r = st.result;
+  const rows = [['方向', '層級', '受影響表', '經由關聯', '狀態', '信心']];
+  r.down.forEach(x => rows.push(['下游', x.level, tname(x.tid), relLabel(x.via), x.via.status, x.via.score]));
+  r.up.forEach(x => rows.push(['上游', x.level, tname(x.tid), relLabel(x.via), x.via.status, x.via.score]));
+  downloadText(`影響分析_${tname(st.table)}${st.col ? '_' + st.col : ''}.csv`, '\uFEFF' + rows.map(x => x.map(csvCell).join(',')).join('\r\n'), 'text/csv');
+};
+
+/* ===== 匯出 ===== */
+const KEYCOL = /(^|_)(ID|NO|CODE|CD|KEY|SEQ)$|(ID|NO)$|帳號|編號|代號|代碼|序號|統編|號碼$|分行別|分號/i;
+const needTables = () => { if (!S.tables.length) { toast('沒有資料表'); return false; } return true; };
+function genMermaid() {
+  const rels = visRels(), alias = new Map(), okId = s => /^[A-Za-z_][A-Za-z0-9_\-]*$/.test(s);
+  S.tables.forEach((t, i) => alias.set(t.id, okId(t.name) ? t.name : 'T' + (i + 1)));
+  const mt = p => !p ? 'string' : p.type === 'int' ? 'int' : p.type === 'decimal' ? 'decimal' : p.type === 'dateAD' ? 'date' : 'string';
+  let out = `%% ${S.ws.name}｜資料關聯探索器產生於 ${fmtTime(Date.now())}\nerDiagram\n`;
+  S.tables.forEach(t => {
+    const a = alias.get(t.id), pk = new Set(effPK(t)), fk = new Set(rels.filter(r => r.srcTable === t.id).flatMap(r => r.srcCols)), pm = profMap(t.id);
+    out += `  ${a === t.name ? a : `${a}["${t.name.replace(/"/g, "'")}"]`} {\n`;
+    t.cols.forEach((c, ci) => {
+      const nm = okId(c) ? c : 'c' + (ci + 1), keys = [pk.has(c) ? 'PK' : '', fk.has(c) ? 'FK' : ''].filter(Boolean).join(',');
+      out += `    ${mt(pm[c])} ${nm}${keys ? ' ' + keys : ''}${nm !== c || pm[c] && pm[c].type === 'dateROC' ? ` "${c.replace(/"/g, "'")}${pm[c] && pm[c].type === 'dateROC' ? '（民國日期）' : ''}"` : ''}\n`;
+    });
+    out += '  }\n';
+  });
+  rels.forEach(r => {
+    const c = effCard(r), L = c === 'N:M' ? '}o' : r.srcOptional ? '|o' : '||', R = c === '1:1' ? 'o|' : 'o{';
+    const line = r.status === 'confirmed' || r.origin === 'manual' ? '--' : '..';
+    out += `  ${alias.get(r.tgtTable)} ${L}${line}${R} ${alias.get(r.srcTable)} : "${r.srcCols.join('+').replace(/"/g, "'")}"\n`;
+  });
+  return out;
+}
+A['exp-mermaid'] = () => { if (!needTables()) return; showCode('Mermaid erDiagram（實線＝已確認，虛線＝推測）', genMermaid(), `ER_${S.ws.name}.mmd`); };
+function genDDL(dialect, inclPending) {
+  if (dialect === 'sqlite') return genDDLSqlite(inclPending);
+  const q = sqlQ(dialect), isO = dialect === 'oracle';
+  const safe = (s, i) => { const x = String(s).replace(/[^A-Za-z0-9_]/g, '_').replace(/^_+|_+$/g, ''); return x && /^[A-Za-z]/.test(x) ? x.toUpperCase() : 'T' + (i + 1); };
+  const nice = n => [10, 20, 50, 100, 200, 500, 1000, 2000, 4000].find(x => x >= n) || n;
+  const ty = p => {
+    if (!p || p.type === 'empty') return isO ? 'VARCHAR2(50)' : 'NVARCHAR(50)';
+    const L = Math.max(1, p.maxLen);
+    switch (p.type) {
+      case 'int': if (p.minLen === p.maxLen && KEYCOL.test(p.col) && L <= 20) return `CHAR(${L})`; return isO ? `NUMBER(${Math.min(38, Math.max(1, p.maxIntD || L))})` : (p.maxIntD || L) <= 9 ? 'INT' : (p.maxIntD || L) <= 18 ? 'BIGINT' : `DECIMAL(${Math.min(38, p.maxIntD || L)})`;
+      case 'decimal': { const s = p.maxScale || 2, pr = Math.min(38, (p.maxIntD || 10) + s); return isO ? `NUMBER(${pr},${s})` : `DECIMAL(${pr},${s})`; }
+      case 'dateAD': return 'DATE';
+      default: {
+        const fixed = p.minLen === p.maxLen && !p.hasCJK && L <= 20;
+        if (p.hasCJK) return isO ? `NVARCHAR2(${Math.min(2000, nice(L))})` : `NVARCHAR(${L > 4000 ? 'MAX' : nice(L)})`;
+        if (fixed) return `CHAR(${L})`;
+        return isO ? `VARCHAR2(${Math.min(4000, nice(L))})` : `VARCHAR(${L > 8000 ? 'MAX' : nice(L)})`;
+      }
+    }
+  };
+  let out = `-- ${S.ws.name}｜由資料關聯探索器產生（${isO ? 'Oracle' : 'SQL Server'}）\n-- 產生時間：${fmtTime(Date.now())}\n-- 型態依資料內容推測，請依實際規格調整。\n\n`;
+  S.tables.forEach((t, i) => {
+    const pm = profMap(t.id), pk = effPK(t);
+    const lines = t.cols.map(c => { const p = pm[c]; return `  ${q(c)} ${ty(p)}${p && p.nulls === 0 && p.rows > 0 ? ' NOT NULL' : ''}${p && p.type === 'dateROC' ? ' -- 民國日期' : ''}`; });
+    if (pk.length) lines.push(`  CONSTRAINT PK_${safe(t.name, i)} PRIMARY KEY (${pk.map(q).join(', ')})`);
+    out += `CREATE TABLE ${q(t.name)} (\n${lines.map((l, j) => { const last = j === lines.length - 1; const m = /^(.*?)( -- .*)?$/.exec(l); return m[1] + (last ? '' : ',') + (m[2] || ''); }).join('\n')}\n);\n\n`;
+  });
+  const rels = S.relations.filter(r => TB(r.srcTable) && TB(r.tgtTable) && r.status !== 'rejected' && (r.status === 'confirmed' || r.origin === 'manual' || (inclPending && r.score >= S.ws.settings.threshold)));
+  if (rels.length) out += '-- ===== 外鍵 =====\n';
+  const uq = new Set();
+  rels.forEach((r, i) => {
+    const s = TB(r.srcTable), t = TB(r.tgtTable), pend = r.status !== 'confirmed' && r.origin !== 'manual', pre = pend ? '-- ' : '';
+    out += `${pend ? `-- [推測，信心 ${r.score}，尚未確認]\n` : ''}`;
+    if (!sameArr(effPK(t), r.tgtCols)) {
+      const k = t.id + r.tgtCols.join(',');
+      out += `-- 注意：${t.name}(${r.tgtCols.join(', ')}) 不是主鍵，需先建立 UNIQUE 限制${effCard(r) === 'N:M' ? '（目前資料不唯一，無法建立）' : ''}\n`;
+      if (!uq.has(k)) { uq.add(k); out += `${pre}ALTER TABLE ${q(t.name)} ADD CONSTRAINT UQ_${safe(t.name, S.tables.indexOf(t))}_${i + 1} UNIQUE (${r.tgtCols.map(q).join(', ')});\n`; }
+    }
+    if (r.orphanDistinct) out += `-- 注意：目前有 ${r.orphanDistinct} 個孤兒值，直接建立會失敗（可加 ${isO ? 'ENABLE NOVALIDATE' : 'WITH NOCHECK'}）\n`;
+    out += `${pre}ALTER TABLE ${q(s.name)} ADD CONSTRAINT FK_${safe(s.name, S.tables.indexOf(s))}_${i + 1}\n${pre}  FOREIGN KEY (${r.srcCols.map(q).join(', ')}) REFERENCES ${q(t.name)} (${r.tgtCols.map(q).join(', ')});\n\n`;
+  });
+  return out;
+}
+/* SQLite：外鍵必須寫在 CREATE TABLE 內（不支援 ALTER TABLE ADD CONSTRAINT） */
+function genDDLSqlite(inclPending) {
+  const q = sqlQ('sqlite');
+  const safe = (s, i) => { const x = String(s).replace(/[^A-Za-z0-9_]/g, '_').replace(/^_+|_+$/g, ''); return x && /^[A-Za-z]/.test(x) ? x.toUpperCase() : 'T' + (i + 1); };
+  const ty = p => {
+    if (!p || p.type === 'empty') return ['TEXT', ''];
+    switch (p.type) {
+      case 'int': return p.minLen === p.maxLen && KEYCOL.test(p.col) ? ['TEXT', `固定 ${p.maxLen} 碼，用 TEXT 保留前導 0`] : ['INTEGER', ''];
+      case 'decimal': return ['NUMERIC', `小數 ${p.maxScale || 0} 位`];
+      case 'dateAD': return ['TEXT', '西元日期，建議存 YYYY-MM-DD'];
+      case 'dateROC': return ['TEXT', '民國日期'];
+      case 'digits': return ['TEXT', `數字代碼（${p.minLen === p.maxLen ? '固定 ' + p.maxLen : p.minLen + '～' + p.maxLen} 碼）`];
+      default: return ['TEXT', p.maxLen ? `最長 ${p.maxLen}` : ''];
+    }
+  };
+  const rels = S.relations.filter(r => TB(r.srcTable) && TB(r.tgtTable) && r.status !== 'rejected' && (r.status === 'confirmed' || r.origin === 'manual' || (inclPending && r.score >= S.ws.settings.threshold)));
+  let out = `-- ${S.ws.name}｜由資料關聯探索器產生（SQLite）\n-- 產生時間：${fmtTime(Date.now())}\n-- 型態依資料內容推測，請依實際規格調整。\n-- SQLite 外鍵需寫在 CREATE TABLE 內，且每次連線都要啟用：\nPRAGMA foreign_keys = ON;\n\n`;
+  const uniq = [], uqSeen = new Set();
+  S.tables.forEach((t, i) => {
+    const pm = profMap(t.id), pk = effPK(t);
+    const items = t.cols.map(c => { const p = pm[c], [tp, note] = ty(p); return { sql: `  ${q(c)} ${tp}${p && p.nulls === 0 && p.rows > 0 ? ' NOT NULL' : ''}`, note }; });
+    if (pk.length) items.push({ sql: `  CONSTRAINT PK_${safe(t.name, i)} PRIMARY KEY (${pk.map(q).join(', ')})`, note: '' });
+    const pend = [];
+    rels.filter(r => r.srcTable === t.id).forEach((r, k) => {
+      const tg = TB(r.tgtTable);
+      const line = `  CONSTRAINT FK_${safe(t.name, i)}_${k + 1} FOREIGN KEY (${r.srcCols.map(q).join(', ')}) REFERENCES ${q(tg.name)} (${r.tgtCols.map(q).join(', ')})`;
+      const isPend = r.status !== 'confirmed' && r.origin !== 'manual';
+      const notes = [];
+      if (r.orphanDistinct) notes.push(`孤兒值 ${r.orphanDistinct} 個（既有資料不會被檢查，可用 PRAGMA foreign_key_check 找出）`);
+      if (!sameArr(effPK(tg), r.tgtCols)) {
+        notes.push(`${tg.name}(${r.tgtCols.join(', ')}) 非主鍵，需有 UNIQUE 索引`);
+        const key = tg.id + '|' + r.tgtCols.join(',');
+        if (!uqSeen.has(key)) { uqSeen.add(key); uniq.push({ sql: `CREATE UNIQUE INDEX ${q('UQ_' + safe(tg.name, S.tables.indexOf(tg)) + '_' + (uniq.length + 1))} ON ${q(tg.name)} (${r.tgtCols.map(q).join(', ')});`, pend: isPend, nm: effCard(r) === 'N:M' }); }
+      }
+      if (isPend) pend.push(`  -- [推測，信心 ${r.score}] 確認後移除註解：\n  -- ,${line.trim()}${notes.length ? '\n  -- 注意：' + notes.join('；') : ''}`);
+      else items.push({ sql: line, note: notes.join('；') });
+    });
+    out += `CREATE TABLE ${q(t.name)} (\n${items.map((it, j) => it.sql + (j === items.length - 1 ? '' : ',') + (it.note ? ' -- ' + it.note : '')).join('\n')}${pend.length ? '\n' + pend.join('\n') : ''}\n);\n\n`;
+  });
+  if (uniq.length) {
+    out += '-- ===== 被參照欄位的唯一索引 =====\n';
+    uniq.forEach(u => { out += (u.nm ? '-- 注意：目前資料不唯一，建立會失敗\n' : '') + (u.pend ? '-- ' : '') + u.sql + '\n'; });
+    out += '\n';
+  }
+  out += '-- 建表並匯入資料後，可執行下列指令檢查外鍵是否有違反：\n-- PRAGMA foreign_key_check;\n';
+  return out;
+}
+A['exp-ddl'] = () => {
+  if (!needTables()) return;
+  const d = S.ws.settings.ddlDialect;
+  showCode('SQL DDL', genDDL(d, false), `DDL_${S.ws.name}_${d}.sql`, `<div class="row"><select id="ddlDial" data-chg="ddl-opt"><option value="oracle" ${d === 'oracle' ? 'selected' : ''}>Oracle</option><option value="mssql" ${d === 'mssql' ? 'selected' : ''}>SQL Server</option><option value="sqlite" ${d === 'sqlite' ? 'selected' : ''}>SQLite</option></select>
+  <label><input type="checkbox" id="ddlPend" data-chg="ddl-opt"> 包含未確認的推測關聯（以註解呈現）</label></div>`);
+};
+CHG['ddl-opt'] = () => { const d = $('#ddlDial').value, code = genDDL(d, $('#ddlPend').checked); S.modalCtx.code = code; S.modalCtx.fileName = `DDL_${S.ws.name}_${d}.sql`; $('#codeOut').textContent = code; };
+const xmlEsc = s => String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+function xlsXML(sheets) {
+  const cell = (c, h) => typeof c === 'number' && isFinite(c) ? `<Cell${h ? ' ss:StyleID="h"' : ''}><Data ss:Type="Number">${c}</Data></Cell>` : `<Cell${h ? ' ss:StyleID="h"' : ''}><Data ss:Type="String">${xmlEsc(c)}</Data></Cell>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles><Style ss:ID="Default"><Font ss:FontName="Microsoft JhengHei" ss:Size="10"/></Style><Style ss:ID="h"><Font ss:FontName="Microsoft JhengHei" ss:Bold="1" ss:Size="10"/><Interior ss:Color="#ececec" ss:Pattern="Solid"/></Style></Styles>
+${sheets.map(sh => `<Worksheet ss:Name="${xmlEsc(sh.name.replace(/[:\\\/?*\[\]]/g, '_').slice(0, 31))}"><Table>${sh.rows.map((r, i) => `<Row>${r.map(c => cell(c, i === 0)).join('')}</Row>`).join('\n')}</Table>
+<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions></Worksheet>`).join('\n')}
+</Workbook>`;
+}
+const r4 = x => x == null ? '' : Math.round(x * 10000) / 10000;
+function reportSheets() {
+  const a = S.ws.analysis || {};
+  const sh = [];
+  sh.push({ name: '資料表', rows: [['資料表', '檔案', '編碼', '列數', '欄數', '主鍵', '主鍵來源', '代碼表'], ...S.tables.map(t => [t.name, t.fileName || '', t.encoding || '', t.rowCount, t.cols.length, effPK(t).join(' + '), t.pk ? '手動' : effPK(t).length ? '自動' : '', codeTableSet().has(t.id) ? 'Y' : ''])] });
+  const pr = [['資料表', '#', '欄位', '推測型態', '最短', '最長', '空值數', '空值率', '不重複值', '唯一率', '型態特徵', 'PK', 'FK', '列舉', 'Top 5 值']];
+  S.tables.forEach(t => { const pk = new Set(effPK(t)), fk = fkColsOf(t.id); (S.profiles[t.id] || []).forEach(p => pr.push([t.name, p.idx + 1, p.col, TYPE_LABEL[p.type], p.minLen, p.maxLen, p.nulls, r4(p.nullRate), p.distinct, r4(p.uniqueRate), p.patternDesc, pk.has(p.col) ? 'Y' : '', fk.has(p.col) ? 'Y' : '', p.isEnum ? 'Y' : '', p.top10.slice(0, 5).map(([v, c]) => `${v}(${c})`).join('、')])); });
+  sh.push({ name: '欄位剖析', rows: pr });
+  const pk = [['資料表', '欄位組合', '欄數', '分數', '狀態']];
+  S.tables.forEach(t => { const e = effPK(t); (t.pkCands || []).forEach(c => pk.push([t.name, c.cols.join(' + '), c.cols.length, c.score, sameArr(c.cols, e) ? '使用中' : (t.pkRejected || []).includes(c.cols.join(',')) ? '已否決' : ''])); if (t.pk && !(t.pkCands || []).some(c => sameArr(c.cols, t.pk.cols))) pk.push([t.name, t.pk.cols.join(' + '), t.pk.cols.length, '', '手動指定']); });
+  sh.push({ name: '主鍵候選', rows: pk });
+  const st = { pending: '待審核', confirmed: '已確認', rejected: '已否決' };
+  const rl = [['狀態', '來源', '來源表', '來源欄位', '目標表', '目標欄位', '基數', '參照端可空', '信心', '包含率', '名稱相似', '型態一致', '特徵一致', '目標為主鍵', '孤兒值個數', '孤兒列數', '類型', '備註']];
+  S.relations.filter(r => TB(r.srcTable) && TB(r.tgtTable)).sort((x, y) => y.score - x.score).forEach(r => rl.push([st[r.status], r.origin === 'manual' ? '手動' : '推測', tname(r.srcTable), r.srcCols.join(' + '), tname(r.tgtTable), r.tgtCols.join(' + '), effCard(r), r.srcOptional ? 'Y' : '', r.score, r4(r.incl), r4(r.nameSim), r4(r.typeMatch), r4(r.patMatch), r.tgtIsPK ? 'Y' : '', r.orphanDistinct, r.orphanRows, r.kind === 'composite' ? '複合' : '單欄', r.note || '']));
+  sh.push({ name: '外鍵關聯', rows: rl });
+  const orp = [['來源表', '來源欄位', '目標表', '目標欄位', '孤兒值', '列數']];
+  visRels().forEach(r => r.orphans.forEach(([v, c]) => orp.push([tname(r.srcTable), r.srcCols.join(' + '), tname(r.tgtTable), r.tgtCols.join(' + '), v, c])));
+  sh.push({ name: '孤兒值', rows: orp });
+  sh.push({ name: '欄位相依', rows: [['資料表', '決定欄位', '被決定欄位', '違反列數', '違反率', '完全相依', '雙向對應'], ...S.fds.filter(f => TB(f.tableId)).map(f => [tname(f.tableId), f.lhs, f.rhs, f.violRows, r4(f.violRate), f.exact ? 'Y' : '', f.bijection ? 'Y' : ''])] });
+  const dc = [['類別', '資料表', '代碼欄', '名稱欄', '筆數', '範例']];
+  (a.codeTables || []).filter(x => TB(x.tableId)).forEach(c => dc.push(['代碼表', tname(c.tableId), c.codeCol, c.nameCol, c.entries, '']));
+  (a.dicts || []).filter(x => TB(x.tableId)).forEach(d => dc.push(['表內代碼對照', tname(d.tableId), d.codeCol, d.nameCol, d.entries, d.sample.map(([c, n]) => `${c}=${n}`).join('、')]));
+  (a.enums || []).filter(x => TB(x.tableId)).forEach(e => dc.push(['列舉欄位', tname(e.tableId), e.col, '', e.distinct, e.values.map(([v, c]) => `${v}(${c})`).join('、')]));
+  sh.push({ name: '代碼字典', rows: dc });
+  sh.push({ name: '日期欄位', rows: [['資料表', '欄位', '曆法', '格式', '最早(西元)', '最晚(西元)'], ...(a.dates || []).filter(x => TB(x.tableId)).map(d => [tname(d.tableId), d.col, d.type === 'dateROC' ? '民國' : '西元', d.pattern, d.min || '', d.max || ''])] });
+  return sh;
+}
+A['exp-excel'] = () => { if (!needTables()) return; downloadText(`資料關聯分析_${S.ws.name}_${stamp()}.xls`, xlsXML(reportSheets()), 'application/vnd.ms-excel'); toast('已匯出 Excel'); };
+function genMarkdown() {
+  const a = S.ws.analysis || {}, rels = visRels(), st = { pending: '待審核', confirmed: '已確認', rejected: '已否決' };
+  const md = s => String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  let o = `# 資料關聯說明：${S.ws.name}\n\n- 產生時間：${fmtTime(Date.now())}\n- 上次分析：${fmtTime(a.analyzedAt)}\n- 資料表 ${S.tables.length} 張；顯示中的關聯 ${rels.length} 筆（信心門檻 ${S.ws.settings.threshold}）\n\n## 1. 資料表總覽\n\n| 資料表 | 列數 | 欄數 | 主鍵 | 備註 |\n|---|---:|---:|---|---|\n`;
+  S.tables.forEach(t => { o += `| ${md(t.name)} | ${fmt(t.rowCount)} | ${t.cols.length} | ${md(effPK(t).join(' + ') || '—')} | ${codeTableSet().has(t.id) ? '代碼表' : ''} |\n`; });
+  o += `\n## 2. 關聯\n\n| 子表.欄位 | 父表.欄位 | 基數 | 信心 | 包含率 | 孤兒值 | 狀態 |\n|---|---|---|---:|---:|---:|---|\n`;
+  rels.sort((x, y) => y.score - x.score).forEach(r => { o += `| ${md(tname(r.srcTable))}.${md(r.srcCols.join('+'))} | ${md(tname(r.tgtTable))}.${md(r.tgtCols.join('+'))} | ${effCard(r)}${r.srcOptional ? '（可空）' : ''} | ${r.score} | ${pct(r.incl)} | ${r.orphanDistinct} | ${st[r.status]}${r.note ? '：' + md(r.note) : ''} |\n`; });
+  o += `\n## 3. ER 圖\n\n\`\`\`mermaid\n${genMermaid()}\`\`\`\n\n## 4. 資料表明細\n`;
+  S.tables.forEach(t => {
+    const pk = new Set(effPK(t)), fk = fkColsOf(t.id);
+    o += `\n### ${md(t.name)}\n\n| # | 欄位 | 鍵 | 型態 | 長度 | 空值率 | 唯一率 | 型態特徵 |\n|---:|---|---|---|---|---:|---:|---|\n`;
+    (S.profiles[t.id] || t.cols.map((c, i) => ({ idx: i, col: c }))).forEach(p => { o += `| ${p.idx + 1} | ${md(p.col)} | ${[pk.has(p.col) ? 'PK' : '', fk.has(p.col) ? 'FK' : ''].filter(Boolean).join(',')} | ${TYPE_LABEL[p.type] || ''} | ${p.maxLen == null ? '' : p.minLen === p.maxLen ? p.maxLen : p.minLen + '~' + p.maxLen} | ${p.nullRate == null ? '' : pct(p.nullRate)} | ${p.uniqueRate == null ? '' : pct(p.uniqueRate)} | ${md(p.patternDesc || '')} |\n`; });
+  });
+  const fds = S.fds.filter(f => TB(f.tableId));
+  if (fds.length) { o += `\n## 5. 欄位相依\n\n| 資料表 | 相依 | 違反率 | 備註 |\n|---|---|---:|---|\n`; fds.forEach(f => { o += `| ${md(tname(f.tableId))} | ${md(f.lhs)} → ${md(f.rhs)} | ${pct(f.violRate, 2)} | ${f.bijection ? '雙向對應' : ''} |\n`; }); }
+  const dates = (a.dates || []).filter(x => TB(x.tableId));
+  if (dates.length) { o += `\n## 6. 日期欄位\n\n| 資料表.欄位 | 曆法 | 範圍（西元） |\n|---|---|---|\n`; dates.forEach(d => { o += `| ${md(tname(d.tableId))}.${md(d.col)} | ${d.type === 'dateROC' ? '民國' : '西元'} | ${d.min} ~ ${d.max} |\n`; }); }
+  return o;
+}
+A['exp-md'] = () => { if (!needTables()) return; downloadText(`資料關聯說明_${S.ws.name}.md`, genMarkdown(), 'text/markdown'); toast('已匯出 Markdown'); };
+A['exp-report'] = () => {
+  if (!needTables()) return;
+  const a = S.ws.analysis || {}, rels = visRels(), st = { pending: '🟡 待審核', confirmed: '✅ 已確認', rejected: '❌ 已否決' };
+  const e = esc, er = erSvgString(true).svg;
+  const cnt = s => S.relations.filter(r => r.status === s).length;
+  const warn = [];
+  S.tables.filter(t => !effPK(t).length).forEach(t => warn.push(`${t.name} 沒有主鍵`));
+  rels.forEach(r => { const rate = r.srcNonNull ? r.orphanRows / r.srcNonNull : 0; if (r.orphanDistinct) warn.push(`${relLabel(r)}：孤兒值 ${r.orphanDistinct} 個 / ${r.orphanRows} 列（${pct(rate, 2)}）`); });
+  rels.filter(r => effCard(r) === 'N:M').forEach(r => warn.push(`${relLabel(r)} 為 N:M`));
+  S.fds.filter(f => !f.exact && TB(f.tableId)).forEach(f => warn.push(`${tname(f.tableId)}：${f.lhs} → ${f.rhs} 有 ${f.violRows} 列不一致`));
+  const tbl = (head, rows) => `<table><thead><tr>${head.map(h => `<th>${e(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${head.length}">無</td></tr>`}</tbody></table>`;
+  const html = `<!DOCTYPE html><html lang="zh-Hant-TW"><head><meta charset="UTF-8"><title>資料關聯分析報告－${e(S.ws.name)}</title><style>
+body{font:14px/1.6 "Microsoft JhengHei","PingFang TC","Noto Sans TC","Noto Sans CJK TC",system-ui,sans-serif;color:#303030;max-width:1200px;margin:0 auto;padding:30px;background:#f6f6f6}
+h1{border-bottom:3px solid #444444;padding-bottom:8px}h2{margin-top:36px;border-left:5px solid #444444;padding-left:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0}th,td{border:1px solid #d4d4d4;padding:5px 8px;text-align:left;vertical-align:top}th{background:#ececec}
+.cards{display:flex;flex-wrap:wrap;gap:10px}.card{border:1px solid #d4d4d4;border-radius:10px;padding:10px 16px;min-width:130px}.card b{display:block;font-size:22px}
+.er{border:1px solid #d4d4d4;border-radius:10px;overflow:auto;max-height:800px}.er svg{max-width:none}.muted{color:#707070}pre{font-family:"Cascadia Mono",Consolas,"SFMono-Regular",monospace;background:#f2f2f2;border:1px solid #d4d4d4;padding:10px;overflow:auto;font-size:12px}
+@media print{.er{max-height:none}h2{page-break-before:auto}}</style></head><body>
+<h1>📑 資料關聯分析報告</h1><p class="muted">工作區：${e(S.ws.name)}｜報告產生：${fmtTime(Date.now())}｜上次分析：${fmtTime(a.analyzedAt)}｜信心門檻：${S.ws.settings.threshold}</p>
+<h2>1. 摘要</h2><div class="cards"><div class="card">資料表<b>${S.tables.length}</b></div><div class="card">總列數<b>${fmt(S.tables.reduce((s, t) => s + t.rowCount, 0))}</b></div><div class="card">有主鍵<b>${S.tables.filter(t => effPK(t).length).length}</b></div>
+<div class="card">顯示關聯<b>${rels.length}</b></div><div class="card">已確認<b>${cnt('confirmed')}</b></div><div class="card">待審核<b>${cnt('pending')}</b></div><div class="card">欄位相依<b>${S.fds.length}</b></div></div>
+<h2>2. 需要注意的事項（${warn.length}）</h2>${warn.length ? `<ul>${warn.map(w => `<li>${e(w)}</li>`).join('')}</ul>` : '<p>無</p>'}
+<h2>3. ER 圖</h2><p class="muted">實線＝已確認；虛線＝系統推測。PK＝主鍵，FK＝外鍵；連線兩端標示基數。</p><div class="er">${er}</div>
+<h2>4. 資料表</h2>${tbl(['資料表', '列數', '欄數', '編碼', '主鍵', '參照出', '被參照'], S.tables.map(t => [e(t.name) + (codeTableSet().has(t.id) ? '（代碼表）' : ''), fmt(t.rowCount), t.cols.length, e(t.encoding || ''), e(effPK(t).join(' + ') || '—'), rels.filter(r => r.srcTable === t.id).length, rels.filter(r => r.tgtTable === t.id).length]))}
+<h2>5. 關聯明細</h2>${tbl(['狀態', '子表.欄位', '父表.欄位', '基數', '信心', '包含率', '孤兒值', '備註'], rels.sort((x, y) => y.score - x.score).map(r => [st[r.status] + (r.origin === 'manual' ? '（手動）' : ''), e(tname(r.srcTable) + '.' + r.srcCols.join('+')), e(tname(r.tgtTable) + '.' + r.tgtCols.join('+')), e(cardText(r)), r.score, pct(r.incl), r.orphanDistinct ? `${r.orphanDistinct}（${e(r.orphans.slice(0, 5).map(x => x[0]).join('、'))}${r.orphanDistinct > 5 ? '…' : ''}）` : '0', e(r.note || '')]))}
+<h2>6. 主鍵</h2>${tbl(['資料表', '主鍵', '來源', '其他候選'], S.tables.map(t => [e(t.name), e(effPK(t).join(' + ') || '—'), t.pk ? '手動' : '自動', e((t.pkCands || []).filter(c => !sameArr(c.cols, effPK(t))).slice(0, 3).map(c => c.cols.join('+') + '(' + c.score + ')').join('、'))]))}
+<h2>7. 欄位相依與正規化</h2>${tbl(['資料表', '相依', '違反率', '說明'], S.fds.filter(f => TB(f.tableId)).map(f => [e(tname(f.tableId)), e(f.lhs + ' → ' + f.rhs), pct(f.violRate, 2), f.bijection ? '雙向一對一（代碼↔名稱）' : f.exact ? '完全相依' : '近似相依']))}
+<h2>8. 代碼與日期</h2><h3>代碼表 / 代碼對照</h3>${tbl(['類別', '資料表', '代碼欄', '名稱欄', '筆數', '範例'], [...(a.codeTables || []).filter(x => TB(x.tableId)).map(c => ['代碼表', e(tname(c.tableId)), e(c.codeCol), e(c.nameCol), c.entries, '']), ...(a.dicts || []).filter(x => TB(x.tableId)).map(d => ['表內對照', e(tname(d.tableId)), e(d.codeCol), e(d.nameCol), d.entries, e(d.sample.slice(0, 6).map(([c, n]) => c + '=' + n).join('、'))])])}
+<h3>日期欄位</h3>${tbl(['資料表.欄位', '曆法', '格式', '範圍（西元）'], (a.dates || []).filter(x => TB(x.tableId)).map(d => [e(tname(d.tableId) + '.' + d.col), d.type === 'dateROC' ? '民國' : '西元', e(d.pattern), `${d.min} ~ ${d.max}`]))}
+<h2>9. 欄位剖析</h2>${S.tables.map(t => `<h3>${e(t.name)}</h3>` + tbl(['#', '欄位', '型態', '長度', '空值率', '唯一率', '不重複', '型態特徵'], (S.profiles[t.id] || []).map(p => [p.idx + 1, e(p.col) + (effPK(t).includes(p.col) ? ' 🔑' : ''), TYPE_LABEL[p.type], p.minLen === p.maxLen ? p.maxLen : p.minLen + '~' + p.maxLen, pct(p.nullRate), pct(p.uniqueRate), fmt(p.distinct), e(p.patternDesc)]))).join('')}
+<h2>10. Mermaid 原始碼</h2><pre>${e(genMermaid())}</pre>
+<p class="muted">本報告由「資料關聯探索器」產生；關聯為依資料內容推測，請搭配系統規格確認。</p></body></html>`;
+  downloadText(`資料關聯分析報告_${S.ws.name}_${stamp()}.html`, html, 'text/html');
+  toast('已產生分析報告');
+};
+
+/* ===== 工作區 JSON ===== */
+A['exp-json'] = async () => {
+  const rows = {};
+  for (const t of S.tables) rows[t.id] = await getRows(t.id);
+  const data = { format: 'DataRelationshipExplorer', version: 3, exportedAt: Date.now(), ws: S.ws, tables: S.tables, rows, profiles: Object.values(S.profiles).flat(), relations: S.relations, fds: S.fds, layout: S.layout };
+  downloadText(`工作區_${S.ws.name}_${stamp()}.json`, JSON.stringify(data), 'application/json');
+  toast('已匯出工作區');
+};
+A['imp-json'] = () => $('#wsFileInput').click();
+async function importWsJSON(file) {
+  let d;
+  try { d = JSON.parse(await file.text()); } catch (e) { return toast('JSON 格式錯誤'); }
+  if (!d || d.format !== 'DataRelationshipExplorer') return toast('不是資料關聯探索器的工作區檔案');
+  const wsId = uid(), tmap = new Map(d.tables.map(t => [t.id, uid()]));
+  const mt = id => tmap.get(id) || id;
+  const names = new Set(S.wsList.map(w => w.name));
+  let name = d.ws.name; while (names.has(name)) name += '（匯入）';
+  const ws = { ...d.ws, id: wsId, name, settings: { ...DEFAULT_SETTINGS, ...(d.ws.settings || {}) } };
+  if (ws.analysis) ['dicts', 'enums', 'dates', 'codeTables'].forEach(k => { (ws.analysis[k] || []).forEach(x => { x.tableId = mt(x.tableId); }); }), ws.analysis.sampled = (ws.analysis.sampled || []).map(mt);
+  await dbPut('workspaces', ws);
+  for (const t of d.tables) await saveTable({ ...t, id: mt(t.id), wsId }, d.rows[t.id] || []);
+  await dbPutMany('profiles', (d.profiles || []).map(p => ({ ...p, tableId: mt(p.tableId), id: mt(p.tableId) + '|' + p.idx, wsId })));
+  await dbPutMany('relations', (d.relations || []).map(r => { const s = mt(r.srcTable), t = mt(r.tgtTable); return { ...r, id: uid(), wsId, srcTable: s, tgtTable: t, key: `${s}|${r.srcCols.join(',')}|${t}|${r.tgtCols.join(',')}` }; }));
+  await dbPutMany('fds', (d.fds || []).map(f => ({ ...f, id: uid(), wsId, tableId: mt(f.tableId) })));
+  const lay = d.layout || { pos: {}, zoom: 1, pan: { x: 40, y: 40 }, hidden: [] }, pos = {};
+  Object.entries(lay.pos || {}).forEach(([k, v]) => { pos[mt(k)] = v; });
+  await dbPut('layouts', { ...lay, wsId, pos, hidden: (lay.hidden || []).map(mt) });
+  S.wsList.push(ws);
+  await loadWs(wsId);
+  toast(`已匯入工作區「${name}」`);
+}
+
+/* ===== 範例資料 ===== */
+A['load-sample'] = async () => {
+  const exist = S.tables.length;
+  if (exist && !confirm('範例資料會建立在新的工作區「範例：放款系統」，確定？')) return;
+  let ws = S.ws;
+  if (exist) { ws = newWs('範例：放款系統'); await dbPut('workspaces', ws); S.wsList.push(ws); }
+  for (const t of genSampleData()) {
+    await saveTable({ id: uid(), wsId: ws.id, name: t.name, cols: t.cols, rowCount: t.rows.length, encoding: 'utf-8', delimiter: ',', fileName: t.name + '.csv（範例）', importedAt: Date.now(), pk: null, pkCands: [], pkRejected: [] }, t.rows);
+  }
+  await loadWs(ws.id);
+  toast('已載入範例資料，開始分析…');
+  await A.analyze();
+};
+/* ===== 範例資料產生器 ===== */
+function genSampleData() {
+  let seed = 20261015;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const p = (n, w) => String(n).padStart(w, '0');
+  const brNames = ['總行營業部', '台北分行', '中山分行', '信義分行', '板橋分行', '桃園分行', '新竹分行', '台中分行', '台南分行', '高雄分行', '花蓮分行', '金門分行'];
+  const BRANCH = { name: 'BRANCH', cols: ['分行別', '分行名稱', '區域'], rows: [] };
+  brNames.forEach((n, i) => BRANCH.rows.push([p(i + 1, 3), n, i < 5 ? '北區' : i < 8 ? '中區' : '南區']));
+  const types = [['01', '個人'], ['02', '中小企業'], ['03', '大型企業'], ['04', '政府機關']];
+  const CUST = { name: 'CUST', cols: ['統一編號', '客戶名稱', '客戶類別代碼', '客戶類別名稱', '主往來分行', '建檔日'], rows: [] };
+  const ids = new Set();
+  while (ids.size < 220) ids.add(String(ri(10000000, 99999999)));
+  const idArr = [...ids];
+  idArr.forEach((id, i) => {
+    const t = pick(types);
+    CUST.rows.push([id, '客戶' + p(i + 1, 4) + (t[0] === '01' ? '' : '股份有限公司'), t[0], t[1], p(ri(1, 12), 3),
+      `${ri(2015, 2025)}-${p(ri(1, 12), 2)}-${p(ri(1, 28), 2)}`]);
+  });
+  const LNMR = { name: 'LNMR', cols: ['分行別', '帳號', '分號', '統一編號', '貸放日', '到期日', '放款餘額', '還本方式'], rows: [] };
+  const keys = new Set();
+  const loans = [];
+  for (let a = 0; a < 320; a++) {
+    const acct = '5031' + p(ri(0, 99999999), 8);
+    const brs = rnd() < 0.3 ? [p(ri(1, 12), 3), p(ri(1, 12), 3)] : [p(ri(1, 12), 3)];
+    brs.forEach(br => {
+      const subs = ri(1, 3);
+      for (let s = 1; s <= subs; s++) {
+        const k = br + acct + s;
+        if (keys.has(k)) continue;
+        keys.add(k);
+        loans.push([br, acct, p(s, 3)]);
+      }
+    });
+  }
+  loans.forEach((l, i) => {
+    const cid = i < 3 ? String(ri(10000000, 99999999)) : pick(idArr);
+    const y = ri(105, 113);
+    LNMR.rows.push([l[0], l[1], l[2], cid, `${y}${p(ri(1, 12), 2)}${p(ri(1, 28), 2)}`, `${y + ri(1, 7)}${p(ri(1, 12), 2)}${p(ri(1, 28), 2)}`,
+      String(ri(10, 5000) * 1000), pick(['1', '1', '1', '3', '9'])]);
+  });
+  const LLCON = { name: 'LLCON', cols: ['契約編號', '分行別', '帳號', '分號', '核准額度', '契約止日', '利率'], rows: [] };
+  loans.forEach((l, i) => {
+    if (rnd() < 0.7) LLCON.rows.push(['C' + p(i + 1, 7), l[0], l[1], l[2], String(ri(50, 8000) * 1000), `${ri(114, 120)}/${p(ri(1, 12), 2)}/${p(ri(1, 28), 2)}`, (ri(150, 380) / 100).toFixed(2)]);
+  });
+  return [BRANCH, CUST, LNMR, LLCON];
+}
+init();
+</script>
+</body>
+</html>

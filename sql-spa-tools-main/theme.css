@@ -1,0 +1,616 @@
+/* SQL SPA Tools - shared monochrome ink wash theme */
+:root {
+  --theme-font-sans: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", system-ui, sans-serif;
+  --theme-font-mono: "Cascadia Mono", Consolas, "SFMono-Regular", monospace;
+
+  --theme-page: #f6f6f6;
+  --theme-surface: #ffffff;
+  --theme-surface-alt: #ececec;
+  --theme-surface-soft: #f2f2f2;
+  --theme-text: #303030;
+  --theme-muted: #707070;
+  --theme-border: #d4d4d4;
+  --theme-border-soft: #e4e4e4;
+  --theme-primary: #444444;
+  --theme-primary-hover: #2e2e2e;
+  --theme-secondary: #777777;
+  --theme-secondary-soft: #e9e9e9;
+  --theme-success: #505050;
+  --theme-success-soft: #e6e6e6;
+  --theme-warning: #5c5c5c;
+  --theme-warning-soft: #dddddd;
+  --theme-danger: #333333;
+  --theme-danger-soft: #cecece;
+  --theme-info: #595959;
+  --theme-info-soft: #eeeeee;
+  --theme-purple: #777777;
+  --theme-purple-soft: #e9e9e9;
+  --theme-shadow: 0 8px 24px rgb(48 48 48 / 12%);
+
+  /* Compatibility aliases for existing standalone pages. The !important flag is
+     intentional: it keeps page-level legacy tokens from re-introducing the old
+     palettes. New code must use --theme-* tokens instead. */
+  --bg: var(--theme-page) !important;
+  --page: var(--theme-page) !important;
+  --panel: var(--theme-surface) !important;
+  --card: var(--theme-surface) !important;
+  --paper: var(--theme-surface) !important;
+  --line: var(--theme-border) !important;
+  --bd: var(--theme-border) !important;
+  --text: var(--theme-text) !important;
+  --ink: var(--theme-text) !important;
+  --muted: var(--theme-muted) !important;
+  --dim: var(--theme-muted) !important;
+  --pri: var(--theme-primary) !important;
+  --pri-d: var(--theme-primary-hover) !important;
+  --pri-h: var(--theme-primary-hover) !important;
+  --pri-l: var(--theme-surface-soft) !important;
+  --head: var(--theme-primary) !important;
+  --focus: var(--theme-secondary) !important;
+  --acc: var(--theme-primary) !important;
+  --ok: var(--theme-success) !important;
+  --ok-bg: var(--theme-success-soft) !important;
+  --warn: var(--theme-warning) !important;
+  --warn-bg: var(--theme-warning-soft) !important;
+  --err: var(--theme-danger) !important;
+  --err-bg: var(--theme-danger-soft) !important;
+  --danger: var(--theme-danger) !important;
+  --danger-h: var(--theme-primary-hover) !important;
+  --info: var(--theme-info) !important;
+  --sel: var(--theme-secondary-soft) !important;
+  --hover: var(--theme-surface-soft) !important;
+  --add: var(--theme-success-soft) !important;
+  --del: var(--theme-danger-soft) !important;
+  --sage: var(--theme-primary) !important;
+  --blue: var(--theme-secondary) !important;
+  --rose: var(--theme-danger-soft) !important;
+  --sand: var(--theme-surface-alt) !important;
+  --purple: var(--theme-purple) !important;
+  --gold: var(--theme-warning) !important;
+  --gold-l: var(--theme-warning-soft) !important;
+  --navy: var(--theme-text) !important;
+  --navy-2: var(--theme-muted) !important;
+  --fuji: var(--theme-purple) !important;
+  --fuji-l: var(--theme-purple-soft) !important;
+  --take: var(--theme-success) !important;
+  --sakura: var(--theme-danger-soft) !important;
+  --cur: var(--theme-secondary-soft) !important;
+  --m-id: #e2e2e2 !important;
+  --m-acct: #d9d9d9 !important;
+  --m-seq: #d0d0d0 !important;
+  --m-sub: #c7c7c7 !important;
+  --m-ban: #bebebe !important;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--theme-font-sans);
+}
+
+/* Light mode is the default; dark mode is opt-in via data-theme="dark". */
+:root[data-theme='dark'] {
+  --theme-page: #202020;
+  --theme-surface: #2a2a2a;
+  --theme-surface-alt: #363636;
+  --theme-surface-soft: #404040;
+  --theme-text: #e9e9e9;
+  --theme-muted: #b9b9b9;
+  --theme-border: #545454;
+  --theme-border-soft: #454545;
+  --theme-primary: #5a5a5a;
+  --theme-primary-hover: #737373;
+  --theme-secondary: #aaa;
+  --theme-secondary-soft: #464646;
+  --theme-success: #c5c5c5;
+  --theme-success-soft: #464646;
+  --theme-warning: #d0d0d0;
+  --theme-warning-soft: #505050;
+  --theme-danger: #eeeeee;
+  --theme-danger-soft: #5a5a5a;
+  --theme-info: #b6b6b6;
+  --theme-info-soft: #414141;
+  --theme-purple: #aaa;
+  --theme-purple-soft: #464646;
+  /* Highlight marks need their own dark surfaces so the shared text colour stays readable. */
+  --m-id: #3d3d3d !important;
+  --m-acct: #444444 !important;
+  --m-seq: #4a4a4a !important;
+  --m-sub: #505050 !important;
+  --m-ban: #565656 !important;
+  --theme-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+  color-scheme: dark;
+}
+
+:root:not([data-theme='dark']) {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--theme-page) !important;
+  color: var(--theme-text) !important;
+}
+
+header {
+  background: var(--theme-primary) !important;
+  color: #fdfdfd !important;
+  border-color: var(--theme-primary-hover) !important;
+}
+
+header h1,
+header h1 small,
+header button,
+header .hint,
+header .root-badge {
+  color: #fdfdfd !important;
+}
+
+header button {
+  background: rgb(255 255 255 / 10%) !important;
+  border-color: rgb(255 255 255 / 35%) !important;
+}
+
+header button:hover {
+  background: rgb(255 255 255 / 20%) !important;
+}
+
+button,
+.btn {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+button:hover:not(:disabled),
+.btn:hover {
+  background: var(--theme-surface-soft) !important;
+  border-color: var(--theme-secondary) !important;
+}
+
+button.primary,
+button.pri,
+button.primary:hover,
+button.pri:hover,
+button.small.primary {
+  background: var(--theme-primary) !important;
+  color: #fdfdfd !important;
+  border-color: var(--theme-primary-hover) !important;
+}
+
+button.acc,
+button.rose,
+button.secondary {
+  background: var(--theme-secondary-soft) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-secondary) !important;
+}
+
+button.danger {
+  background: var(--theme-danger-soft) !important;
+  color: var(--theme-danger) !important;
+  border-color: var(--theme-danger) !important;
+}
+
+input,
+select,
+textarea {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline-color: var(--theme-secondary-soft) !important;
+  border-color: var(--theme-primary) !important;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+progress {
+  accent-color: var(--theme-primary) !important;
+}
+
+.toolbar,
+.topbar,
+.searchbar,
+footer,
+.tabs,
+.details,
+.sidebar,
+.pane,
+.card,
+.panel,
+.sum-card,
+.sec,
+.modal-box,
+.busy-card {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+.pane-hd,
+.sec-hd,
+table th,
+.data-table th,
+.trace-sum,
+.summary-note,
+.sum,
+.toolbar {
+  background: var(--theme-surface-alt) !important;
+  border-color: var(--theme-border) !important;
+}
+
+/* Page-specific surfaces that previously used legacy palettes. */
+.listhead,
+.data-table th,
+.canvas,
+.code,
+.code .gut,
+.preview .bar,
+.trace-cands,
+.trace-sum,
+.summary-note,
+.editor textarea {
+  background: var(--theme-surface-alt) !important;
+}
+
+.listhead,
+.preview .bar {
+  color: var(--theme-text) !important;
+  border-color: var(--theme-primary) !important;
+}
+
+.code .k,
+.code .f,
+.code .s,
+.code .c,
+.code .n {
+  color: var(--theme-info) !important;
+}
+
+.canvas {
+  background-color: var(--theme-surface-soft) !important;
+  background-image: radial-gradient(var(--theme-border) 0.7px, transparent 0.7px) !important;
+}
+
+.node-title,
+.node-sub,
+.field-text,
+.more-text {
+  fill: var(--theme-text) !important;
+}
+
+.edge {
+  stroke: var(--theme-primary) !important;
+}
+
+.edge.indirect {
+  stroke: var(--theme-danger) !important;
+}
+
+.obj-card,
+.field-bg {
+  fill: var(--theme-surface) !important;
+  stroke: var(--theme-border) !important;
+}
+
+.obj-head.table,
+.tag.table {
+  fill: var(--theme-success-soft) !important;
+  background: var(--theme-success-soft) !important;
+}
+
+.obj-head.cte,
+.tag.cte {
+  fill: var(--theme-info-soft) !important;
+  background: var(--theme-info-soft) !important;
+}
+
+.obj-head.inline,
+.tag.inline {
+  fill: var(--theme-purple-soft) !important;
+  background: var(--theme-purple-soft) !important;
+}
+
+.obj-head.result,
+.obj-head.target,
+.tag.result,
+.tag.target,
+.tag.view {
+  fill: var(--theme-warning-soft) !important;
+  background: var(--theme-warning-soft) !important;
+}
+
+table.diff tr.del td.cl,
+table.diff tr.mod td.cl {
+  background: var(--theme-danger-soft) !important;
+}
+
+table.diff tr.add td.cr,
+table.diff tr.mod td.cr {
+  background: var(--theme-success-soft) !important;
+}
+
+table.diff tr.mv td.code {
+  background: var(--theme-purple-soft) !important;
+}
+
+table td,
+.data-table td,
+.file,
+.sumt td,
+.sumt th {
+  border-color: var(--theme-border-soft) !important;
+}
+
+tr:hover td,
+.file:hover,
+.file.active,
+tr.sel,
+.tn:hover {
+  background: var(--theme-surface-soft) !important;
+}
+
+.tab.on,
+.tab.active {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+.badge.add,
+.t-ok,
+.msg.ok,
+.stat-add,
+.sum-card.add {
+  background: var(--theme-success-soft) !important;
+  color: var(--theme-success) !important;
+}
+
+.badge.del,
+.t-err,
+.msg.err,
+.stat-del,
+.sum-card.del {
+  background: var(--theme-danger-soft) !important;
+  color: var(--theme-danger) !important;
+}
+
+.badge.mod,
+.t-warn,
+.msg.warn,
+.stat-mod,
+.sum-card.mod {
+  background: var(--theme-warning-soft) !important;
+  color: var(--theme-warning) !important;
+}
+
+.msg.info,
+.stat-info,
+.sum-card.info {
+  background: var(--theme-info-soft) !important;
+  color: var(--theme-info) !important;
+}
+
+.toast,
+#toast {
+  background: var(--theme-text) !important;
+  color: var(--theme-surface) !important;
+}
+
+mark,
+.tag,
+.pill,
+.chip {
+  color: var(--theme-text) !important;
+  background: var(--theme-surface-alt) !important;
+}
+
+code,
+pre {
+  background: var(--theme-surface-soft) !important;
+  color: var(--theme-text) !important;
+}
+
+::selection {
+  background: var(--theme-secondary-soft);
+}
+
+/* Header controls must remain readable when actions are unavailable. */
+header button:not(:disabled):not(.pri):not(.primary):not(.danger) {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+header button:not(:disabled):not(.pri):not(.primary):not(.danger):hover {
+  background: var(--theme-surface-soft) !important;
+  color: var(--theme-text) !important;
+}
+
+header button:disabled {
+  background: var(--theme-surface-soft) !important;
+  color: var(--theme-muted) !important;
+  border-color: var(--theme-border) !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+.theme-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 200;
+  border-radius: 999px !important;
+  padding: 8px 14px !important;
+  box-shadow: var(--theme-shadow);
+  font-weight: 600;
+}
+
+.home-link {
+  position: fixed;
+  right: 170px;
+  bottom: 16px;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--theme-border);
+  border-radius: 999px;
+  background: var(--theme-surface);
+  color: var(--theme-primary);
+  box-shadow: var(--theme-shadow);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-link:hover {
+  background: var(--theme-surface-soft);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary-hover);
+}
+
+@media (max-width: 560px) {
+  .home-link {
+    right: 16px;
+    bottom: 62px;
+  }
+}
+
+/* Legacy component states use the shared ink palette as well. */
+.qf button.on,
+.fi.sel {
+  background: var(--theme-surface-soft) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-primary) !important;
+}
+
+.stat.w b {
+  color: var(--theme-warning) !important;
+}
+
+mark.id {
+  background: var(--m-id) !important;
+}
+
+mark.acct {
+  background: var(--m-acct) !important;
+}
+
+mark.seq {
+  background: var(--m-seq) !important;
+}
+
+mark.sub {
+  background: var(--m-sub) !important;
+}
+
+mark.ban {
+  background: var(--m-ban) !important;
+}
+
+.l-使用中,
+.t-完成 {
+  background: var(--theme-success-soft) !important;
+  color: var(--theme-success) !important;
+}
+
+.l-草稿,
+.t-待處理 {
+  background: var(--theme-warning-soft) !important;
+  color: var(--theme-warning) !important;
+}
+
+.l-停用 {
+  background: var(--theme-surface-alt) !important;
+  color: var(--theme-muted) !important;
+}
+
+.l-遺失 {
+  background: var(--theme-danger-soft) !important;
+  color: var(--theme-danger) !important;
+}
+
+.t-處理中 {
+  background: var(--theme-info-soft) !important;
+  color: var(--theme-info) !important;
+}
+
+.message {
+  background: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+.message.warn {
+  border-left-color: var(--theme-warning) !important;
+}
+
+.message.error {
+  border-left-color: var(--theme-danger) !important;
+}
+
+.message .count {
+  background: var(--theme-surface-alt) !important;
+}
+
+.modal .mh {
+  background: var(--theme-surface-alt) !important;
+  color: var(--theme-text) !important;
+  border-bottom-color: var(--theme-primary) !important;
+}
+
+.modal .mh .x {
+  color: var(--theme-text) !important;
+}
+
+.modal .mh .x:hover {
+  color: var(--theme-primary) !important;
+}
+
+.modal .mf,
+.suggest,
+.bars .b .t,
+#progress .pb {
+  background: var(--theme-surface-alt) !important;
+}
+
+.suggest {
+  color: var(--theme-info) !important;
+  border-color: var(--theme-info) !important;
+}
+
+.bars .b .t i,
+#progress .pb i {
+  background: var(--theme-primary) !important;
+}
+
+#progress {
+  border-top-color: var(--theme-primary) !important;
+}
+
+.toast {
+  border-left-color: var(--theme-primary) !important;
+}
+
+.toast.error {
+  background: var(--theme-danger-soft) !important;
+  color: var(--theme-danger) !important;
+  border-left-color: var(--theme-danger) !important;
+}
+
+.toast.ok {
+  background: var(--theme-success-soft) !important;
+  color: var(--theme-success) !important;
+  border-left-color: var(--theme-success) !important;
+}
+
+.mask {
+  background: rgb(32 32 32 / 50%) !important;
+}

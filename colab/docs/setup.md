@@ -56,6 +56,26 @@ $colab = Join-Path $env:APPDATA 'Python\Python313\Scripts\colab.exe'
 & $colab version
 ```
 
+## 執行本機自動化測試
+
+`google-colab-cli` 支援 Linux 與 macOS，官方尚未支援 Windows。本機 Windows 可先嘗試，但完整遠端操作若不相容，請改在 WSL 安裝 Linux 版 Python 與 CLI，並在 WSL 內完成 OAuth 登入；不要複製 Windows 的 CLI token 到 WSL。
+
+在儲存庫根目錄先檢查環境，再執行 quick 或 full：
+
+```powershell
+python colab/run_colab_tests.py doctor
+python colab/run_colab_tests.py run --mode quick
+python colab/run_colab_tests.py run --mode full
+```
+
+`run` 首次會呼叫 `colab sessions`，因此授權網址與一次性授權碼會顯示在目前終端機。預設輸出位於 `colab/outputs/cli/<run-id>/`。若需補下載，依 `run-state.json` 內的 run-id 執行：
+
+```powershell
+python colab/run_colab_tests.py download --run-id <run-id>
+```
+
+完整流程與退出碼請參閱 `colab/docs/testing-guide.md` 的「CLI 自動執行」。
+
 ## 憑證位置與安全
 
 OAuth 憑證由 CLI 保存在使用者設定目錄（通常為 `~/.config/colab-cli/token.json`）。請勿將此檔案提交到 Git、貼到聊天或分享給他人。授權碼是一次性敏感資料，也不要留存在文件或日誌中。

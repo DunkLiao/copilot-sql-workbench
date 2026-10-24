@@ -34,7 +34,8 @@ playwright-report/
 blob-report/
 
 # 本專案產生的 Colab 報告與簡報素材
-/colab/outputs/
+/colab/outputs/*
+!/colab/outputs/.gitkeep
 /參賽準備/.artifact-build/
 
 # 套件管理器與執行日誌
